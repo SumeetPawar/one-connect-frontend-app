@@ -1,5 +1,7 @@
 // lib/auth.ts
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
+import { logger } from "@/lib/logger";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8001";
 
 type LoginResponse = {
   access_token: string;
@@ -95,19 +97,19 @@ export function startBackgroundRefresh() {
         const timeUntilExpiry = expiryTime - Date.now();
         // Refresh if token expires in less than 30 seconds
         if (timeUntilExpiry < 30 * 1000) {
-          console.log('Token expiring soon, refreshing...');
+          logger.info('Token expiring soon, refreshing...');
           const success = await refreshAccessToken();
           if (!success) {
-            console.warn('Background refresh failed - user may need to re-login');
+            logger.warn('Background refresh failed - user may need to re-login');
             stopBackgroundRefresh();
           } else {
-            console.log('✅ Token refreshed successfully');
+            logger.info('✅ Token refreshed successfully');
           }
         }
       }
     } else {
       // No access token, try to refresh
-      console.log('No access token, attempting refresh...');
+      logger.info('No access token, attempting refresh...');
       const success = await refreshAccessToken();
       if (!success) {
         stopBackgroundRefresh();
@@ -156,7 +158,7 @@ export async function login(email: string, password: string) {
     startBackgroundRefresh();
     return { ok: true };
   } catch (error) {
-    console.error("Login network error:", error);
+    logger.error("Login network error:", error);
     return { 
       ok: false, 
       error: error instanceof Error && error.message.includes('CORS') 
@@ -185,7 +187,7 @@ export async function signup(name: string, email: string, password: string) {
 
     return { ok: true, data: data as SignupResponse };
   } catch (error) {
-    console.error("Signup network error:", error);
+    logger.error("Signup network error:", error);
     return { 
       ok: false, 
       error: error instanceof Error && error.message.includes('CORS') 

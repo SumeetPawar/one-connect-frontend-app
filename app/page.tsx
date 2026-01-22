@@ -17,790 +17,1053 @@
 //   return null;
 // }
 
-
 'use client';
 
-import { useState, useMemo } from 'react';
 
-// Helper functions
-function clamp(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n));
+
+import React, { JSX, useMemo, useState } from 'react';
+
+
+interface Reading {
+  date: string;
+  weight: number;
+  bmi: number;
+  bodyFat: number;
+  muscle: number | null;
+  visceralFat: number | null;
+  water: number | null;
+  bmr: number | null;
+  boneMass: number | null;
 }
 
-function formatNumber(n: number): string {
-  return Number(n || 0).toLocaleString("en-IN");
+interface ChangeIndicator {
+  symbol: string;
+  value: string;
+  color: string;
 }
 
-function buildAiSummary(steps: number, goal: number, hasSteps: boolean) {
-  const stepComparisons = [
-    { steps: 2000, text: '🗼 You walked the height of the Eiffel Tower!' },
-    { steps: 5000, text: '🏟️ You walked around a football field 10 times!' },
-    { steps: 7500, text: '🌉 You walked the length of the Golden Gate Bridge!' },
-    { steps: 10000, text: '🏔️ You walked up a small mountain today!' },
-    { steps: 12000, text: '✈️ You walked the length of 2 jumbo jets!' },
-    { steps: 15000, text: '🏃 You completed a half marathon distance!' },
-    { steps: 20000, text: '🌍 You walked 10 miles - amazing achievement!' },
-  ];
-
-  if (!hasSteps || steps === 0) return '';
-
-  for (let i = stepComparisons.length - 1; i >= 0; i--) {
-    if (steps >= stepComparisons[i].steps) return stepComparisons[i].text;
-  }
-
-  return `🚀 You have taken ${steps.toLocaleString()} steps! Keep going!`;
+interface SparkGraphProps {
+  data: Reading[];
+  metricKey: keyof Reading;
+  label: string;
+  unit: string;
 }
 
-function getSwipeablePages() {
-  const dayOfWeek = new Date().getDay();
-
-  const funFacts = [
-    '💡 Walking 10,000 steps burns about 400-500 calories!',
-    '🦴 Walking strengthens your bones and improves balance.',
-    '❤️ Just 30 minutes of walking can reduce heart disease risk by 35%.',
-    '🧠 Walking boosts creativity by up to 60%!',
-    '😊 A 15-minute walk can reduce sugar cravings.',
-    '🌙 Regular walking improves sleep quality significantly.',
-    '💪 Walking tones your legs, abs, and arms naturally.',
-  ];
-
-  const healthTips = [
-    '🌿 Take the stairs instead of the elevator whenever possible.',
-    '⚡ Walk during phone calls to add extra steps effortlessly.',
-    '🎯 Park farther away to increase your daily step count.',
-    '🔥 Set hourly reminders to stand up and walk for 2 minutes.',
-    '🦵 Walk after meals to aid digestion and control blood sugar.',
-    '☀️ Morning walks boost your mood and energy all day.',
-    '👟 Invest in comfortable shoes - your feet will thank you!',
-  ];
-
-  const stepsComparisons = [
-    '🗼 10,000 steps = Height of 5 Eiffel Towers stacked!',
-    '🏟️ 5,000 steps = Around a standard football field 10 times.',
-    '🌉 7,500 steps = Length of the Golden Gate Bridge.',
-    '🏔️ 10,000 steps = Climbing a small mountain.',
-    '✈️ 12,000 steps = Length of 2 Boeing 747 jets.',
-    '🌍 15,000 steps = About 7 miles or 11 kilometers.',
-    '🚀 20,000 steps = You are a walking champion today!',
-  ];
-
-  const dailyFunFact = funFacts[dayOfWeek % funFacts.length];
-  const dailyHealthTip = healthTips[dayOfWeek % healthTips.length];
-  const dailyComparison = stepsComparisons[dayOfWeek % stepsComparisons.length];
-
-  return [
-    { title: 'Fun Fact', content: dailyFunFact },
-    { title: 'Health Tip', content: dailyHealthTip },
-    { title: 'Did You Know', content: dailyComparison },
-  ];
+interface GraphPoint {
+  x: number;
+  y: number;
+  v: number;
+  date: string;
+  i: number;
 }
 
-export default function StepsTracker() {
-  const goalToday = 10000;
-  const goalWeek = goalToday * 7;
+// Add this interface at the top with your other interfaces
+interface GraphTab {
+  key: keyof Reading;
+  label: string;
+}
 
-  const [stepsToday, setStepsToday] = useState(7890);
-  const [stepsWeek, setStepsWeek] = useState(38450);
+// ---------------- helpers (pure) ----------------
 
-  const [viewSteps, setViewSteps] = useState(7890);
-  const [viewLabel, setViewLabel] = useState('Today');
-  const [selectedLabel, setSelectedLabel] = useState('Thu');
-
-  const [logOpen, setLogOpen] = useState(false);
-  const [inputSteps, setInputSteps] = useState('');
-  const [profileOpen, setProfileOpen] = useState(false);
-
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
-
-  const swipeablePages = useMemo(() => getSwipeablePages(), []);
-
-  const date = useMemo(() => {
-    return new Date().toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    });
-  }, []);
-
-  const weekDays = useMemo(() => {
-    return [
-      { label: 'Mon', short: 'Mon', date: 13, steps: 8234, done: false },
-      { label: 'Tue', short: 'Tue', date: 14, steps: 9876, done: false },
-      { label: 'Wed', short: 'Wed', date: 15, steps: 12450, done: true },
-      { label: 'Thu', short: 'Thu', date: 16, steps: stepsToday, done: stepsToday >= goalToday, today: true },
-      { label: 'Fri', short: 'Fri', date: 17, steps: 0, done: false },
-      { label: 'Sat', short: 'Sat', date: 18, steps: 0, done: false },
-      { label: 'Sun', short: 'Sun', date: 19, steps: 0, done: false },
-    ];
-  }, [stepsToday, goalToday]);
-
-  const todayIdx = useMemo(() => weekDays.findIndex(d => d.today), [weekDays]);
-
-  const streak = useMemo(() => {
-    const idx = weekDays.findIndex(d => d.today);
-    if (idx < 0 || !weekDays[idx].done) return 0;
-    let s = 0;
-    for (let i = idx; i >= 0; i--) {
-      if (weekDays[i].done) s += 1;
-      else break;
-    }
-    return s;
-  }, [weekDays]);
-
-  const hasSteps = viewSteps > 0;
-  const allPages = useMemo(() => {
-    return hasSteps
-      ? [{ title: 'Your Achievement', content: buildAiSummary(viewSteps, goalToday, true) }, ...swipeablePages]
-      : swipeablePages;
-  }, [hasSteps, swipeablePages, viewSteps, goalToday]);
-
-  // Keep index valid when switching days / hasSteps changes
-  const safePageIndex = clamp(currentPageIndex, 0, Math.max(allPages.length - 1, 0));
-  const displayedTitle = allPages[safePageIndex]?.title || '';
-  const displayedContent = allPages[safePageIndex]?.content || '';
-
-  const remainingToday = Math.max(goalToday - viewSteps, 0);
-
-  const onSelectDay = (day: any, idx: number) => {
-    // Disable selecting future days (after today) if no data
-    const isFuture = idx > todayIdx;
-    const isEmptyFuture = isFuture && (!day.steps || day.steps === 0);
-    if (isEmptyFuture) return;
-
-    setSelectedLabel(day.label);
-    setViewSteps(day.steps);
-    setViewLabel(day.today ? 'Today' : day.label);
-    setCurrentPageIndex(0);
+function getChange(current: number | null | undefined, prev: number | null | undefined): ChangeIndicator {
+  if (current == null || prev == null) return { symbol: '●', value: '', color: '#94a3b8' };
+  const diff = current - prev;
+  if (Math.abs(diff) < 0.1) return { symbol: '—', value: '', color: '#94a3b8' };
+  return {
+    symbol: diff > 0 ? '▲' : '▼',
+    value: `${diff > 0 ? '+' : ''}${diff.toFixed(1)}`,
+    color: diff > 0 ? '#ef4444' : '#10b981'
   };
+}
 
-  const onAddSteps = () => {
-    const n = Number(inputSteps);
-    if (!Number.isFinite(n) || n <= 0) return;
+function getBMICategory(bmi: number | null | undefined): string
+ {
+  if (bmi == null) return 'Unknown';
+  if (bmi < 18.5) return 'Underweight';
+  if (bmi < 25) return 'Normal';
+  if (bmi < 30) return 'Overweight';
+  return 'Obese';
+}
 
-    const add = Math.floor(n);
-    const nextToday = stepsToday + add;
-    const nextWeek = stepsWeek + add;
+function getBMIColor(bmi: number | null | undefined): string
+ {
+  if (bmi == null) return '#94a3b8';
+  if (bmi < 18.5) return '#60a5fa';
+  if (bmi < 25) return '#10b981';
+  if (bmi < 30) return '#f59e0b';
+  return '#ef4444';
+}
 
-    setStepsToday(nextToday);
-    setStepsWeek(nextWeek);
+function sortByDateAsc(arr: Reading[]) {
+  return arr.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
 
-    if (viewLabel === 'Today') setViewSteps(nextToday);
+// Lightweight self-tests (run only in test env)
+export const __test__ = { getChange, getBMICategory, getBMIColor, sortByDateAsc };
+if (typeof window === 'undefined' && process?.env?.NODE_ENV === 'test') {
+  // Basic sanity checks
+  const t1 = getBMICategory(24.0);
+  if (t1 !== 'Normal') throw new Error('getBMICategory test failed');
+  const t2 = getBMIColor(31.0);
+  if (t2 !== '#ef4444') throw new Error('getBMIColor test failed');
+  const t3 = getChange(10, 11);
+  if (t3.symbol !== '▼') throw new Error('getChange test failed');
+}
 
-    setInputSteps('');
-    setLogOpen(false);
-  };
+// ---------------- mini chart ----------------
 
-  const weekProgress = (stepsWeek / goalWeek) * 100;
-  const dayProgress = (viewSteps / goalToday) * 100;
+function SparkGraph({ data, metricKey, label, unit }: SparkGraphProps): JSX.Element | null
+ {
+  if (!data || data.length === 0) return null;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-    setTouchEnd(0);
-  };
+  const values = data.map((d) => d[metricKey]).filter((v): v is number => typeof v === 'number');
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
+  if (values.length === 0) return null;
 
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min || 1;
 
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 30;
-    const isRightSwipe = distance < -30;
+  const healthyMin = 18.5;
+  const healthyMax = 24.9;
 
-    if (isLeftSwipe && safePageIndex < allPages.length - 1) {
-      setCurrentPageIndex(prev => prev + 1);
-    }
-    if (isRightSwipe && safePageIndex > 0) {
-      setCurrentPageIndex(prev => prev - 1);
-    }
+  const W = 320;
+  const H = 132;
+  const PAD_X = 10;
+  const PAD_Y = 10;
 
-    setTouchStart(0);
-    setTouchEnd(0);
-  };
+  const points = data
+  .map((d, i) => {
+    const v = d[metricKey];
+    if (v == null || typeof v !== 'number') return null;
+    const x = PAD_X + (i * (W - PAD_X * 2)) / Math.max(data.length - 1, 1);
+    const y = PAD_Y + (1 - (v - min) / range) * (H - PAD_Y * 2);
+    return { x, y, v, date: d.date, i };
+  })
+  .filter((p): p is GraphPoint => p !== null);
+
+  const pathD = points
+    .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+    .join(' ');
+
+  const last = points[points.length - 1];
+
+  // Healthy band positions (only BMI)
+  const bandTop = PAD_Y + (1 - (healthyMax - min) / range) * (H - PAD_Y * 2);
+  const bandBottom = PAD_Y + (1 - (healthyMin - min) / range) * (H - PAD_Y * 2);
+  const bandY = Math.min(bandTop, bandBottom);
+  const bandH = Math.abs(bandBottom - bandTop);
 
   return (
-    <div style={{ minHeight: '100vh', width: '100%', backgroundColor: '#0f172a', padding: '0' }}>
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        borderRadius: '16px',
+        padding: '14px',
+        marginBottom: '12px',
+        overflow: 'hidden'
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: '10px',
+          marginBottom: '10px'
+        }}
+      >
+        <div
+          style={{
+            fontSize: '11px',
+            fontWeight: '700',
+            color: 'rgba(255,255,255,0.72)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.6px'
+          }}
+        >
+          {label} Over Time
+        </div>
+        {last && (
+          <div
+            style={{
+              fontSize: '11px',
+              fontWeight: '700',
+              color: '#c4b5fd'
+            }}
+          >
+            {last.v}
+            {unit}
+            <span
+              style={{
+                marginLeft: '8px',
+                fontSize: '10px',
+                fontWeight: '600',
+                color: 'rgba(255,255,255,0.45)'
+              }}
+            >
+              {new Date(last.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          background: 'rgba(124, 58, 237, 0.06)',
+          border: '1px solid rgba(124, 58, 237, 0.12)',
+          borderRadius: '14px',
+          padding: '10px'
+        }}
+      >
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="140" style={{ display: 'block' }}>
+          {metricKey === 'bmi' && bandH > 0 && (
+            <rect
+              x="0"
+              y={bandY}
+              width={W}
+              height={bandH}
+              rx="8"
+              fill="rgba(16, 185, 129, 0.10)"
+              stroke="rgba(16, 185, 129, 0.25)"
+              strokeDasharray="4 4"
+            />
+          )}
+
+          {[0.25, 0.5, 0.75].map((t) => (
+            <line
+              key={t}
+              x1="0"
+              x2={W}
+              y1={PAD_Y + t * (H - PAD_Y * 2)}
+              y2={PAD_Y + t * (H - PAD_Y * 2)}
+              stroke="rgba(255,255,255,0.06)"
+            />
+          ))}
+
+          {/* glow */}
+          <path
+            d={pathD}
+            fill="none"
+            stroke="rgba(124, 58, 237, 0.35)"
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* line */}
+          <path
+            d={pathD}
+            fill="none"
+            stroke="rgba(168, 85, 247, 0.95)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {points.map((p: GraphPoint) => (
+            <circle
+              key={p.i}
+              cx={p.x}
+              cy={p.y}
+              r={p.i === points.length - 1 ? 5 : 3.5}
+              fill={p.i === points.length - 1 ? '#ffffff' : 'rgba(196, 181, 253, 0.9)'}
+              stroke="rgba(124, 58, 237, 0.9)"
+              strokeWidth={p.i === points.length - 1 ? 3 : 2}
+            />
+          ))}
+        </svg>
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: '10px',
+            color: 'rgba(255,255,255,0.45)',
+            marginTop: '6px'
+          }}
+        >
+          <span>
+            {min.toFixed(1)}
+            {unit}
+          </span>
+          {metricKey === 'bmi' && (
+            <span style={{ color: 'rgba(16, 185, 129, 0.95)' }}>Healthy {healthyMin}–{healthyMax}</span>
+          )}
+          <span>
+            {max.toFixed(1)}
+            {unit}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function BodyComposition() {
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
+  const [showMoreMetrics, setShowMoreMetrics] = useState(false);
+  const [selectedGraph, setSelectedGraph] = useState<keyof Reading>('bmi');
+
+  // Form inputs
+  const [weight, setWeight] = useState('');
+  const [bmi, setBmi] = useState('');
+  const [bodyFat, setBodyFat] = useState('');
+  const [muscle, setMuscle] = useState('');
+  const [visceralFat, setVisceralFat] = useState('');
+  const [water, setWater] = useState('');
+  const [bmr, setBmr] = useState('');
+  const [boneMass, setBoneMass] = useState('');
+  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  // Historical data (sample)
+const [readings, setReadings] = useState<Reading[]>([
+    {
+      date: '2025-12-15',
+      weight: 74.5,
+      bmi: 24.6,
+      bodyFat: 23.5,
+      muscle: 37.8,
+      visceralFat: 9,
+      water: 56.9,
+      bmr: 1660,
+      boneMass: 3.1
+    },
+    {
+      date: '2025-12-22',
+      weight: 74.0,
+      bmi: 24.4,
+      bodyFat: 23.1,
+      muscle: 38.0,
+      visceralFat: 9,
+      water: 57.1,
+      bmr: 1665,
+      boneMass: 3.1
+    },
+    {
+      date: '2025-12-29',
+      weight: 73.6,
+      bmi: 24.2,
+      bodyFat: 22.7,
+      muscle: 38.2,
+      visceralFat: 8,
+      water: 57.4,
+      bmr: 1670,
+      boneMass: 3.2
+    },
+    {
+      date: '2026-01-05',
+      weight: 73.2,
+      bmi: 24.0,
+      bodyFat: 22.4,
+      muscle: 38.4,
+      visceralFat: 8,
+      water: 57.6,
+      bmr: 1675,
+      boneMass: 3.2
+    },
+    {
+      date: '2026-01-10',
+      weight: 73.0,
+      bmi: 23.9,
+      bodyFat: 22.2,
+      muscle: 38.5,
+      visceralFat: 8,
+      water: 57.8,
+      bmr: 1680,
+      boneMass: 3.2
+    },
+    {
+      date: '2026-01-13',
+      weight: 72.7,
+      bmi: 23.8,
+      bodyFat: 21.9,
+      muscle: 38.7,
+      visceralFat: 7,
+      water: 58.2,
+      bmr: 1685,
+      boneMass: 3.2
+    },
+    {
+      date: '2026-01-17',
+      weight: 72.4,
+      bmi: 24.1,
+      bodyFat: 21.8,
+      muscle: 38.8,
+      visceralFat: 7,
+      water: 58.5,
+      bmr: 1690,
+      boneMass: 3.2
+    }
+  ]);
+
+  const readingsSorted = useMemo(() => sortByDateAsc(readings), [readings]);
+  const latest = readingsSorted[readingsSorted.length - 1] || {};
+  const previous = readingsSorted[readingsSorted.length - 2] || {};
+
+  const saveReading = () => {
+    if (!weight || !bmi || !bodyFat) return;
+
+    const newReading = {
+      date,
+      weight: parseFloat(weight),
+      bmi: parseFloat(bmi),
+      bodyFat: parseFloat(bodyFat),
+      muscle: muscle ? parseFloat(muscle) : null,
+      visceralFat: visceralFat ? parseFloat(visceralFat) : null,
+      water: water ? parseFloat(water) : null,
+      bmr: bmr ? parseFloat(bmr) : null,
+      boneMass: boneMass ? parseFloat(boneMass) : null
+    };
+
+    setReadings((prevList) => sortByDateAsc([...prevList, newReading]));
+    resetForm();
+    setShowBottomSheet(false);
+  };
+
+  const resetForm = () => {
+    setWeight('');
+    setBmi('');
+    setBodyFat('');
+    setMuscle('');
+    setVisceralFat('');
+    setWater('');
+    setBmr('');
+    setBoneMass('');
+    setDate(new Date().toISOString().split('T')[0]);
+    setShowMoreMetrics(false);
+  };
+
+  const getInsight = () => {
+    const bmiChange = (latest.bmi ?? 0) - (previous.bmi ?? 0);
+    const fatChange = (latest.bodyFat ?? 0) - (previous.bodyFat ?? 0);
+    const muscleChange = (latest.muscle ?? 0) - (previous.muscle ?? 0);
+    const weightChange = (latest.weight ?? 0) - (previous.weight ?? 0);
+
+    if (Math.abs(bmiChange) < 0.1 && fatChange < 0) return 'BMI stable, body fat decreasing — good progress.';
+    if (weightChange < 0 && muscleChange < 0) return 'Weight down but muscle also down — add strength training.';
+    if (bmiChange > 0 && muscleChange > 0) return 'Weight gain from muscle — excellent progress.';
+    if (Math.abs(bmiChange) < 0.3) return 'Maintaining steady composition — keep it up.';
+    return 'Track regularly to see trends over time.';
+  };
+
+  const selectedUnit = selectedGraph === 'weight' ? 'kg' : selectedGraph === 'bmi' ? '' : '%';
+  const selectedLabel =
+    selectedGraph === 'bmi'
+      ? 'BMI'
+      : selectedGraph === 'weight'
+        ? 'Weight'
+        : selectedGraph === 'bodyFat'
+          ? 'Body Fat'
+          : 'Muscle';
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', padding: 0 }}>
       <div
         style={{
           background: 'linear-gradient(180deg, rgba(124, 58, 237, 0.15) 0%, rgba(15, 23, 42, 1) 100%)',
           padding: '16px',
+          minHeight: '100vh'
         }}
       >
         <div style={{ maxWidth: '400px', margin: '0 auto' }}>
           {/* Header */}
           <div
             style={{
-              marginBottom: '24px',
+              marginBottom: '16px',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
-              position: 'relative',
+              alignItems: 'flex-start'
             }}
           >
-            <div>
-              <h1
-                style={{
-                  fontSize: '26px',
-                  fontWeight: '700',
-                  color: '#ffffff',
-                  marginBottom: '0',
-                  letterSpacing: '-0.02em',
-                  lineHeight: '1.1',
-                }}
-              >
-                Steps
-              </h1>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', marginTop: '4px', fontWeight: '500' }}>
-                Daily activity tracker
-              </p>
-            </div>
-
-            <div style={{ position: 'relative' }}>
-              <div
-                onClick={() => setProfileOpen(!profileOpen)}
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-              >
-                S
-              </div>
-
-              {profileOpen && (
-                <>
-                  <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
-
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '48px',
-                      right: '0',
-                      width: '280px',
-                      background: '#ffffff',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '16px',
-                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-                      zIndex: 1000,
-                      animation: 'dropdownIn 0.2s ease',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: '16px',
-                        borderBottom: '1px solid #f1f5f9',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#ffffff',
-                          flexShrink: 0,
-                        }}
-                      >
-                        S
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a', margin: 0, marginBottom: '2px' }}>
-                          Sumeet
-                        </h3>
-                        <p
-                          style={{
-                            fontSize: '12px',
-                            color: '#94a3b8',
-                            margin: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          sumeet@email.com
-                        </p>
-                      </div>
-                    </div>
-
-                    <div style={{ padding: '4px 0' }}>
-                      {[
-                        { icon: '📊', label: 'My Stats' },
-                        { icon: '🎯', label: 'Set Goals' },
-                        { icon: '⚙️', label: 'Settings' },
-                        { icon: '🔔', label: 'Notifications' },
-                        { icon: '🎨', label: 'Appearance' },
-                        { icon: '❓', label: 'Help & Support' },
-                      ].map((item, index) => (
-                        <button
-                          key={index}
-                          onClick={() => {
-                            console.log(item.label);
-                            setProfileOpen(false);
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '10px 16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            transition: 'background 0.2s ease',
-                            fontSize: '14px',
-                            color: '#0f172a',
-                            textAlign: 'left',
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          <span style={{ fontSize: '16px' }}>{item.icon}</span>
-                          <span style={{ fontWeight: '500' }}>{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div style={{ padding: '4px 0', borderTop: '1px solid #f1f5f9' }}>
-                      <button
-                        onClick={() => {
-                          console.log('Log Out');
-                          setProfileOpen(false);
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '10px 16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'background 0.2s ease',
-                          fontSize: '14px',
-                          color: '#ef4444',
-                          fontWeight: '600',
-                          textAlign: 'left',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = '#fef2f2')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <span style={{ fontSize: '16px' }}>🚪</span>
-                        <span>Log Out</span>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Week Ticks */}
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>This Week</span>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>🔥 {streak} day streak</span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
-              {weekDays.map((day, idx) => {
-                const isSelected = selectedLabel === day.label;
-                const isToday = day.today === true;
-                const isFuture = idx > todayIdx;
-                const isEmptyFuture = isFuture && (!day.steps || day.steps === 0);
-
-                return (
-                  <div key={day.label} style={{ textAlign: 'center', opacity: isEmptyFuture ? 0.35 : 1 }}>
-                    <button
-                      onClick={() => onSelectDay(day, idx)}
-                      disabled={isEmptyFuture}
-                      style={{
-                        width: '44px',
-                        height: '44px',
-                        borderRadius: '50%',
-                        background: day.done ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : '#ffffff',
-                        border: isSelected ? '2px solid #7c3aed' : '1px solid #e2e8f0',
-                        color: day.done ? '#ffffff' : '#94a3b8',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: isEmptyFuture ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: day.done ? '0 4px 12px rgba(124, 58, 237, 0.25)' : '0 1px 3px rgba(0,0,0,0.05)',
-                        position: 'relative',
-                        margin: '0 auto',
-                      }}
-                    >
-                      {day.done ? '✓' : day.date}
-                      {isToday && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '-2px',
-                            right: '-2px',
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            background: '#10b981',
-                            border: '2px solid #fafbfc',
-                          }}
-                        />
-                      )}
-                    </button>
-
-                    <p
-                      style={{
-                        fontSize: '9px',
-                        color: isToday ? '#7c3aed' : '#94a3b8',
-                        marginTop: '6px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {day.short}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Progress Ring */}
-          <div style={{ position: 'relative', width: '160px', height: '160px', margin: '0 auto 20px' }}>
-            <svg viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)' }}>
-              <circle cx="80" cy="80" r="64" fill="none" stroke="#e2e8f0" strokeWidth="11" />
-              <circle
-                cx="80"
-                cy="80"
-                r="64"
-                fill="none"
-                stroke="url(#gradient)"
-                strokeWidth="11"
-                strokeLinecap="round"
-                strokeDasharray={`${(dayProgress / 100) * 402} 402`}
-                style={{ transition: 'stroke-dasharray 0.5s ease' }}
-              />
-              <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#7c3aed" />
-                  <stop offset="100%" stopColor="#a855f7" />
-                </linearGradient>
-              </defs>
-            </svg>
-
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontSize: '32px', fontWeight: '700', color: '#ffffff', lineHeight: '1' }}>{formatNumber(viewSteps)}</div>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: '6px' }}>{viewLabel}</div>
-              <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>{Math.round(dayProgress)}% of goal</div>
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '20px' }}>
-            Goal: {formatNumber(goalToday)} • {formatNumber(Math.max(goalToday - viewSteps, 0))} left
-          </div>
-
-          {/* Weekly Progress */}
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Weekly Progress</span>
-              <span style={{ fontSize: '12px', color: '#a855f7', fontWeight: '600' }}>{Math.round(weekProgress)}%</span>
-            </div>
-
-            <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '999px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  height: '100%',
-                  width: `${weekProgress}%`,
-                  background: 'linear-gradient(90deg, #7c3aed 0%, #a855f7 100%)',
-                  borderRadius: '999px',
-                  transition: 'width 0.5s ease',
-                }}
-              />
-            </div>
-
-            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '8px' }}>
-              {formatNumber(stepsWeek)} / {formatNumber(goalWeek)} steps
-            </div>
-          </div>
-
-          {/* Swipe Card */}
-          <div
-            style={{
-              background: 'rgba(124, 58, 237, 0.15)',
-              border: '1px solid rgba(124, 58, 237, 0.3)',
-              borderRadius: '16px',
-              padding: '16px 16px 20px 16px',
-              marginBottom: '24px',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              overflow: 'hidden',
-            }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div
-              style={{
-                display: 'flex',
-                width: `${allPages.length * 100}%`,
-                transform: `translateX(-${safePageIndex * (100 / allPages.length)}%)`,
-                transition: 'transform 260ms ease',
-              }}
-            >
-              {allPages.map((p, i) => (
-                <div key={i} style={{ width: `${100 / allPages.length}%`, padding: '0 6px', boxSizing: 'border-box' }}>
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      color: 'rgba(255,255,255,0.5)',
-                      marginBottom: '10px',
-                      fontWeight: '600',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {p.title}
-                  </div>
-
-                  <p
-                    style={{
-                      fontSize: '14px',
-                      color: '#c4b5fd',
-                      lineHeight: '1.6',
-                      fontWeight: '500',
-                      margin: '0 0 14px 0',
-                      textAlign: 'center',
-                      minHeight: '44px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {p.content}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
-              {allPages.map((page, index) => (
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                 <button
-                  key={index}
-                  onClick={() => setCurrentPageIndex(index)}
+                  onClick={() => window.history.back()}
                   style={{
-                    width: index === safePageIndex ? '24px' : '6px',
-                    height: '6px',
-                    borderRadius: '3px',
-                    background: index === safePageIndex ? '#7c3aed' : 'rgba(255,255,255,0.3)',
-                    transition: 'all 0.3s ease',
+                    background: 'none',
                     border: 'none',
+                    color: '#a855f7',
+                    fontSize: '18px',
                     cursor: 'pointer',
                     padding: 0,
+                    display: 'flex',
+                    alignItems: 'center'
                   }}
-                  aria-label={`Go to ${page.title}`}
-                />
-              ))}
+                  aria-label="Go back"
+                >
+                  ←
+                </button>
+                <h1
+                  style={{
+                    fontSize: '22px',
+                    fontWeight: '700',
+                    color: '#ffffff',
+                    margin: 0,
+                    letterSpacing: '-0.02em',
+                    lineHeight: '1.1'
+                  }}
+                >
+                  Body Composition
+                </h1>
+              </div>
+              <p
+                style={{
+                  fontSize: '11px',
+                  color: 'rgba(255,255,255,0.45)',
+                  margin: '0 0 0 26px',
+                  fontWeight: '500'
+                }}
+              >
+                From machine readings
+              </p>
+            </div>
+            <button
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: '18px',
+                cursor: 'pointer',
+                padding: '4px'
+              }}
+              aria-label="Info"
+              onClick={() => alert('Tip: Measure at the same time of day for best comparisons.')}
+            >
+              ℹ️
+            </button>
+          </div>
+
+          {/* Snapshot */}
+          <div
+            style={{
+              background: 'rgba(124, 58, 237, 0.1)',
+              border: '1px solid rgba(124, 58, 237, 0.25)',
+              borderRadius: '16px',
+              padding: '16px',
+              marginBottom: '12px'
+            }}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              {/* BMI */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', fontWeight: '500' }}>
+                  BMI
+                </div>
+                <div
+                  style={{
+                    fontSize: '28px',
+                    fontWeight: '700',
+                    color: getBMIColor(latest.bmi),
+                    lineHeight: '1',
+                    marginBottom: '4px'
+                  }}
+                >
+                  {latest.bmi}
+                </div>
+                <div style={{ fontSize: '9px', color: getBMIColor(latest.bmi), fontWeight: '600', marginBottom: '4px' }}>
+                  ● {getBMICategory(latest.bmi)}
+                </div>
+                <div style={{ fontSize: '9px', color: getChange(latest.bmi, previous.bmi).color, fontWeight: '600' }}>
+                  {getChange(latest.bmi, previous.bmi).symbol} {getChange(latest.bmi, previous.bmi).value}
+                </div>
+              </div>
+
+              {/* Weight */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', fontWeight: '500' }}>
+                  Weight
+                </div>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', lineHeight: '1', marginBottom: '4px' }}>
+                  {latest.weight}
+                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>kg</span>
+                </div>
+                <div
+                  style={{
+                    fontSize: '9px',
+                    color: getChange(latest.weight, previous.weight).color,
+                    fontWeight: '600',
+                    marginTop: '13px'
+                  }}
+                >
+                  {getChange(latest.weight, previous.weight).symbol} {getChange(latest.weight, previous.weight).value}kg
+                </div>
+              </div>
+
+              {/* Body Fat */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', fontWeight: '500' }}>
+                  Body Fat
+                </div>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', lineHeight: '1', marginBottom: '4px' }}>
+                  {latest.bodyFat}
+                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>%</span>
+                </div>
+                <div
+                  style={{
+                    fontSize: '9px',
+                    color: getChange(latest.bodyFat, previous.bodyFat).color,
+                    fontWeight: '600',
+                    marginTop: '13px'
+                  }}
+                >
+                  {getChange(latest.bodyFat, previous.bodyFat).symbol} {getChange(latest.bodyFat, previous.bodyFat).value}%
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Add Steps Button */}
+          {/* Graph Selector */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '6px',
+              marginBottom: '12px',
+              overflowX: 'hidden',
+              padding: '2px 0'
+            }}
+          >
+            {([
+              { key: 'bmi', label: 'BMI' },
+              { key: 'weight', label: 'Weight' },
+              { key: 'bodyFat', label: 'Body Fat %' },
+              { key: 'muscle', label: 'Muscle %' }
+            ] as const).map((tab: GraphTab) => (
+              <button
+                key={tab.key}
+                onClick={() => setSelectedGraph(tab.key)}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  color: selectedGraph === tab.key ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                  background:
+                    selectedGraph === tab.key
+                      ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)'
+                      : 'rgba(255,255,255,0.05)',
+                  border: selectedGraph === tab.key ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Graph */}
+          <SparkGraph data={readingsSorted} metricKey={selectedGraph} label={selectedLabel} unit={selectedUnit} />
+
+          {/* Insight */}
+          <div
+            style={{
+              background: 'rgba(124, 58, 237, 0.08)',
+              border: '1px solid rgba(124, 58, 237, 0.2)',
+              borderRadius: '12px',
+              padding: '12px',
+              marginBottom: '12px'
+            }}
+          >
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', margin: 0, lineHeight: '1.4', fontWeight: '600' }}>
+              💡 {getInsight()}
+            </p>
+          </div>
+
+          {/* History */}
+          <div
+            style={{
+              background: 'rgba(124, 58, 237, 0.06)',
+              border: '1px solid rgba(124, 58, 237, 0.15)',
+              borderRadius: '14px',
+              padding: '14px',
+              marginBottom: '14px'
+            }}
+          >
+            <button
+              onClick={() => setHistoryOpen((v) => !v)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer'
+              }}
+              aria-expanded={historyOpen}
+              aria-controls="history-panel"
+            >
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  color: 'rgba(255,255,255,0.7)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                History
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.45)' }}>
+                  {readingsSorted.length} readings
+                </div>
+                <div
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(255,255,255,0.65)',
+                    transform: historyOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease'
+                  }}
+                  aria-hidden="true"
+                >
+                  ▾
+                </div>
+              </div>
+            </button>
+
+            <div
+              id="history-panel"
+              style={{
+                marginTop: '10px',
+                overflow: 'hidden',
+                maxHeight: historyOpen ? '520px' : '0px',
+                opacity: historyOpen ? 1 : 0,
+                transform: historyOpen ? 'translateY(0)' : 'translateY(-4px)',
+                transition: 'max-height 0.28s ease, opacity 0.2s ease, transform 0.2s ease'
+              }}
+            >
+              {readingsSorted
+                .slice()
+                .reverse()
+                .map((reading: Reading) => (
+                  <div
+                    key={reading.date}
+                    style={{
+                      padding: '10px',
+                      background: 'rgba(255,255,255,0.03)',
+                      borderRadius: '10px',
+                      marginBottom: '6px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '12px', color: '#ffffff', fontWeight: '700', marginBottom: '2px' }}>
+                        {new Date(reading.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
+                        BMI {reading.bmi} • {reading.weight}kg • Fat {reading.bodyFat}% • Muscle {reading.muscle}%
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '16px', color: 'rgba(255,255,255,0.3)' }}>›</div>
+                  </div>
+                ))}
+            </div>
+
+            {!historyOpen && (
+              <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontWeight: '600' }}>
+                Tap “History” to expand
+              </div>
+            )}
+          </div>
+
+          {/* Add Reading Button (bottom) */}
           <button
-            onClick={() => setLogOpen(true)}
+            onClick={() => setShowBottomSheet(true)}
             style={{
               width: '100%',
-              padding: '16px',
-              fontSize: '15px',
-              fontWeight: '600',
+              padding: '14px',
+              fontSize: '14px',
+              fontWeight: '800',
               color: '#ffffff',
               background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '14px',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(124, 58, 237, 0.4)',
-              transition: 'all 0.2s ease',
-              marginBottom: '12px',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(124, 58, 237, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(124, 58, 237, 0.4)';
-            }}
-          >
-            Add Steps
-          </button>
-
-          {/* Team Activity Button */}
-          <button
-            onClick={() => (window.location.href = '/team-activity')}
-            style={{
-              width: '100%',
-              padding: '16px',
-              fontSize: '15px',
-              fontWeight: '600',
-              color: '#ffffff',
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(124, 58, 237, 0.3)',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.2s ease',
-              display: 'none',
-              // display: 'flex',
+              boxShadow: '0 10px 24px rgba(124, 58, 237, 0.35)',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
+              marginBottom: '18px'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
-              e.currentTarget.style.borderColor = '#7c3aed';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 14px 30px rgba(124, 58, 237, 0.45)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.borderColor = 'rgba(124, 58, 237, 0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 10px 24px rgba(124, 58, 237, 0.35)';
             }}
           >
-            <span>👥</span>
-            View Team Activity
+            ➕ Add Machine Reading
           </button>
 
-          {/* Modal */}
-          {logOpen && (
+          {/* Bottom Sheet */}
+          {showBottomSheet && (
             <div
               style={{
                 position: 'fixed',
                 inset: 0,
                 background: 'rgba(0, 0, 0, 0.8)',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                alignItems: 'flex-end',
                 zIndex: 1000,
-                backdropFilter: 'blur(4px)',
-                padding: '20px',
+                backdropFilter: 'blur(4px)'
               }}
-              onClick={() => setLogOpen(false)}
+              onClick={() => setShowBottomSheet(false)}
             >
               <div
                 style={{
-                  background: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '20px',
-                  padding: '24px',
+                  background: '#0f172a',
+                  borderRadius: '24px 24px 0 0',
+                  padding: 0,
                   width: '100%',
-                  maxWidth: '360px',
-                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-                  animation: 'fadeIn 0.2s ease',
+                  maxWidth: '440px',
+                  margin: '0 auto',
+                  boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.5)',
+                  animation: 'slideUp 0.3s ease',
+                  maxHeight: '80vh',
+                  overflowY: 'auto'
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>Add Steps</h3>
-                <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
-                  Today, {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-                </p>
-
-                <input
-                  type="number"
-                  value={inputSteps}
-                  onChange={(e) => setInputSteps(e.target.value)}
-                  placeholder="Enter steps"
-                  inputMode="numeric"
+                <div
                   style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    fontSize: '16px',
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    marginBottom: '20px',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    color: '#0f172a',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#7c3aed';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.2)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#e2e8f0';
-                    e.target.style.boxShadow = 'none';
+                    width: '40px',
+                    height: '4px',
+                    background: 'rgba(255,255,255,0.2)',
+                    borderRadius: '999px',
+                    margin: '12px auto 20px'
                   }}
                 />
 
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ padding: '0 24px 24px' }}>
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '4px' }}>
+                    Add Machine Reading
+                  </h3>
+                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', fontWeight: '600' }}>
+                    Enter values from your body composition machine
+                  </p>
+
+                  {/* Date */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <label
+                      style={{
+                        fontSize: '12px',
+                        color: 'rgba(255,255,255,0.7)',
+                        marginBottom: '6px',
+                        display: 'block',
+                        fontWeight: '700'
+                      }}
+                    >
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        fontSize: '14px',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(124, 58, 237, 0.3)',
+                        borderRadius: '10px',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        color: '#ffffff'
+                      }}
+                    />
+                  </div>
+
+                  {/* Required */}
+                  <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                      {[
+                        { label: 'Weight (kg)', value: weight, setter: setWeight },
+                        { label: 'BMI', value: bmi, setter: setBmi },
+                        { label: 'Body Fat (%)', value: bodyFat, setter: setBodyFat }
+                      ].map((field) => (
+                        <div key={field.label}>
+                          <label
+                            style={{
+                              fontSize: '11px',
+                              color: 'rgba(255,255,255,0.6)',
+                              marginBottom: '6px',
+                              display: 'block',
+                              fontWeight: '700'
+                            }}
+                          >
+                            {field.label} <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input
+                            type="number"
+                            value={field.value}
+                            onChange={(e) => field.setter(e.target.value)}
+                            inputMode="decimal"
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              fontSize: '14px',
+                              background: 'rgba(255,255,255,0.05)',
+                              border: '1px solid rgba(124, 58, 237, 0.25)',
+                              borderRadius: '8px',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                              color: '#ffffff'
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* More metrics */}
                   <button
-                    onClick={onAddSteps}
-                    disabled={!inputSteps.trim()}
+                    onClick={() => setShowMoreMetrics((v) => !v)}
                     style={{
-                      flex: 1,
-                      padding: '14px',
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      color: '#ffffff',
-                      background: inputSteps.trim() ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : '#e2e8f0',
-                      border: 'none',
-                      borderRadius: '12px',
-                      cursor: inputSteps.trim() ? 'pointer' : 'not-allowed',
-                      opacity: inputSteps.trim() ? 1 : 0.5,
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: '13px',
+                      fontWeight: '800',
+                      color: '#a855f7',
+                      background: 'transparent',
+                      border: '1px solid rgba(124, 58, 237, 0.3)',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      marginBottom: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
                     }}
                   >
-                    Add
+                    {showMoreMetrics ? '▼' : '▶'} More metrics
                   </button>
 
-                  <button
-                    onClick={() => setLogOpen(false)}
-                    style={{
-                      flex: 1,
-                      padding: '14px',
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      color: '#94a3b8',
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Cancel
-                  </button>
+                  {showMoreMetrics && (
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '12px',
+                        marginBottom: '20px',
+                        animation: 'fadeIn 0.2s ease'
+                      }}
+                    >
+                      {[
+                        { label: 'Muscle (%)', value: muscle, setter: setMuscle },
+                        { label: 'Visceral Fat', value: visceralFat, setter: setVisceralFat },
+                        { label: 'Water (%)', value: water, setter: setWater },
+                        { label: 'BMR (kcal)', value: bmr, setter: setBmr },
+                        { label: 'Bone Mass (kg)', value: boneMass, setter: setBoneMass, fullWidth: true }
+                      ].map((field) => (
+                        <div key={field.label} style={{ gridColumn: field.fullWidth ? '1 / -1' : 'auto' }}>
+                          <label
+                            style={{
+                              fontSize: '11px',
+                              color: 'rgba(255,255,255,0.6)',
+                              marginBottom: '6px',
+                              display: 'block',
+                              fontWeight: '700'
+                            }}
+                          >
+                            {field.label}
+                          </label>
+                          <input
+                            type="number"
+                            value={field.value}
+                            onChange={(e) => field.setter(e.target.value)}
+                            inputMode="decimal"
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              fontSize: '14px',
+                              background: 'rgba(255,255,255,0.05)',
+                              border: '1px solid rgba(124, 58, 237, 0.25)',
+                              borderRadius: '8px',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                              color: '#ffffff'
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                      onClick={() => {
+                        resetForm();
+                        setShowBottomSheet(false);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '14px',
+                        fontSize: '15px',
+                        fontWeight: '800',
+                        color: 'rgba(255,255,255,0.7)',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveReading}
+                      disabled={!weight || !bmi || !bodyFat}
+                      style={{
+                        flex: 1,
+                        padding: '14px',
+                        fontSize: '15px',
+                        fontWeight: '800',
+                        color: '#ffffff',
+                        background: weight && bmi && bodyFat ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : 'rgba(255,255,255,0.1)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        cursor: weight && bmi && bodyFat ? 'pointer' : 'not-allowed',
+                        opacity: weight && bmi && bodyFat ? 1 : 0.5
+                      }}
+                    >
+                      Save Reading
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
           <style>{`
-            @keyframes fadeIn {
-              from { opacity: 0; transform: scale(0.95); }
-              to { opacity: 1; transform: scale(1); }
-            }
-            @keyframes dropdownIn {
-              from { opacity: 0; transform: translateY(-10px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
+            *, *::before, *::after { box-sizing: border-box; }
+            @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+            input[type=number] { -moz-appearance: textfield; }
           `}</style>
         </div>
       </div>

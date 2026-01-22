@@ -68,8 +68,8 @@ export default function SignupPage() {
     return;
   }
 
-  // go to login
-  router.replace("/login");
+  // go to landing page
+  router.replace("/goals");
 };
 
   const handleLoginClick = (): void => {

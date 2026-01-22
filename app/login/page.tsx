@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
 import { login } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 type DemoUser = { name: string; email: string; password: string };
 
@@ -17,7 +19,10 @@ export default function LoginPage() {
   // ✅ Auto-redirect if already logged in
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
-    if (token) router.replace("/goals");
+    if (token) {
+      logger.info("User already logged in, redirecting to /goals");
+      router.replace("/goals");
+    }
     // if (token) router.replace("/home");
   }, [router]);
 
@@ -35,31 +40,42 @@ export default function LoginPage() {
   }, []);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  // Basic validation
-  if (!email || !password) {
-    setError("Please fill in all fields");
-    return;
-  }
+    logger.info("Login attempt", { email });
 
-  if (!email.includes("@")) {
-    setError("Please enter a valid email");
-    return;
-  }
+    // Basic validation
+    if (!email || !password) {
+      logger.warn("Login failed: missing fields");
+      setError("Please fill in all fields");
+      return;
+    }
 
-  setError("");
+    if (!email.includes("@")) {
+      logger.warn("Login failed: invalid email", email);
+      setError("Please enter a valid email");
+      return;
+    }
 
-  const res = await login(email, password);
+    setError("");
 
-  if (!res.ok) {
-    setError(res.error || "Login failed");
-    return;
-  }
+    try {
+      const res = await login(email, password);
 
-  router.replace("/goals");
-  // router.replace("/home");
-};
+      if (!res.ok) {
+        logger.error("Login failed for", email, res.error);
+        setError(res.error || "Login failed");
+        return;
+      }
+
+      logger.info("Login successful for", email);
+      router.replace("/goals");
+      // router.replace("/home");
+    } catch (err) {
+      logger.error("Login exception", err);
+      setError("An unexpected error occurred");
+    }
+  };
 
   const handleSignupClick = (): void => {
     router.push("/signup");
