@@ -196,10 +196,10 @@ export default function StepsTracker() {
     });
   }, [apiWeek, goalToday]);
 
-  const todayIdx = useMemo(() => weekDays.findIndex((d) => d.today), [weekDays]);
+  const todayIdx = useMemo(() => weekDays.findIndex((d: any) => d.today), [weekDays]);
 
   const streak = useMemo(() => {
-    const idx = weekDays.findIndex((d) => d.today);
+    const idx = weekDays.findIndex((d: any) => d.today);
     if (idx < 0 || !weekDays[idx].done) return 0;
     let s = 0;
     for (let i = idx; i >= 0; i--) {
@@ -252,15 +252,22 @@ export default function StepsTracker() {
     const now = new Date();
     let log_date = now.toISOString().slice(0, 10);
 
-    // Allow logging to previous day if before 12pm and user selected previous day
-    if (now.getHours() < 12 && viewLabel !== 'Today') {
-      const selectedDay = weekDays.find((d: any) => d.label === selectedLabel);
-      if (selectedDay && !selectedDay.today && apiWeek?.days) {
-        const match = apiWeek.days.find((d: any) => {
-          const dateObj = new Date(d.day);
-          return dateObj.getDate() === selectedDay.date;
-        });
-        if (match) log_date = match.day;
+    // Only allow logging to previous day if before 12:30pm and user selected previous day
+    // Strictly block after 12:30pm
+    const isBefore1230 = (now.getHours() < 12) || (now.getHours() === 12 && now.getMinutes() < 30);
+    if (viewLabel !== 'Today') {
+      if (isBefore1230) {
+        const selectedDay = weekDays.find((d: any) => d.label === selectedLabel);
+        if (selectedDay && !selectedDay.today && apiWeek?.days) {
+          const match = apiWeek.days.find((d: any) => {
+            const dateObj = new Date(d.day);
+            return dateObj.getDate() === selectedDay.date;
+          });
+          if (match) log_date = match.day;
+        }
+      } else {
+        alert('You cannot add steps to previous days after 12:30pm.');
+        return;
       }
     }
 
@@ -428,7 +435,7 @@ export default function StepsTracker() {
                 S
               </div>
 
-              {profileOpen && (
+              {false && (
                 <>
                   <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
 
@@ -806,35 +813,30 @@ export default function StepsTracker() {
 
           {/* Team Activity Button */}
           <button
-            onClick={() => (window.location.href = '/team-activity')}
+            disabled
             style={{
               width: '100%',
               padding: '16px',
               fontSize: '15px',
               fontWeight: '600',
-              color: '#ffffff',
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(124, 58, 237, 0.3)',
+              color: '#bdbdbd',
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px dashed #bdbdbd',
               borderRadius: '12px',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+              cursor: 'not-allowed',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
               transition: 'all 0.2s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
+              opacity: 0.7,
+              marginBottom: '8px',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
-              e.currentTarget.style.borderColor = '#7c3aed';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.borderColor = 'rgba(124, 58, 237, 0.3)';
-            }}
+            title="Coming soon"
           >
             <span>👥</span>
-            View Team Activity
+            Team Activity (Coming Soon)
           </button>
 
           {/* Modal */}
@@ -845,30 +847,52 @@ export default function StepsTracker() {
                 inset: 0,
                 background: 'rgba(0, 0, 0, 0.8)',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-end',
                 justifyContent: 'center',
                 zIndex: 1000,
                 backdropFilter: 'blur(4px)',
                 padding: '20px',
               }}
-              onClick={() => setLogOpen(false)}
+              onClick={() => {
+                setLogOpen(false);
+                setInputSteps('');
+              }}
             >
               <div
                 style={{
                   background: '#ffffff',
                   border: '1px solid #e2e8f0',
-                  borderRadius: '20px',
+                  borderRadius: '20px 20px 0 0',
                   padding: '24px',
                   width: '100%',
                   maxWidth: '360px',
-                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-                  animation: 'fadeIn 0.2s ease',
+                  boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.18)',
+                  animation: 'slideUp 0.25s ease',
+                  marginBottom: 0,
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>Add Steps</h3>
                 <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
-                  Today, {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                  {(() => {
+                    // Find selected day object
+                    const selectedDayObj = weekDays.find((d: any) => d.label === selectedLabel);
+                    if (selectedDayObj && !selectedDayObj.today) {
+                      // Previous day
+                      const dateObj = apiWeek?.days?.find((d: any) => {
+                        const date = new Date(d.day);
+                        return date.getDate() === selectedDayObj.date;
+                      });
+                      if (dateObj) {
+                        const date = new Date(dateObj.day);
+                        return `${selectedDayObj.label}, ${date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+                      }
+                      return `${selectedDayObj.label}`;
+                    } else {
+                      // Today
+                      return `Today, ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+                    }
+                  })()}
                 </p>
 
                 <input
@@ -889,14 +913,7 @@ export default function StepsTracker() {
                     boxSizing: 'border-box',
                     color: '#0f172a',
                   }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#7c3aed';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.2)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#e2e8f0';
-                    e.target.style.boxShadow = 'none';
-                  }}
+                  // Remove auto-focus
                 />
 
                 <div style={{ display: 'flex', gap: '12px' }}>
@@ -920,7 +937,10 @@ export default function StepsTracker() {
                   </button>
 
                   <button
-                    onClick={() => setLogOpen(false)}
+                    onClick={() => {
+                      setLogOpen(false);
+                      setInputSteps('');
+                    }}
                     style={{
                       flex: 1,
                       padding: '14px',
@@ -941,9 +961,9 @@ export default function StepsTracker() {
           )}
 
           <style>{`
-            @keyframes fadeIn {
-              from { opacity: 0; transform: scale(0.95); }
-              to { opacity: 1; transform: scale(1); }
+            @keyframes slideUp {
+              from { transform: translateY(100%); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
             }
             @keyframes dropdownIn {
               from { opacity: 0; transform: translateY(-10px); }

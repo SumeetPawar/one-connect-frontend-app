@@ -1,0 +1,8 @@
+{
+    "appService.zipIgnorePattern": [
+        "node_modules{,/**}",
+        ".vscode{,/**}"
+    ],
+    "appService.defaultWebAppToDeploy": "/subscriptions/3cce08fa-4ab5-4ac3-98ef-af507658fa64/resourceGroups/ges-social/providers/Microsoft.Web/sites/social-app-ui-qa",
+    "appService.deploySubpath": "."
+}

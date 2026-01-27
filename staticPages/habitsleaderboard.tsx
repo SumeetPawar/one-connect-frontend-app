@@ -106,7 +106,11 @@ export default function ProgressPage() {
               <p className="text-[15px] text-white/90 font-normal tracking-[-0.01em] leading-relaxed">
                 {activeTab === 'individual' 
                   ? `You're on a ${personalStats.currentStreak}-day streak! 🔥 You've completed ${personalStats.totalHabits} habits and maintained ${personalStats.averageCompletion}% average completion. Your consistency is ${personalStats.averageCompletion >= 80 ? 'excellent' : 'improving'} - ${personalStats.perfectDays >= 10 ? 'keep crushing those perfect days!' : 'try for more perfect days this week!'}`
-                  : `Your Marketing team has ${teamStats.find(t => t.isYourTeam)?.activeMembers} of ${teamStats.find(t => t.isYourTeam)?.members} members participating (${Math.round((teamStats.find(t => t.isYourTeam)?.activeMembers || 0) / (teamStats.find(t => t.isYourTeam)?.members || 1) * 100)}%)! 💪 Team completion is at ${teamStats.find(t => t.isYourTeam)?.completion}% with an average ${teamStats.find(t => t.isYourTeam)?.avgStreak.toFixed(1)}-day streak. ${teamStats.find(t => t.isYourTeam)?.completion >= 80 ? 'Outstanding team performance!' : 'Your contributions are making a real impact - keep it up!'}`
+                  : (() => {
+                      const yourTeam = teamStats.find(t => t.isYourTeam);
+                      if (!yourTeam) return "Your team data is not available.";
+                      return `Your Marketing team has ${yourTeam.activeMembers} of ${yourTeam.members} members participating (${Math.round((yourTeam.activeMembers / yourTeam.members) * 100)}%)! 💪 Team completion is at ${yourTeam.completion}% with an average ${yourTeam.avgStreak.toFixed(1)}-day streak. ${yourTeam.completion >= 80 ? 'Outstanding team performance!' : 'Your contributions are making a real impact - keep it up!'}`;
+                    })()
                 }
               </p>
             </div>

@@ -68,7 +68,7 @@ export default function CompactHabitsTracker() {
   const todayCompleted = selectedDay === 0 
     ? goals.filter(g => {
         const value = habits[g.key as keyof typeof habits];
-        return g.type === 'boolean' ? value === true : (g.target ? value >= g.target : false);
+        return g.type === 'boolean' ? value === true : (g.target ? typeof value === 'number' && value >= g.target : false);
       }).length
     : currentDayData.completed;
   
@@ -238,7 +238,7 @@ export default function CompactHabitsTracker() {
         <div className="space-y-1.5 mb-4">
           {goals.map((goal, index) => {
             const value = selectedDay === 0 ? habits[goal.key as keyof typeof habits] : currentDayData.habits[goal.key as keyof typeof currentDayData.habits];
-            const isComplete = goal.type === 'boolean' ? value === true : (goal.target ? value >= goal.target : false);
+            const isComplete = goal.type === 'boolean' ? value === true : (goal.target ? typeof value === 'number' && value >= goal.target : false);
             const isReadOnly = selectedDay !== 0;
             const isExpanded = showDescription === goal.key;
 

@@ -19,7 +19,9 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 export function registerServiceWorker(onPushSubscription?: (sub: PushSubscription) => void) {
     console.log("Registering service worker from registerServiceWorker.ts...");
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        console.log("Service workers are supported.");
         window.addEventListener('load', () => {
+            console.log("Window loaded, registering service worker...");
             navigator.serviceWorker.register('/service-worker.js')
                 .then(async reg => {
                     console.log('Service worker registered:', reg);
@@ -45,7 +47,7 @@ export function registerServiceWorker(onPushSubscription?: (sub: PushSubscriptio
                                 return;
                             }
 
-                            const response = await fetch('http://localhost:8000/push/subscribe', {
+                            const response = await fetch('https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net/push/subscribe', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',

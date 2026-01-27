@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  output: "export",
+  // Removed output: "export" for Azure App Service deployment
   images: {
     unoptimized: true
   }

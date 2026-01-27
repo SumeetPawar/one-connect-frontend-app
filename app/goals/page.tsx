@@ -148,7 +148,7 @@ export default function WeeklyChallenge() {
                 {/* Header */}
                 <div className="text-center mb-10">
                     <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight" style={{ letterSpacing: '-0.022em' }}>
-                        Weekly Challenge
+                        Steps Challenge
                     </h1>
                     <p className="text-lg text-white/60 font-normal">
                         Choose your challenge level

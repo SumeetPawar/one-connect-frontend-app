@@ -147,7 +147,7 @@ export default function LoginPage() {
               lineHeight: "1",
             }}
           >
-            Social{" "}
+            GES {" "}
             <span
               key={currentWord}
               style={{
