@@ -46,7 +46,6 @@ function buildAiSummary(steps: number, goal: number, hasSteps: boolean) {
 }
 
 function getSwipeablePages() {
-  // Rotate daily instead of weekly
   const today = new Date();
   const dayIndex = today.getDate() + today.getMonth() * 31 + today.getFullYear() * 372;
 
@@ -95,11 +94,10 @@ function getSwipeablePages() {
     '🚶‍♂️ Walk at a pace that lets you talk but not sing.',
     '🛑 If you feel pain, slow down or take a break.',
   ];
- 
 
   const dailyFunFact = funFacts[dayIndex % funFacts.length];
   const dailyTip = dailyTips[dayIndex % dailyTips.length];
- 
+
   return [
     { title: 'Fun Fact', content: dailyFunFact },
     { title: 'Tip of the day', content: dailyTip }
@@ -132,61 +130,76 @@ export default function StepsTracker() {
     });
   }, []);
 
-  // --- API-driven state (moved before usage) ---
+  // API-driven state
   const [apiWeek, setApiWeek] = useState<any>(null);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // Sync state with backend data when loaded
+  // ✅ UPDATED: Sync state with backend data
   useEffect(() => {
     if (!apiWeek) return;
-    // Set stepsWeek and stepsToday from backend
+    
+    // Set week total
     setStepsWeek(apiWeek.week_total_steps ?? 0);
-    // Find today in backend days
+    
+    // Find today's steps from days array
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayObj = apiWeek.days?.find((d: any) => d.day === todayStr);
-    setStepsToday(todayObj?.total_steps ?? 0);
-    // Optionally, setViewSteps if you want the selected day to always be today
-    setViewSteps(todayObj?.total_steps ?? 0);
+    const todaySteps = todayObj?.total_steps ?? 0;
+    
+    setStepsToday(todaySteps);
+    setViewSteps(todaySteps);
   }, [apiWeek]);
 
-  // Declare goalToday and goalWeek before any usage
-  const goalToday: number = apiWeek?.goal_daily_target ?? 0;
-  const goalWeek: number = apiWeek?.goal_period_target ?? 0;
+  // ✅ UPDATED: Get goals from API response
+  const goalToday: number = apiWeek?.goal_daily_target ?? 5000;
+  const goalWeek: number = apiWeek?.goal_period_target ?? 35000;
 
-  // Map backend days to weekDays for UI
+  // ✅ UPDATED: Map backend days to weekDays for UI
   const weekDays = useMemo(() => {
-    if (apiWeek?.days?.length === 7) {
-      // Map backend days to UI weekDays
-      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      return apiWeek.days.map((d: any, idx: number) => {
-        const dateObj = new Date(d.day);
+    if (!apiWeek?.days || apiWeek.days.length === 0) {
+      // Fallback to empty week if no data
+      const today = new Date();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - today.getDay() + 1);
+      
+      return Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + i);
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        
         return {
-          label: dayNames[idx],
-          short: dayNames[idx],
-          date: dateObj.getDate(),
-          steps: d.total_steps,
-          done: d.total_steps >= (apiWeek.goal_daily_target ?? 0),
-          today: d.day === new Date().toISOString().slice(0, 10),
+          label: dayNames[i],
+          short: dayNames[i],
+          date: date.getDate(),
+          steps: 0,
+          done: false,
+          today: date.toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10),
         };
       });
     }
-    // fallback to static if backend not loaded
-    return [
-      { label: 'Mon', short: 'Mon', date: 13, steps: 8234, done: false },
-      { label: 'Tue', short: 'Tue', date: 14, steps: 9876, done: false },
-      { label: 'Wed', short: 'Wed', date: 15, steps: 12450, done: true },
-      { label: 'Thu', short: 'Thu', date: 16, steps: stepsToday, done: stepsToday >= goalToday, today: true },
-      { label: 'Fri', short: 'Fri', date: 17, steps: 0, done: false },
-      { label: 'Sat', short: 'Sat', date: 18, steps: 0, done: false },
-      { label: 'Sun', short: 'Sun', date: 19, steps: 0, done: false },
-    ];
-  }, [apiWeek, stepsToday, goalToday]);
- 
-  const todayIdx = useMemo(() => weekDays.findIndex((d: { today?: boolean }) => d.today), [weekDays]);
+
+    // Map backend days (already in order Mon-Sun)
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const todayStr = new Date().toISOString().slice(0, 10);
+    
+    return apiWeek.days.map((d: any, idx: number) => {
+      const dateObj = new Date(d.day);
+      return {
+        label: dayNames[idx],
+        short: dayNames[idx],
+        date: dateObj.getDate(),
+        steps: d.total_steps ?? 0,
+        done: (d.total_steps ?? 0) >= goalToday,
+        today: d.day === todayStr,
+      };
+    });
+  }, [apiWeek, goalToday]);
+
+  const todayIdx = useMemo(() => weekDays.findIndex((d) => d.today), [weekDays]);
 
   const streak = useMemo(() => {
-    const idx = weekDays.findIndex((d: { today?: boolean }) => d.today);
+    const idx = weekDays.findIndex((d) => d.today);
     if (idx < 0 || !weekDays[idx].done) return 0;
     let s = 0;
     for (let i = idx; i >= 0; i--) {
@@ -197,24 +210,22 @@ export default function StepsTracker() {
   }, [weekDays]);
 
   const hasSteps = viewSteps > 0;
-  // Animation state for achievement
   const [showAchievementAnim, setShowAchievementAnim] = useState(false);
+  
   const allPages = useMemo(() => {
     return hasSteps
       ? [{ title: 'Your Achievement', content: buildAiSummary(viewSteps, goalToday, true) }, ...swipeablePages]
       : swipeablePages;
   }, [hasSteps, swipeablePages, viewSteps, goalToday]);
 
-  // Trigger animation when steps are added (viewSteps changes and > 0)
   useEffect(() => {
     if (hasSteps) {
       setShowAchievementAnim(true);
       const timeout = setTimeout(() => setShowAchievementAnim(false), 1200);
       return () => clearTimeout(timeout);
     }
-  }, [viewSteps]);
+  }, [viewSteps, hasSteps]);
 
-  // Keep index valid when switching days / hasSteps changes
   const safePageIndex = clamp(currentPageIndex, 0, Math.max(allPages.length - 1, 0));
   const displayedTitle = allPages[safePageIndex]?.title || '';
   const displayedContent = allPages[safePageIndex]?.content || '';
@@ -222,7 +233,6 @@ export default function StepsTracker() {
   const remainingToday = Math.max(goalToday - viewSteps, 0);
 
   const onSelectDay = (day: any, idx: number) => {
-    // Disable selecting future days (after today) if no data
     const isFuture = idx > todayIdx;
     const isEmptyFuture = isFuture && (!day.steps || day.steps === 0);
     if (isEmptyFuture) return;
@@ -233,19 +243,20 @@ export default function StepsTracker() {
     setCurrentPageIndex(0);
   };
 
+  // ✅ UPDATED: Add steps handler
   const onAddSteps = async () => {
     const n = Number(inputSteps);
     if (!Number.isFinite(n) || n <= 0) return;
 
-    // Determine log_date: allow previous day if before 12pm, else today
+    // Determine log_date
     const now = new Date();
     let log_date = now.toISOString().slice(0, 10);
+
+    // Allow logging to previous day if before 12pm and user selected previous day
     if (now.getHours() < 12 && viewLabel !== 'Today') {
-      // If before noon and user selected previous day, allow it
       const selectedDay = weekDays.find((d: any) => d.label === selectedLabel);
-      if (selectedDay && !selectedDay.today) {
-        // Find the ISO date for the selected day in apiWeek.days
-        const match = apiWeek?.days?.find((d: any) => {
+      if (selectedDay && !selectedDay.today && apiWeek?.days) {
+        const match = apiWeek.days.find((d: any) => {
           const dateObj = new Date(d.day);
           return dateObj.getDate() === selectedDay.date;
         });
@@ -255,18 +266,21 @@ export default function StepsTracker() {
 
     try {
       await addSteps({ steps: n, log_date, source: 'manual', note: inputSteps ? 'Manual entry' : undefined });
-      // Refresh weekly data after adding
+      
+      // Refresh weekly data
       const updated = await getWeeklySteps();
       setApiWeek(updated);
+      
       setInputSteps('');
       setLogOpen(false);
     } catch (err) {
-      alert('Failed to add steps.');
+      console.error('Failed to add steps:', err);
+      alert('Failed to add steps. Please try again.');
     }
   };
 
-  const weekProgress = (stepsWeek / goalWeek) * 100;
-  const dayProgress = (viewSteps / goalToday) * 100;
+  const weekProgress = goalWeek > 0 ? (stepsWeek / goalWeek) * 100 : 0;
+  const dayProgress = goalToday > 0 ? (viewSteps / goalToday) * 100 : 0;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
@@ -295,27 +309,64 @@ export default function StepsTracker() {
     setTouchEnd(0);
   };
 
+  // ✅ UPDATED: Load weekly data on mount
   useEffect(() => {
     setApiLoading(true);
     getWeeklySteps()
       .then(data => {
+        console.log('Weekly steps data:', data);
         setApiWeek(data);
         setApiLoading(false);
       })
       .catch(err => {
+        console.error('Failed to load weekly steps:', err);
         setApiError('Could not load weekly steps');
         setApiLoading(false);
       });
   }, []);
 
-  // Helper to get today's steps from API data
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todaySteps = apiWeek?.days?.find((d: any) => d.day === todayStr)?.total_steps ?? 0;
-  const weekSteps = apiWeek?.week_total_steps ?? 0;
-  const dailyTarget = apiWeek?.goal_daily_target ?? 0;
-  const weekTarget = apiWeek?.goal_period_target ?? 0;
+  if (apiLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#0f172a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <p style={{ color: 'rgba(255,255,255,0.7)' }}>Loading your progress...</p>
+      </div>
+    );
+  }
 
-  // goalToday and goalWeek are now declared above
+  if (apiError) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#0f172a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: '16px',
+      }}>
+        <p style={{ color: '#ef4444' }}>{apiError}</p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            padding: '12px 24px',
+            background: '#7c3aed',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', width: '100%', backgroundColor: '#0f172a', padding: '0' }}>
@@ -521,14 +572,7 @@ export default function StepsTracker() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
-              {weekDays.map((day: {
-                label: string;
-                short: string;
-                date: number;
-                steps: number;
-                done: boolean;
-                today?: boolean;
-              }, idx: number) => {
+              {weekDays.map((day: any, idx: number) => {
                 const isSelected = selectedLabel === day.label;
                 const isToday = day.today === true;
                 const isFuture = idx > todayIdx;

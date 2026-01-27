@@ -13,9 +13,9 @@ export default function WeeklyChallenge() {
 
     const GOAL_DAILY_TARGET: Record<string, number> = {
         easy: 3000,
-        medium: 6000,
-        hard: 9000,
-        expert: 12000,
+        medium: 5000,
+        hard: 7500,
+        expert: 10000,
     };
 
     const goals = [
@@ -33,7 +33,7 @@ export default function WeeklyChallenge() {
             icon: '🏃',
             title: 'Medium',
             description: 'Balanced weekly activity',
-            daily: '6,000 steps per day',
+            daily: '5,000 steps per day',
             level: 'Moderate Challenge',
             color: 'from-blue-400 to-blue-500'
         },
@@ -42,7 +42,7 @@ export default function WeeklyChallenge() {
             icon: '⚡',
             title: 'Hard',
             description: 'Push your limits',
-            daily: '9,000 steps per day',
+            daily: '7,500 steps per day',
             level: 'High Intensity',
             color: 'from-amber-400 to-orange-500'
         },
@@ -51,19 +51,19 @@ export default function WeeklyChallenge() {
             icon: '🔥',
             title: 'Expert',
             description: 'For fitness enthusiasts',
-            daily: '12,000 steps per day',
+            daily: '10,000 steps per day',
             level: 'Maximum Challenge',
             color: 'from-red-400 to-pink-500'
         }
     ];
-
 
     useEffect(() => {
         let cancelled = false;
 
         (async () => {
             try {
-                await api("/goals/current?metric_key=steps");
+                // ✅ Fixed: Changed from /goals/current to /api/goals/current
+                await api("/api/goals/current");
                 if (!cancelled) router.replace("/steps");
             } catch (e) {
                 if (isApiError(e) && e.status === 401) {
@@ -93,19 +93,18 @@ export default function WeeklyChallenge() {
         try {
             const daily_target = GOAL_DAILY_TARGET[selectedGoal];
 
-            await api("/goals/set", {
+            // ✅ Fixed: Changed from /goals/set to /api/goals/set-target
+            await api("/api/goals/set-target", {
                 method: "POST",
                 body: JSON.stringify({
-                    metric_key: "steps",
-                    period: "week",
-                    daily_target, // backend expects daily_target
+                    daily_target,  // Backend expects just daily_target
                 }),
             });
 
             // success UI
             setShowSteps(true);
 
-            // redirect after small delay (optional)
+            // redirect after small delay
             setTimeout(() => router.push("/steps"), 600);
         } catch (e: any) {
             setError(e.message || "Failed to set goal");
@@ -121,7 +120,6 @@ export default function WeeklyChallenge() {
             </div>
         );
     }
-
 
     if (showSteps) {
         const goal = goals.find(g => g.id === selectedGoal);
@@ -162,7 +160,6 @@ export default function WeeklyChallenge() {
                     {goals.map((goal) => {
                         const isSelected = selectedGoal === goal.id;
 
-                        // Color mapping for clean accent colors
                         const accentColors = {
                             'from-emerald-400 to-green-500': { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', text: 'text-emerald-400', gradient: 'from-emerald-500 to-green-500' },
                             'from-blue-400 to-blue-500': { border: 'border-blue-500/30', bg: 'bg-blue-500/5', text: 'text-blue-400', gradient: 'from-blue-500 to-blue-600' },
@@ -181,7 +178,6 @@ export default function WeeklyChallenge() {
                                     : 'bg-white/5 border-white/10 hover:bg-white/8'
                                     }`}
                             >
-                                {/* Colored Top Bar */}
                                 {isSelected && (
                                     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${colors.gradient}`} />
                                 )}
@@ -234,24 +230,17 @@ export default function WeeklyChallenge() {
                 {/* Continue Button */}
                 <button
                     onClick={handleContinue}
-                    disabled={!selectedGoal}
-                    className={`w-full py-3.5 px-6 rounded-xl font-semibold text-white transition-all duration-200 ${selectedGoal
+                    disabled={!selectedGoal || saving}
+                    className={`w-full py-3.5 px-6 rounded-xl font-semibold text-white transition-all duration-200 ${selectedGoal && !saving
                         ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-500/40 hover:shadow-xl hover:shadow-violet-500/50 hover:-translate-y-0.5'
                         : 'bg-white/10 cursor-not-allowed opacity-50'
                         }`}
                 >
                     {saving ? "Saving..." : "Continue to Steps Tracker"}
                 </button>
-                {error ? (
+                {error && (
                     <p className="mt-3 text-sm text-red-300 text-center">{error}</p>
-                ) : null}
-                {/* Skip Option */}
-                {/* <button
-                    onClick={() => setShowSteps(true)}
-                    className="w-full py-2.5 text-sm font-semibold text-white/50 hover:text-white/80 transition-colors mt-2"
-                >
-                    Skip for now
-                </button> */}
+                )}
 
             </div>
         </div>

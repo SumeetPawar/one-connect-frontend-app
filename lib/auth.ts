@@ -1,198 +1,272 @@
-// lib/auth.ts
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
-import { logger } from "@/lib/logger";
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8001";
-
-type LoginResponse = {
+interface AuthResponse {
   access_token: string;
-  refresh_token?: string;
-  token_type?: string;
-};
+  refresh_token: string;
+  token_type: string;
+  detail?: string;
+}
 
-type SignupResponse = {
-  id: string;
-  email: string;
-  name?: string;
-};
+interface LoginResult {
+  ok: boolean;
+  error?: string;
+}
 
-export function getAccessToken() {
+interface SignupResult {
+  ok: boolean;
+  error?: string;
+}
+
+// ==========================================
+// TOKEN MANAGEMENT
+// ==========================================
+
+export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("access_token");
 }
 
-export function getRefreshToken() {
+export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("refresh_token");
 }
 
-export function setTokens(access: string, refresh?: string) {
-  localStorage.setItem("access_token", access);
-  if (refresh) localStorage.setItem("refresh_token", refresh);
+function setTokens(accessToken: string, refreshToken: string): void {
+  localStorage.setItem("access_token", accessToken);
+  localStorage.setItem("refresh_token", refreshToken);
+  localStorage.setItem("auth_token", accessToken);
 }
 
-export async function refreshAccessToken(): Promise<boolean> {
-  const rt = getRefreshToken();
-  if (!rt) return false;
-
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: rt }),
-  });
-
-  const data = await res.json().catch(() => null);
-  if (!res.ok || !data?.access_token) return false;
-
-  setTokens(data.access_token, data.refresh_token); // refresh_token optional
-  return true;
-}
-
-export function logout() {
-  stopBackgroundRefresh();
+function clearTokens(): void {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
-  // Redirect to login page
-  if (typeof window !== "undefined") {
-    window.location.href = "/login";
-  }
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("user_data");
 }
 
-export async function isAuthed() {
-  if (getAccessToken()) return true;
-  // Try to refresh if no access token
-  const refreshed = await refreshAccessToken();
-  return refreshed;
-}
+// ==========================================
+// AUTHENTICATION
+// ==========================================
 
-// Background token refresh - keeps user logged in
-let refreshInterval: NodeJS.Timeout | null = null;
-
-function getTokenExpiryTime(token: string): number | null {
+export async function login(email: string, password: string): Promise<LoginResult> {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.exp * 1000; // Convert to milliseconds
-  } catch {
-    return null;
-  }
-}
-
-export function startBackgroundRefresh() {
-  // Clear any existing interval
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-  }
-  
-  const checkAndRefresh = async () => {
-    const token = getAccessToken();
-    const refreshToken = getRefreshToken();
-    
-    if (!refreshToken) {
-      stopBackgroundRefresh();
-      return;
-    }
-
-    if (token) {
-      const expiryTime = getTokenExpiryTime(token);
-      if (expiryTime) {
-        const timeUntilExpiry = expiryTime - Date.now();
-        // Refresh if token expires in less than 30 seconds
-        if (timeUntilExpiry < 30 * 1000) {
-          logger.info('Token expiring soon, refreshing...');
-          const success = await refreshAccessToken();
-          if (!success) {
-            logger.warn('Background refresh failed - user may need to re-login');
-            stopBackgroundRefresh();
-          } else {
-            logger.info('✅ Token refreshed successfully');
-          }
-        }
-      }
-    } else {
-      // No access token, try to refresh
-      logger.info('No access token, attempting refresh...');
-      const success = await refreshAccessToken();
-      if (!success) {
-        stopBackgroundRefresh();
-      }
-    }
-  };
-
-  // Check immediately
-  checkAndRefresh();
-  
-  // Check every 20 seconds (handles tokens with 1 min expiry)
-  refreshInterval = setInterval(checkAndRefresh, 20 * 1000);
-}
-
-export function stopBackgroundRefresh() {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-    refreshInterval = null;
-  }
-}
-
-// ✅ Real backend login
-export async function login(email: string, password: string) {
-  try {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    const response = await fetch(`${API_BASE}/api/auth/login`, {  // ✅ /api/auth
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await res.json().catch(() => null);
+    const data: AuthResponse = await response.json();
 
-    if (!res.ok) {
-      return { ok: false, error: (data?.detail || data?.message || "Login failed") as string };
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data.detail || "Login failed",
+      };
     }
 
-    const parsed = data as LoginResponse;
-    if (!parsed.access_token) {
-      return { ok: false, error: "Login response missing access_token" };
-    }
+    setTokens(data.access_token, data.refresh_token);
+    console.log("✅ Login successful, tokens stored");
 
-    setTokens(parsed.access_token, parsed.refresh_token);
-    // Start background refresh to keep user logged in
-    startBackgroundRefresh();
     return { ok: true };
   } catch (error) {
-    logger.error("Login network error:", error);
-    return { 
-      ok: false, 
-      error: error instanceof Error && error.message.includes('CORS') 
-        ? "Unable to connect to server. Please check if the backend is running and CORS is configured correctly."
-        : "Network error. Please check your connection and try again."
+    console.error("Login error:", error);
+    return {
+      ok: false,
+      error: "Network error. Please check your connection.",
     };
   }
 }
 
-
-export async function signup(name: string, email: string, password: string) {
+export async function signup(
+  name: string,
+  email: string,
+  password: string
+): Promise<SignupResult> {
   try {
-    const res = await fetch(`${API_BASE}/auth/signup`, {
+    const response = await fetch(`${API_BASE}/api/auth/signup`, {  // ✅ /api/auth
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+      }),
     });
 
-    const data = await res.json().catch(() => null);
+    const data: AuthResponse = await response.json();
 
-    if (!res.ok) {
-      return { ok: false, error: (data?.detail || data?.message || "Signup failed") as string };
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data.detail || "Signup failed",
+      };
     }
 
-    return { ok: true, data: data as SignupResponse };
+    setTokens(data.access_token, data.refresh_token);
+    console.log("✅ Signup successful, tokens stored");
+
+    return { ok: true };
   } catch (error) {
-    logger.error("Signup network error:", error);
-    return { 
-      ok: false, 
-      error: error instanceof Error && error.message.includes('CORS') 
-        ? "Unable to connect to server. Please check if the backend is running and CORS is configured correctly."
-        : "Network error. Please check your connection and try again."
+    console.error("Signup error:", error);
+    return {
+      ok: false,
+      error: "Network error. Please check your connection.",
     };
   }
+}
+
+export function logout(): void {
+  stopBackgroundRefresh();
+  clearTokens();
+  
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
+}
+
+export async function isAuthed(): Promise<boolean> {
+  const token = getAccessToken();
+  
+  if (!token) {
+    return false;
+  }
+
+  // Token exists - consider authenticated
+  return true;
+}
+
+export async function refreshAccessToken(): Promise<boolean> {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken) {
+    clearTokens();
+    return false;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/api/auth/refresh`, {  // ✅ /api/auth
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      clearTokens();
+      return false;
+    }
+
+    const data: AuthResponse = await response.json();
+    
+    localStorage.setItem("access_token", data.access_token);
+    localStorage.setItem("auth_token", data.access_token);
+    localStorage.setItem("refresh_token", data.refresh_token);
+
+    return true;
+  } catch (error) {
+    console.error("Token refresh error:", error);
+    clearTokens();
+    return false;
+  }
+}
+
+// ==========================================
+// USER DATA
+// ==========================================
+
+export function getCurrentUser() {
+  if (typeof window === "undefined") return null;
+  
+  const userData = localStorage.getItem("user_data");
+  if (!userData) return null;
+  
+  try {
+    return JSON.parse(userData);
+  } catch {
+    return null;
+  }
+}
+
+// ==========================================
+// BACKGROUND TOKEN REFRESH (PERSISTENT)
+// ==========================================
+
+let refreshIntervalId: NodeJS.Timeout | null = null;
+
+export function startBackgroundRefresh(): void {
+  if (refreshIntervalId) {
+    return;
+  }
+
+  refreshIntervalId = setInterval(async () => {
+    const token = getAccessToken();
+    
+    if (!token) {
+      console.log("⚠️ No token found, stopping refresh");
+      stopBackgroundRefresh();
+      return;
+    }
+
+    console.log("🔄 Refreshing token...");
+    const success = await refreshAccessToken();
+    
+    if (success) {
+      console.log("✅ Token refreshed successfully");
+    } else {
+      console.log("❌ Token refresh failed");
+      stopBackgroundRefresh();
+    }
+  }, 10 * 60 * 1000);
+
+  refreshAccessToken().then((success) => {
+    if (success) {
+      console.log("✅ Initial token refresh successful");
+    }
+  });
+
+  console.log("🔄 Background token refresh started");
+}
+
+export function stopBackgroundRefresh(): void {
+  if (refreshIntervalId) {
+    clearInterval(refreshIntervalId);
+    refreshIntervalId = null;
+    console.log("⏹️ Background token refresh stopped");
+  }
+}
+
+// ==========================================
+// PAGE VISIBILITY HANDLER
+// ==========================================
+
+export function setupVisibilityRefresh(): (() => void) | undefined {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return undefined;
+  }
+
+  const handleVisibilityChange = async () => {
+    if (document.visibilityState === "visible") {
+      console.log("👀 Tab became visible, checking token...");
+      const token = getAccessToken();
+      
+      if (token) {
+        const success = await refreshAccessToken();
+        if (success) {
+          console.log("✅ Token refreshed on tab focus");
+        }
+      }
+    }
+  };
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  
+  return () => {
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+  };
 }
