@@ -47,7 +47,7 @@ export function registerServiceWorker(onPushSubscription?: (sub: PushSubscriptio
                                 return;
                             }
 
-                            const response = await fetch('https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net/push/subscribe', {
+                            const response = await fetch('https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net/api/push/subscribe', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
