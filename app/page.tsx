@@ -16,7 +16,7 @@ export default function Home() {
       console.log("User is", authed ? "authenticated ✅" : "not authenticated ❌");
       
       setChecking(false);
-      router.replace(authed ? "/goals" : "/login");
+      router.replace(authed ? "/challanges" : "/login");
     };
 
     checkAuth();
@@ -58,3 +58,4 @@ export default function Home() {
 
   return null;
 }
+

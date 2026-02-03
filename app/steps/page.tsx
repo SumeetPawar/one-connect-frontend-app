@@ -12,6 +12,17 @@ function formatNumber(n: number): string {
   return Number(n || 0).toLocaleString("en-IN");
 }
 
+function toISODate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+// string compare works for YYYY-MM-DD
+function isWithinRange(dayISO: string, startISO: string, endISO: string) {
+  return dayISO >= startISO && dayISO <= endISO;
+}
+
+
+
 function buildAiSummary(steps: number, goal: number, hasSteps: boolean) {
   const stepComparisons = [
     { steps: 1000, text: '🏠 You walked the length of 10 city blocks!' },
@@ -138,15 +149,15 @@ export default function StepsTracker() {
   // ✅ UPDATED: Sync state with backend data
   useEffect(() => {
     if (!apiWeek) return;
-    
+
     // Set week total
     setStepsWeek(apiWeek.week_total_steps ?? 0);
-    
+
     // Find today's steps from days array
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayObj = apiWeek.days?.find((d: any) => d.day === todayStr);
     const todaySteps = todayObj?.total_steps ?? 0;
-    
+
     setStepsToday(todaySteps);
     setViewSteps(todaySteps);
   }, [apiWeek]);
@@ -157,44 +168,61 @@ export default function StepsTracker() {
 
   // ✅ UPDATED: Map backend days to weekDays for UI
   const weekDays = useMemo(() => {
-    if (!apiWeek?.days || apiWeek.days.length === 0) {
-      // Fallback to empty week if no data
-      const today = new Date();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - today.getDay() + 1);
-      
-      return Array.from({ length: 7 }, (_, i) => {
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + i);
-        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    const todayISO = toISODate(new Date());
+    const startISO = apiWeek?.challenge_start; // "2026-01-01"
+    const endISO = apiWeek?.challenge_end;     // "2026-01-31"
+
+    // Fallback if challenge dates missing
+    const hasRange = Boolean(startISO && endISO);
+
+    // If backend gave days => use those (already Mon-Sun)
+    if (apiWeek?.days && apiWeek.days.length > 0) {
+      return apiWeek.days.map((d: any, idx: number) => {
+        const isoDay = d.day; // backend ISO date
+        const steps = d.total_steps ?? 0;
+
+        const inChallenge = hasRange ? isWithinRange(isoDay, startISO, endISO) : true;
+
         return {
-          label: dayNames[i],
-          short: dayNames[i],
-          date: date.getDate(),
-          steps: 0,
-          done: false,
-          today: date.toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10),
+          label: dayNames[idx],
+          short: dayNames[idx],
+          date: new Date(isoDay).getDate(),
+          isoDay,
+          steps,
+          done: steps >= goalToday,
+          today: isoDay === todayISO,
+          inChallenge,
         };
       });
     }
 
-    // Map backend days (already in order Mon-Sun)
-    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const todayStr = new Date().toISOString().slice(0, 10);
-    
-    return apiWeek.days.map((d: any, idx: number) => {
-      const dateObj = new Date(d.day);
+    // If no backend days => create current week Mon-Sun
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - today.getDay() + 1);
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+
+      const isoDay = toISODate(d);
+      const inChallenge = hasRange ? isWithinRange(isoDay, startISO, endISO) : true;
+
       return {
-        label: dayNames[idx],
-        short: dayNames[idx],
-        date: dateObj.getDate(),
-        steps: d.total_steps ?? 0,
-        done: (d.total_steps ?? 0) >= goalToday,
-        today: d.day === todayStr,
+        label: dayNames[i],
+        short: dayNames[i],
+        date: d.getDate(),
+        isoDay,
+        steps: 0,
+        done: false,
+        today: isoDay === todayISO,
+        inChallenge,
       };
     });
   }, [apiWeek, goalToday]);
+
 
   const todayIdx = useMemo(() => weekDays.findIndex((d: any) => d.today), [weekDays]);
 
@@ -211,7 +239,7 @@ export default function StepsTracker() {
 
   const hasSteps = viewSteps > 0;
   const [showAchievementAnim, setShowAchievementAnim] = useState(false);
-  
+
   const allPages = useMemo(() => {
     return hasSteps
       ? [{ title: 'Your Achievement', content: buildAiSummary(viewSteps, goalToday, true) }, ...swipeablePages]
@@ -233,6 +261,7 @@ export default function StepsTracker() {
   const remainingToday = Math.max(goalToday - viewSteps, 0);
 
   const onSelectDay = (day: any, idx: number) => {
+    if (day.inChallenge === false) return;
     const isFuture = idx > todayIdx;
     const isEmptyFuture = isFuture && (!day.steps || day.steps === 0);
     if (isEmptyFuture) return;
@@ -251,7 +280,12 @@ export default function StepsTracker() {
     // Determine log_date
     const now = new Date();
     let log_date = now.toISOString().slice(0, 10);
-
+    const startISO = apiWeek?.challenge_start;
+    const endISO = apiWeek?.challenge_end;
+    if (startISO && endISO && !isWithinRange(log_date, startISO, endISO)) {
+      alert(`This date is outside the challenge period (${startISO} to ${endISO}).`);
+      return;
+    }
     // Only allow logging to previous day if before 12:30pm and user selected previous day
     // Strictly block after 12:30pm
     const isBefore1230 = (now.getHours() < 12) || (now.getHours() === 12 && now.getMinutes() < 30);
@@ -273,11 +307,11 @@ export default function StepsTracker() {
 
     try {
       await addSteps({ steps: n, log_date, source: 'manual', note: inputSteps ? 'Manual entry' : undefined });
-      
+
       // Refresh weekly data
       const updated = await getWeeklySteps();
       setApiWeek(updated);
-      
+
       setInputSteps('');
       setLogOpen(false);
     } catch (err) {
@@ -582,14 +616,19 @@ export default function StepsTracker() {
               {weekDays.map((day: any, idx: number) => {
                 const isSelected = selectedLabel === day.label;
                 const isToday = day.today === true;
+                // old future disabling can remain, but challenge range takes priority
                 const isFuture = idx > todayIdx;
                 const isEmptyFuture = isFuture && (!day.steps || day.steps === 0);
+                const isOutOfRange = day.inChallenge === false;
+                // final disabled rule:
+                const isDisabled = isOutOfRange || isEmptyFuture;
 
                 return (
-                  <div key={day.label} style={{ textAlign: 'center', opacity: isEmptyFuture ? 0.35 : 1 }}>
+                  <div key={day.label} style={{ textAlign: 'center', opacity: isDisabled ? 0.25 : 1 }}>
+
                     <button
-                      onClick={() => onSelectDay(day, idx)}
-                      disabled={isEmptyFuture}
+                      onClick={() => !isDisabled && onSelectDay(day, idx)}
+                      disabled={isDisabled}
                       style={{
                         width: '44px',
                         height: '44px',
@@ -599,14 +638,14 @@ export default function StepsTracker() {
                         color: day.done ? '#ffffff' : '#94a3b8',
                         fontSize: '14px',
                         fontWeight: '600',
-                        cursor: isEmptyFuture ? 'not-allowed' : 'pointer',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s ease',
                         boxShadow: day.done ? '0 4px 12px rgba(124, 58, 237, 0.25)' : '0 1px 3px rgba(0,0,0,0.05)',
                         position: 'relative',
                         margin: '0 auto',
                       }}
                     >
-                      {day.done ? '✓' : day.date}
+                      {isOutOfRange ? '—' : (day.done ? '✓' : day.date)}
                       {isToday && (
                         <div
                           style={{
@@ -913,7 +952,7 @@ export default function StepsTracker() {
                     boxSizing: 'border-box',
                     color: '#0f172a',
                   }}
-                  // Remove auto-focus
+                // Remove auto-focus
                 />
 
                 <div style={{ display: 'flex', gap: '12px' }}>

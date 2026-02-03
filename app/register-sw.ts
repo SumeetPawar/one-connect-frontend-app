@@ -1,6 +1,10 @@
 // Helper: get VAPID public key from backend or config
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BMmVTo0GaTfa9QJSmxlmXrE3ukC6wfZKBRgxxkjBBpvEfBK8-9iNOSGxH04kZPaKCuRccatRgPGlrxnGDIr0O0Y';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net";
 
+const PUSH_SUBSCRIBE_URL = `${API_BASE_URL}/api/push/subscribe`;
+console.log('PUSH_SUBSCRIBE_URL:', PUSH_SUBSCRIBE_URL);
 // Convert base64 public key to Uint8Array
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
     const normalized = base64String.padEnd(base64String.length + (4 - base64String.length % 4) % 4, '=')
@@ -47,7 +51,7 @@ export function registerServiceWorker(onPushSubscription?: (sub: PushSubscriptio
                                 return;
                             }
 
-                            const response = await fetch('https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net/api/push/subscribe', {
+                            const response = await fetch(PUSH_SUBSCRIBE_URL, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',

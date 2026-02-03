@@ -1,7 +1,9 @@
 import { getAccessToken, logout, refreshAccessToken } from "./auth";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net";
+const API_BASE=
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net";
 
+const PUSH_SUBSCRIBE_URL = `${API_BASE}/api/push/subscribe`;
 class ApiError extends Error {
   status: number;
   data: any;

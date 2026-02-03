@@ -15,11 +15,12 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [currentWord, setCurrentWord] = useState<string>("Fitness");
+  const [loading, setLoading] = useState(false);
 
   // ✅ If already logged in, go home
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
-    if (token) router.replace("/goals");
+    if (token) router.replace("/challanges");
   }, [router]);
 
   // Animated word loop
@@ -35,42 +36,48 @@ export default function SignupPage() {
     return () => clearInterval(interval);
   }, []);
 
-   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  // Basic validation
-  if (!name || !email || !password || !confirmPassword) {
-    setError("Please fill in all fields");
-    return;
-  }
+    // Basic validation
+    if (!name || !email || !password || !confirmPassword) {
+      setError("Please fill in all fields");
+      return;
+    }
 
-  if (!email.includes("@")) {
-    setError("Please enter a valid email");
-    return;
-  }
+    if (!email.includes("@")) {
+      setError("Please enter a valid email");
+      return;
+    }
 
-  if (password.length < 6) {
-    setError("Password must be at least 6 characters");
-    return;
-  }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
 
-  if (password !== confirmPassword) {
-    setError("Passwords do not match");
-    return;
-  }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
 
-  setError("");
+    setError("");
+    setLoading(true);
 
-  const res = await signup(name, email, password);
+    try {
+      const res = await signup(name, email, password);
 
-  if (!res.ok) {
-    setError(res.error || "Signup failed");
-    return;
-  }
-
-  // go to landing page
-  router.replace("/goals");
-};
+      if (!res.ok) {
+        setError(res.error || "Signup failed");
+        return;
+      }
+      router.replace("/challanges");
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLoginClick = (): void => {
     router.push("/login");
@@ -175,6 +182,7 @@ export default function SignupPage() {
               <input
                 id="name"
                 type="text"
+                disabled={loading}
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
@@ -224,6 +232,7 @@ export default function SignupPage() {
               <input
                 id="email"
                 type="email"
+                disabled={loading}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -273,6 +282,7 @@ export default function SignupPage() {
               <input
                 id="password"
                 type="password"
+                disabled={loading}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -322,6 +332,7 @@ export default function SignupPage() {
               <input
                 id="confirmPassword"
                 type="password"
+                disabled={loading}
                 value={confirmPassword}
                 onChange={(e) => {
                   setConfirmPassword(e.target.value);
@@ -371,7 +382,28 @@ export default function SignupPage() {
             )}
 
             {/* Signup Button */}
-            <button
+            <button 
+            type="submit"
+             disabled={loading} 
+             style={{
+                width: "100%",
+                height: "48px",
+                borderRadius: "12px",
+                fontSize: "15px",
+                fontWeight: "bold",
+                background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.20)",
+                boxShadow: "0 4px 12px 0 rgba(124, 58, 237, 0.25)",
+                // cursor: "pointer",
+                transition: "all 0.2s",
+                opacity: loading ? 0.75 : 1,
+                cursor: loading ? "not-allowed" : "pointer"
+             }}
+            >
+               {loading ? "Creating..." : "Create Account"}
+              </button>
+            {/* <button
               type="submit"
               style={{
                 width: "100%",
@@ -402,7 +434,7 @@ export default function SignupPage() {
               }}
             >
               Create Account
-            </button>
+            </button> */}
           </form>
 
           {/* Divider */}
