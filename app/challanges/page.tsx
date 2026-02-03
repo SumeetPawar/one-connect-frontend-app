@@ -18,7 +18,7 @@ export default function Dashboard() {
         user_joined: boolean;
         user_daily_target?: number | null;
         days_remaining: number;
-        // add description later if you add in API
+        description?: string; // optional description property
     };
 
     const [challenges, setChallenges] = useState<ApiChallenge[]>([]);
@@ -361,13 +361,124 @@ export default function Dashboard() {
                 })}
 
                 {/* Featured Card - Hero */}
+                <div
+                    style={{
+                        background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                        borderRadius: '18px',
+                        padding: '28px 22px',
+                        marginBottom: '12px',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 16px rgba(124, 58, 237, 0.15)'
+                    }}
+                    onClick={() => setSelectedChallenge({
+                        id: '047db050-627a-47a9-9eac-adde7fe3a64b',
+                        title: 'February Steps Challenge',
+                        description: "Walk, compete with colleagues, and boost your health. Every step counts—let's make this month active and fun!",
+                        period: 'month',
+                        scope: 'department',
+                        start_date: '2026-02-01',
+                        end_date: '2026-02-28',
+                        status: 'active',
+                        participant_count: 0,
+                        user_joined: false,
+                        days_remaining: 26
+                    })}
+                >
+                    <div style={{
+                        position: 'absolute',
+                        top: '-50px',
+                        right: '-50px',
+                        fontSize: '120px',
+                        opacity: '0.12'
+                    }}>
+                        💪
+                    </div>
+
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <div style={{
+                            display: 'inline-block',
+                            background: 'rgba(255, 255, 255, 0.18)',
+                            padding: '5px 13px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#ffffff',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            marginBottom: '14px'
+                        }}>
+                            Featured
+                        </div>
+
+                        <h2 style={{
+                            fontSize: '22px',
+                            fontWeight: '700',
+                            color: '#ffffff',
+                            marginBottom: '8px',
+                            letterSpacing: '-0.02em',
+                            lineHeight: '1.2'
+                        }}>
+                            February Steps Challenge
+                        </h2>
+
+                        <p style={{
+                            fontSize: '14px',
+                            color: 'rgba(255, 255, 255, 0.85)',
+                            marginBottom: '16px',
+                            lineHeight: '1.5'
+                        }}>
+                            Walk, compete with colleagues, and boost your health. Every step counts—let's make this month active and fun!
+                        </p>
+
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            flexWrap: 'wrap'
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '16px',
+                                fontSize: '12px',
+                                color: 'rgba(255, 255, 255, 0.75)'
+                            }}>
+                                <span>🔥 0 active</span>
+                                <span>⏱️ 26 days left</span>
+                            </div>
+
+                            {/* Not joined badge (default) */}
+                            <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                background: 'rgba(255,255,255,0.15)',
+                                padding: '5px 13px',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(255,255,255,0.25)'
+                            }}>
+                                <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    color: '#fff',
+                                    letterSpacing: '0.3px'
+                                }}>
+                                    Join
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
 
                 {/* Active Challenge Card */}
 
 
                 {/* Coming Soon Card - Faded */}
-                {/* <div
+                <div
                     style={{
                         background: 'rgba(255, 255, 255, 0.04)',
                         borderRadius: '18px',
@@ -379,7 +490,7 @@ export default function Dashboard() {
                         cursor: 'pointer',
                         border: '1px solid rgba(255, 255, 255, 0.08)'
                     }}
-                    onClick={() => setSelectedChallenge('wellness')}
+                    onClick={() => console.log('Coming Soon clicked')}
                 >
                     <div style={{
                         position: 'absolute',
@@ -427,7 +538,7 @@ export default function Dashboard() {
                             Set and track collective wellness objectives
                         </p>
                     </div>
-                </div> */}
+                </div>
 
                 {/* Quick Actions - Apple/Samsung Style */}
                 <div>
@@ -729,7 +840,9 @@ export default function Dashboard() {
                         }} />
 
                         {/* Fitness Challenge Content */}
-                        {selectedChallenge === 'fitness' && (
+                        {/* {selectedChallenge === 'fitness' && (
+                         */}
+                         {false && (
                             <>
                                 {/* Challenge Hero */}
                                 <div
@@ -1019,7 +1132,8 @@ export default function Dashboard() {
                         )}
 
                         {/* Hydration Challenge Content */}
-                        {selectedChallenge === 'hydration' && (
+                        {/* {selectedChallenge === 'hydration' && ( */}
+                        {false && (
                             <>
                                 {/* Challenge Hero */}
                                 <div
@@ -1336,7 +1450,10 @@ export default function Dashboard() {
                         )}
 
                         {/* Wellness Challenge Content - NOT JOINED EXAMPLE */}
-                        {selectedChallenge === 'wellness' && (
+                        {/* {selectedChallenge === 'wellness' && ( */}
+                        
+                        {false && (
+                            
                             <>
                                 {/* Challenge Hero */}
                                 <div
