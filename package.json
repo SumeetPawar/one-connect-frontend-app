@@ -6,9 +6,9 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
-    
+    "build:azure": "echo 'Build already complete'",
     "start": "next start -p $PORT",
     "lint": "eslint"
   },

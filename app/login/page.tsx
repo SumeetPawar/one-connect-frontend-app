@@ -56,7 +56,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace("/goals");
+      router.replace("/challanges");
     } catch (err) {
       console.error("Login exception:", err);
       setError("An unexpected error occurred");

@@ -211,13 +211,12 @@ export default function Dashboard() {
                                         color: '#ffffff',
                                         marginBottom: '2px'
                                     }}>
-                                        John Doe
+                                        User
                                     </div>
                                     <div style={{
                                         fontSize: '12px',
                                         color: 'rgba(255, 255, 255, 0.6)'
                                     }}>
-                                        john.doe@company.com
                                     </div>
                                 </div>
 
@@ -283,8 +282,6 @@ export default function Dashboard() {
                             key={ch.id}
                             onClick={() => setSelectedChallenge(ch)}
                             style={{
-                                // keep your card styling,
-                                // you can vary gradient by idx if you want
                                 borderRadius: "18px",
                                 padding: "28px 22px",
                                 marginBottom: "12px",
@@ -297,8 +294,18 @@ export default function Dashboard() {
                                         : "linear-gradient(135deg, rgba(59, 130, 246, 0.85) 0%, rgba(37, 99, 235, 0.85) 100%)",
                             }}
                         >
+                            <div style={{
+                                position: 'absolute',
+                                top: '-50px',
+                                right: '-50px',
+                                fontSize: '120px',
+                                opacity: '0.12'
+                            }}>
+                                💪
+                            </div>
                             {/* Featured badge only for first */}
                             {isFeatured && (
+
                                 <div style={{
                                     display: "inline-block",
                                     background: "rgba(255,255,255,0.18)",
@@ -319,16 +326,24 @@ export default function Dashboard() {
                                 {ch.title}
                             </h2>
 
-                            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", marginBottom: "16px" }}>
-                                {ch.period === "month" ? "Monthly challenge" : "Weekly challenge"} • {ch.scope ?? "team"}
+                            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", marginBottom: "8px" }}>
+                                {ch.description}
                             </p>
-
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                                <div style={{ display: "flex", gap: 16, fontSize: 12, color: "rgba(255,255,255,0.75)" }}>
-                                    <span>🔥 {ch.participant_count} active</span>
-                                    <span>⏱️ {ch.days_remaining} days left</span>
+                            {/* <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "8px" }}>
+                                <strong>Period:</strong> {ch.period || '-'} | <strong>Scope:</strong> {ch.scope || '-'}
+                            </div>
+                            <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "8px" }}>
+                                <strong>Status:</strong> {ch.status} | <strong>Start:</strong> {ch.start_date} | <strong>End:</strong> {ch.end_date}
+                            </div>
+                            <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "8px" }}>
+                                <strong>Participants:</strong> {ch.participant_count} | <strong>Days left:</strong> {ch.days_remaining}
+                            </div> */}
+                            {ch.user_daily_target !== undefined && ch.user_daily_target !== null && (
+                                <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "8px" }}>
+                                    <strong>Your daily target:</strong> {ch.user_daily_target}
                                 </div>
-
+                            )}
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                                 {ch.user_joined ? (
                                     <div style={{
                                         display: "inline-flex",
@@ -842,7 +857,7 @@ export default function Dashboard() {
                         {/* Fitness Challenge Content */}
                         {/* {selectedChallenge === 'fitness' && (
                          */}
-                         {false && (
+                        {true && (
                             <>
                                 {/* Challenge Hero */}
                                 <div
@@ -1451,9 +1466,9 @@ export default function Dashboard() {
 
                         {/* Wellness Challenge Content - NOT JOINED EXAMPLE */}
                         {/* {selectedChallenge === 'wellness' && ( */}
-                        
+
                         {false && (
-                            
+
                             <>
                                 {/* Challenge Hero */}
                                 <div

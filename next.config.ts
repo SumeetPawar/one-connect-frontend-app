@@ -7,15 +7,13 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
 
-  // Application Gateway routing - serve app under /socialapp path (only in production)
-  basePath: isProduction ? '/socialapp' : '',
+  // Remove basePath - Application Gateway handles the /socialapp routing
+  // basePath: '', // No basePath needed
   
   // Removed output: "export" for Azure App Service deployment
   images: {
     unoptimized: true
   },
-  // CRITICAL: Use standalone output to reduce deployment size
-  // output: 'standalone',
   // Production optimizations
   reactStrictMode: true,
   compress: true,  // Enable gzip compression
