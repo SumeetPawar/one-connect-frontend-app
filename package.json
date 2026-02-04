@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:azure": "echo 'Build already complete'",
-    "start": "next start -p $PORT",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {

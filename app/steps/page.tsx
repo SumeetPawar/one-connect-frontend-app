@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { getWeeklySteps, addSteps } from '../../lib/api';
+import Header from '../commponents/Header';
 
 // Helper functions
 function clamp(n: number, min: number, max: number): number {
@@ -125,7 +126,6 @@ export default function StepsTracker() {
 
   const [logOpen, setLogOpen] = useState(false);
   const [inputSteps, setInputSteps] = useState('');
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
@@ -408,9 +408,15 @@ export default function StepsTracker() {
       </div>
     );
   }
-
   return (
     <div style={{ minHeight: '100vh', width: '100%', backgroundColor: '#0f172a', padding: '0' }}>
+      {/* ADD HEADER COMPONENT */}
+      <Header
+        title="Steps"
+        subtitle="Daily activity tracker"
+        showAnimatedWord={false}
+      />
+
       <div
         style={{
           background: 'linear-gradient(180deg, rgba(124, 58, 237, 0.15) 0%, rgba(15, 23, 42, 1) 100%)',
@@ -418,192 +424,6 @@ export default function StepsTracker() {
         }}
       >
         <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-          {/* Header */}
-          <div
-            style={{
-              marginBottom: '24px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              position: 'relative',
-            }}
-          >
-            <div>
-              <h1
-                style={{
-                  fontSize: '26px',
-                  fontWeight: '700',
-                  color: '#ffffff',
-                  marginBottom: '0',
-                  letterSpacing: '-0.02em',
-                  lineHeight: '1.1',
-                }}
-              >
-                Steps
-              </h1>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', marginTop: '4px', fontWeight: '500' }}>
-                Daily activity tracker
-              </p>
-            </div>
-
-            <div style={{ position: 'relative' }}>
-              <div
-                onClick={() => setProfileOpen(!profileOpen)}
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-              >
-                S
-              </div>
-
-              {false && (
-                <>
-                  <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
-
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '48px',
-                      right: '0',
-                      width: '280px',
-                      background: '#ffffff',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '16px',
-                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-                      zIndex: 1000,
-                      animation: 'dropdownIn 0.2s ease',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: '16px',
-                        borderBottom: '1px solid #f1f5f9',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#ffffff',
-                          flexShrink: 0,
-                        }}
-                      >
-                        S
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a', margin: 0, marginBottom: '2px' }}>
-                          Sumeet
-                        </h3>
-                        <p
-                          style={{
-                            fontSize: '12px',
-                            color: '#94a3b8',
-                            margin: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          sumeet@email.com
-                        </p>
-                      </div>
-                    </div>
-
-                    <div style={{ padding: '4px 0' }}>
-                      {[
-                        { icon: '📊', label: 'My Stats' },
-                        { icon: '🎯', label: 'Set Goals' },
-                        { icon: '⚙️', label: 'Settings' },
-                        { icon: '🔔', label: 'Notifications' },
-                        { icon: '🎨', label: 'Appearance' },
-                        { icon: '❓', label: 'Help & Support' },
-                      ].map((item, index) => (
-                        <button
-                          key={index}
-                          onClick={() => {
-                            console.log(item.label);
-                            setProfileOpen(false);
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '10px 16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            transition: 'background 0.2s ease',
-                            fontSize: '14px',
-                            color: '#0f172a',
-                            textAlign: 'left',
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          <span style={{ fontSize: '16px' }}>{item.icon}</span>
-                          <span style={{ fontWeight: '500' }}>{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div style={{ padding: '4px 0', borderTop: '1px solid #f1f5f9' }}>
-                      <button
-                        onClick={() => {
-                          console.log('Log Out');
-                          setProfileOpen(false);
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '10px 16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'background 0.2s ease',
-                          fontSize: '14px',
-                          color: '#ef4444',
-                          fontWeight: '600',
-                          textAlign: 'left',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = '#fef2f2')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <span style={{ fontSize: '16px' }}>🚪</span>
-                        <span>Log Out</span>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
 
           {/* Week Ticks */}
           <div style={{ marginBottom: '24px' }}>

@@ -10,7 +10,9 @@ export default function WeeklyChallenge() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string>("");
     const [checking, setChecking] = useState(true);
-
+    const [isJoining, setIsJoining] = useState(false);
+    const [selectedTarget, setSelectedTarget] = useState<number>(7500);
+    const [showTargetSelector, setShowTargetSelector] = useState(false);
     const GOAL_DAILY_TARGET: Record<string, number> = {
         easy: 3000,
         medium: 5000,

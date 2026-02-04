@@ -17,9 +17,17 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+// export const metadata: Metadata = {
+//   title: "GES Connect",
+
+// };
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 export const metadata: Metadata = {
   title: "GES Connect",
   description: "One place to track all your fitness goals and connect with friends. Join challenges, share your progress, and stay motivated on your fitness journey.",
+  manifest: isProduction ? "/socialapp/manifest.json" : "/socialapp/manifest-local.json",
 };
 
 export default function RootLayout({
@@ -27,12 +35,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const basePath = process.env.NODE_ENV === 'production' ? '/socialapp' : '';
-  
+  const isProduction = process.env.NODE_ENV === 'production';
+
+
   return (
     <html lang="en">
       <head>
-        <link rel="manifest" href={`${basePath}/manifest.json`} />
+        <link rel="manifest" href={metadata.manifest?.toString()} />
         <meta name="theme-color" content="#7c3aed" />
       </head>
       <body
