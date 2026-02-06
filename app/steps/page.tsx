@@ -130,6 +130,7 @@ export default function StepsTracker() {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const swipeablePages = useMemo(() => getSwipeablePages(), []);
 
@@ -160,6 +161,28 @@ export default function StepsTracker() {
 
     setStepsToday(todaySteps);
     setViewSteps(todaySteps);
+  }, [apiWeek]);
+
+
+  // Update: Fetch steps for the selected week
+  useEffect(() => {
+    setApiLoading(true);
+    getWeeklySteps(weekOffset) // Pass weekOffset to your API
+      .then(data => {
+        setApiWeek(data);
+        setApiLoading(false);
+      })
+      .catch(err => {
+        setApiError('Could not load weekly steps');
+        setApiLoading(false);
+      });
+  }, [weekOffset]);
+
+  const weekRangeLabel = useMemo(() => {
+    if (!apiWeek?.challenge_start || !apiWeek?.challenge_end) return '';
+    const start = new Date(apiWeek.challenge_start);
+    const end = new Date(apiWeek.challenge_end);
+    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
   }, [apiWeek]);
 
   // ✅ UPDATED: Get goals from API response
@@ -425,6 +448,48 @@ export default function StepsTracker() {
       >
         <div style={{ maxWidth: '400px', margin: '0 auto' }}>
 
+          {/* Week Navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px', gap: '8px' }}>
+            <button
+              onClick={() => setWeekOffset(weekOffset - 1)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#a855f7',
+                fontSize: '18px',
+                cursor: 'pointer',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                opacity: weekOffset <= -52 ? 0.3 : 1, // limit to 1 year back
+                pointerEvents: weekOffset <= -52 ? 'none' : 'auto'
+              }}
+              aria-label="Previous week"
+              title="Previous week"
+            >
+              &#8592;
+            </button>
+            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>
+              {weekRangeLabel || 'This Week'}
+            </span>
+            <button
+              onClick={() => setWeekOffset(weekOffset + 1)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#a855f7',
+                fontSize: '18px',
+                cursor: 'pointer',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                opacity: weekOffset >= 0 ? 0.3 : 1, // can't go to future weeks
+                pointerEvents: weekOffset >= 0 ? 'none' : 'auto'
+              }}
+              aria-label="Next week"
+              title="Next week"
+            >
+              &#8594;
+            </button>
+          </div>
           {/* Week Ticks */}
           <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>

@@ -432,13 +432,14 @@ export default function Dashboard() {
                             marginBottom: '0',
                             lineHeight: '1.5'
                         }}>
-                            Set and track collective wellness objectives with your team
+                            Unite your team, crush collective goals, and celebrate victories together!
                         </p>
                     </div>
                 </div>
 
                 {/* Quick Actions */}
-                {/* <div style={{ marginTop: '24px' }}>
+                {/* Quick Actions */}
+                <div style={{ marginTop: '24px' }}>
                     <h3 style={{
                         fontSize: '16px',
                         fontWeight: '600',
@@ -453,72 +454,127 @@ export default function Dashboard() {
                         display: 'grid',
                         gridTemplateColumns: 'repeat(2, 1fr)',
                         gap: '10px'
-                    }}> */}
-                {/* Log Steps */}
-                {/* <div
-                            onClick={() => alert('Log Steps - Coming Soon!')}
-                            style={{
-                                background: 'rgba(255, 255, 255, 0.05)',
-                                backdropFilter: 'blur(20px)',
-                                borderRadius: '16px',
-                                padding: '18px 16px',
-                                cursor: 'pointer',
-                                border: '1px solid rgba(255, 255, 255, 0.08)',
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                minHeight: '68px'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)';
-                                e.currentTarget.style.transform = 'scale(1.02)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                e.currentTarget.style.transform = 'scale(1)';
-                            }}
-                        >
-                            <div style={{
-                                width: '42px',
-                                height: '42px',
-                                borderRadius: '11px',
-                                background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(168, 85, 247, 0.18) 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '21px',
-                                flexShrink: 0,
-                                fontWeight: '600',
-                                color: 'rgba(168, 85, 247, 0.9)',
-                                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                            }}>
-                                S
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
+                    }}>
+                        {/* Log Steps - Active if user joined a challenge */}
+                        {challenges.some(ch => ch.user_joined) ? (
+                            <div
+                                onClick={() => router.push('/steps')}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    backdropFilter: 'blur(20px)',
+                                    borderRadius: '16px',
+                                    padding: '18px 16px',
+                                    cursor: 'pointer',
+                                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    minHeight: '68px'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)';
+                                    e.currentTarget.style.transform = 'scale(1.02)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
+                            >
                                 <div style={{
-                                    fontSize: '14px',
+                                    width: '42px',
+                                    height: '42px',
+                                    borderRadius: '11px',
+                                    background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(168, 85, 247, 0.18) 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '21px',
+                                    flexShrink: 0,
                                     fontWeight: '600',
-                                    color: '#ffffff',
-                                    letterSpacing: '-0.01em',
-                                    lineHeight: '1.2',
-                                    marginBottom: '4px'
+                                    color: 'rgba(168, 85, 247, 0.9)',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
                                 }}>
-                                    Log Steps
+                                    S
                                 </div>
-                                <div style={{
-                                    fontSize: '12px',
-                                    fontWeight: '400',
-                                    color: 'rgba(255, 255, 255, 0.6)',
-                                    lineHeight: '1.3'
-                                }}>
-                                    Track your daily activity
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        color: '#ffffff',
+                                        letterSpacing: '-0.01em',
+                                        lineHeight: '1.2',
+                                        marginBottom: '4px'
+                                    }}>
+                                        Log Steps
+                                    </div>
+                                    <div style={{
+                                        fontSize: '12px',
+                                        fontWeight: '400',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        lineHeight: '1.3'
+                                    }}>
+                                        Track your activity
+                                    </div>
                                 </div>
                             </div>
-                        </div> */}
+                        ) : (
+                            <div
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.03)',
+                                    backdropFilter: 'blur(20px)',
+                                    borderRadius: '16px',
+                                    padding: '18px 16px',
+                                    cursor: 'not-allowed',
+                                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    minHeight: '68px',
+                                    opacity: '0.5'
+                                }}
+                            >
+                                <div style={{
+                                    width: '42px',
+                                    height: '42px',
+                                    borderRadius: '11px',
+                                    background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(168, 85, 247, 0.18) 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '21px',
+                                    flexShrink: 0,
+                                    fontWeight: '600',
+                                    color: 'rgba(168, 85, 247, 0.5)',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
+                                }}>
+                                    S
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        letterSpacing: '-0.01em',
+                                        lineHeight: '1.2',
+                                        marginBottom: '4px'
+                                    }}>
+                                        Log Steps
+                                    </div>
+                                    <div style={{
+                                        fontSize: '11px',
+                                        fontWeight: '500',
+                                        color: 'rgba(255, 255, 255, 0.4)',
+                                        letterSpacing: '0.3px'
+                                    }}>
+                                        Join a challenge first
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                {/* ==============Track Habit - Coming Soon========= */}
-                {/* <div
+                        {/* Track Habit - Coming Soon */}
+                        <div
                             style={{
                                 background: 'rgba(255, 255, 255, 0.03)',
                                 backdropFilter: 'blur(20px)',
@@ -569,10 +625,10 @@ export default function Dashboard() {
                                     Coming Soon
                                 </div>
                             </div>
-                        </div> */}
+                        </div>
 
-                {/* Body Stats - Coming Soon */}
-                {/* <div
+                        {/* Body Stats - Coming Soon */}
+                        <div
                             style={{
                                 background: 'rgba(255, 255, 255, 0.03)',
                                 backdropFilter: 'blur(20px)',
@@ -623,72 +679,127 @@ export default function Dashboard() {
                                     Coming Soon
                                 </div>
                             </div>
-                        </div> */}
-
-                {/* Log Water */}
-                {/* <div
-                            onClick={() => alert('Log Water - Coming Soon!')}
-                            style={{
-                                background: 'rgba(255, 255, 255, 0.05)',
-                                backdropFilter: 'blur(20px)',
-                                borderRadius: '16px',
-                                padding: '18px 16px',
-                                cursor: 'pointer',
-                                border: '1px solid rgba(255, 255, 255, 0.08)',
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                minHeight: '68px'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)';
-                                e.currentTarget.style.transform = 'scale(1.02)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                e.currentTarget.style.transform = 'scale(1)';
-                            }}
-                        >
-                            <div style={{
-                                width: '42px',
-                                height: '42px',
-                                borderRadius: '11px',
-                                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(37, 99, 235, 0.18) 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '21px',
-                                flexShrink: 0,
-                                fontWeight: '600',
-                                color: 'rgba(59, 130, 246, 0.9)',
-                                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                            }}>
-                                W
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{
-                                    fontSize: '14px',
-                                    fontWeight: '600',
-                                    color: '#ffffff',
-                                    letterSpacing: '-0.01em',
-                                    lineHeight: '1.2',
-                                    marginBottom: '4px'
-                                }}>
-                                    Log Water
-                                </div>
-                                <div style={{
-                                    fontSize: '12px',
-                                    fontWeight: '400',
-                                    color: 'rgba(255, 255, 255, 0.6)',
-                                    lineHeight: '1.3'
-                                }}>
-                                    Stay hydrated daily
-                                </div>
-                            </div>
                         </div>
+
+                        {/* Log Water - Active if user joined a challenge */}
+                        {challenges.some(ch => ch.user_joined) ? (
+                            <div
+                                // onClick={() => router.push('/home')}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    backdropFilter: 'blur(20px)',
+                                    borderRadius: '16px',
+                                    padding: '18px 16px',
+                                    cursor: 'pointer',
+                                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    minHeight: '68px'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)';
+                                    e.currentTarget.style.transform = 'scale(1.02)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
+                            >
+                                <div style={{
+                                    width: '42px',
+                                    height: '42px',
+                                    borderRadius: '11px',
+                                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(37, 99, 235, 0.18) 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '21px',
+                                    flexShrink: 0,
+                                    fontWeight: '600',
+                                    color: 'rgba(59, 130, 246, 0.9)',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
+                                }}>
+                                    W
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{   
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        color: '#ffffff',
+                                        letterSpacing: '-0.01em',
+                                        lineHeight: '1.2',
+                                        marginBottom: '4px'
+                                    }}>
+                                        Log Water
+                                    </div>
+                                    <div style={{
+                                        fontSize: '12px',
+                                        fontWeight: '400',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        lineHeight: '1.3'
+                                    }}>
+                                        Stay hydrated
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.03)',
+                                    backdropFilter: 'blur(20px)',
+                                    borderRadius: '16px',
+                                    padding: '18px 16px',
+                                    cursor: 'not-allowed',
+                                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    minHeight: '68px',
+                                    opacity: '0.5'
+                                }}
+                            >
+                                <div style={{
+                                    width: '42px',
+                                    height: '42px',
+                                    borderRadius: '11px',
+                                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(37, 99, 235, 0.18) 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '21px',
+                                    flexShrink: 0,
+                                    fontWeight: '600',
+                                    color: 'rgba(59, 130, 246, 0.5)',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
+                                }}>
+                                    W
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        letterSpacing: '-0.01em',
+                                        lineHeight: '1.2',
+                                        marginBottom: '4px'
+                                    }}>
+                                        Log Water
+                                    </div>
+                                    <div style={{
+                                        fontSize: '11px',
+                                        fontWeight: '500',
+                                        color: 'rgba(255, 255, 255, 0.4)',
+                                        letterSpacing: '0.3px'
+                                    }}>
+                                        Join a challenge first
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                </div> */}
+                </div>
             </div>
 
             {/* Bottom Sheet Modal - DYNAMIC DATA */}
