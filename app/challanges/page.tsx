@@ -319,9 +319,9 @@ export default function Dashboard() {
                                     {ch.title}
                                 </h2>
 
-                                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", marginBottom: "12px" }}>
+                                {/* <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", marginBottom: "12px" }}>
                                     {ch.description || 'Join this challenge and compete with your colleagues!'}
-                                </p>
+                                </p> */}
 
                                 {/* <div style={{
                                     display: 'flex',
@@ -458,7 +458,13 @@ export default function Dashboard() {
                         {/* Log Steps - Active if user joined a challenge */}
                         {challenges.some(ch => ch.user_joined) ? (
                             <div
-                                onClick={() => router.push('/steps')}
+                                onClick={() => {
+                                    // Find the first joined challenge
+                                    const joinedChallenge = challenges.find(ch => ch.user_joined);
+                                    if (joinedChallenge) {
+                                        router.push(`/challanges/${joinedChallenge.id}/steps`);  // ✅ Fixed
+                                    }
+                                }}
                                 style={{
                                     background: 'rgba(255, 255, 255, 0.05)',
                                     backdropFilter: 'blur(20px)',
@@ -724,7 +730,7 @@ export default function Dashboard() {
                                     W
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{   
+                                    <div style={{
                                         fontSize: '14px',
                                         fontWeight: '600',
                                         color: '#ffffff',
@@ -1098,7 +1104,7 @@ export default function Dashboard() {
                                 <button
                                     onClick={() => {
                                         setSelectedChallenge(null);
-                                        router.push('/steps');
+                                        router.push(`/challanges/${selectedChallenge.id}/steps`);
                                     }}
                                     style={{
                                         width: '100%',

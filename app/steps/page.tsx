@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { getWeeklySteps, addSteps } from '../../lib/api';
+import { useParams, useRouter } from 'next/navigation';
+import { getChallengeWeeklySteps, addSteps } from '../../lib/api';
 import Header from '../commponents/Header';
 
 // Helper functions
@@ -21,6 +22,8 @@ function toISODate(d: Date) {
 function isWithinRange(dayISO: string, startISO: string, endISO: string) {
   return dayISO >= startISO && dayISO <= endISO;
 }
+
+
 
 
 
@@ -133,6 +136,10 @@ export default function StepsTracker() {
   const [weekOffset, setWeekOffset] = useState(0);
 
   const swipeablePages = useMemo(() => getSwipeablePages(), []);
+  const params = useParams();
+  const router = useRouter();
+
+  const challengeId = params.id as string;
 
   const date = useMemo(() => {
     return new Date().toLocaleDateString('en-US', {
@@ -163,26 +170,64 @@ export default function StepsTracker() {
     setViewSteps(todaySteps);
   }, [apiWeek]);
 
-
-  // Update: Fetch steps for the selected week
   useEffect(() => {
+    if (!challengeId) return;
+
     setApiLoading(true);
-    getWeeklySteps(weekOffset) // Pass weekOffset to your API
+    getChallengeWeeklySteps(challengeId, weekOffset)
       .then(data => {
+        console.log('Challenge weekly data:', data);
         setApiWeek(data);
         setApiLoading(false);
       })
       .catch(err => {
-        setApiError('Could not load weekly steps');
+        console.error('Failed to load challenge data:', err);
+        setApiError(err.message || 'Could not load challenge data');
         setApiLoading(false);
       });
-  }, [weekOffset]);
+  }, [challengeId, weekOffset]);
 
+  // Calculate navigation limits
+  const navigationLimits = useMemo(() => {
+    if (!apiWeek?.challenge_start || !apiWeek?.challenge_end) {
+      return { canGoPrev: false, canGoNext: false };
+    }
+
+    const today = new Date();
+    const currentMonday = new Date(today);
+    currentMonday.setDate(today.getDate() - today.getDay() + 1);
+
+    // Calculate target week
+    const targetMonday = new Date(currentMonday);
+    targetMonday.setDate(currentMonday.getDate() + (weekOffset * 7));
+
+    const targetSunday = new Date(targetMonday);
+    targetSunday.setDate(targetMonday.getDate() + 6);
+
+    const challengeStart = new Date(apiWeek.challenge_start);
+    const challengeEnd = new Date(apiWeek.challenge_end);
+
+    // Calculate previous week Monday
+    const prevMonday = new Date(targetMonday);
+    prevMonday.setDate(targetMonday.getDate() - 7);
+
+    // Calculate next week Monday
+    const nextMonday = new Date(targetMonday);
+    nextMonday.setDate(targetMonday.getDate() + 7);
+
+    return {
+      canGoPrev: prevMonday >= challengeStart,
+      canGoNext: nextMonday <= currentMonday && nextMonday <= challengeEnd
+    };
+  }, [apiWeek, weekOffset]);
+
+
+  // Week range label
   const weekRangeLabel = useMemo(() => {
-    if (!apiWeek?.challenge_start || !apiWeek?.challenge_end) return '';
-    const start = new Date(apiWeek.challenge_start);
-    const end = new Date(apiWeek.challenge_end);
-    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    if (!apiWeek?.week_start || !apiWeek?.week_end) return '';
+    const start = new Date(apiWeek.week_start);
+    const end = new Date(apiWeek.week_end);
+    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   }, [apiWeek]);
 
   // ✅ UPDATED: Get goals from API response
@@ -332,7 +377,7 @@ export default function StepsTracker() {
       await addSteps({ steps: n, log_date, source: 'manual', note: inputSteps ? 'Manual entry' : undefined });
 
       // Refresh weekly data
-      const updated = await getWeeklySteps();
+      const updated = await getChallengeWeeklySteps(challengeId || '', weekOffset);
       setApiWeek(updated);
 
       setInputSteps('');
@@ -376,7 +421,7 @@ export default function StepsTracker() {
   // ✅ UPDATED: Load weekly data on mount
   useEffect(() => {
     setApiLoading(true);
-    getWeeklySteps()
+    getChallengeWeeklySteps(challengeId || '', weekOffset) // Pass weekOffset to your API
       .then(data => {
         console.log('Weekly steps data:', data);
         setApiWeek(data);
@@ -398,7 +443,7 @@ export default function StepsTracker() {
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        <p style={{ color: 'rgba(255,255,255,0.7)' }}>Loading your progress...</p>
+        <p style={{ color: 'rgba(255,255,255,0.7)' }}>Loading challenge data...</p>
       </div>
     );
   }
@@ -413,10 +458,11 @@ export default function StepsTracker() {
         justifyContent: 'center',
         flexDirection: 'column',
         gap: '16px',
+        padding: '20px',
       }}>
-        <p style={{ color: '#ef4444' }}>{apiError}</p>
+        <p style={{ color: '#ef4444', textAlign: 'center' }}>{apiError}</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => router.push('/challanges')}
           style={{
             padding: '12px 24px',
             background: '#7c3aed',
@@ -426,7 +472,7 @@ export default function StepsTracker() {
             cursor: 'pointer',
           }}
         >
-          Retry
+          Back to Challenges
         </button>
       </div>
     );
@@ -440,6 +486,55 @@ export default function StepsTracker() {
         showAnimatedWord={false}
       />
 
+      {/* Header with Back Button */}
+      <div style={{
+        background: 'linear-gradient(180deg, rgba(124, 58, 237, 0.15) 0%, rgba(15, 23, 42, 1) 100%)',
+        padding: '16px',
+        paddingBottom: '0'
+      }}>
+        <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+          {/* Back Button + Challenge Name */}
+          <div style={{ marginBottom: '16px' }}>
+            <button
+              onClick={() => router.push('/challanges')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#a855f7',
+                fontSize: '14px',
+                cursor: 'pointer',
+                padding: '8px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: '600'
+              }}
+            >
+              ← Back to Challenges
+            </button>
+
+            <h1 style={{
+              fontSize: '24px',
+              fontWeight: '700',
+              color: '#ffffff',
+              marginTop: '8px',
+              marginBottom: '4px'
+            }}>
+              {apiWeek?.challenge_title || 'Challenge Steps'}
+            </h1>
+
+            <p style={{
+              fontSize: '13px',
+              color: 'rgba(255,255,255,0.6)'
+            }}>
+              {apiWeek?.challenge_start && apiWeek?.challenge_end && (
+                `${new Date(apiWeek.challenge_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(apiWeek.challenge_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div
         style={{
           background: 'linear-gradient(180deg, rgba(124, 58, 237, 0.15) 0%, rgba(15, 23, 42, 1) 100%)',
@@ -448,48 +543,63 @@ export default function StepsTracker() {
       >
         <div style={{ maxWidth: '400px', margin: '0 auto' }}>
 
-          {/* Week Navigation */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px', gap: '8px' }}>
+          {/* Week Navigation with Limits */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '8px',
+            gap: '8px'
+          }}>
             <button
               onClick={() => setWeekOffset(weekOffset - 1)}
+              disabled={!navigationLimits.canGoPrev}
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#a855f7',
+                color: navigationLimits.canGoPrev ? '#a855f7' : '#4a5568',
                 fontSize: '18px',
-                cursor: 'pointer',
+                cursor: navigationLimits.canGoPrev ? 'pointer' : 'not-allowed',
                 padding: '2px 8px',
                 borderRadius: '6px',
-                opacity: weekOffset <= -52 ? 0.3 : 1, // limit to 1 year back
-                pointerEvents: weekOffset <= -52 ? 'none' : 'auto'
+                opacity: navigationLimits.canGoPrev ? 1 : 0.3
               }}
               aria-label="Previous week"
-              title="Previous week"
+              title={navigationLimits.canGoPrev ? "Previous week" : "Cannot go before challenge start"}
             >
               &#8592;
             </button>
-            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>
-              {weekRangeLabel || 'This Week'}
+
+            <span style={{
+              color: '#fff',
+              fontSize: '13px',
+              fontWeight: 600,
+              minWidth: '140px',
+              textAlign: 'center'
+            }}>
+              {weekRangeLabel}
             </span>
+
             <button
               onClick={() => setWeekOffset(weekOffset + 1)}
+              disabled={!navigationLimits.canGoNext}
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#a855f7',
+                color: navigationLimits.canGoNext ? '#a855f7' : '#4a5568',
                 fontSize: '18px',
-                cursor: 'pointer',
+                cursor: navigationLimits.canGoNext ? 'pointer' : 'not-allowed',
                 padding: '2px 8px',
                 borderRadius: '6px',
-                opacity: weekOffset >= 0 ? 0.3 : 1, // can't go to future weeks
-                pointerEvents: weekOffset >= 0 ? 'none' : 'auto'
+                opacity: navigationLimits.canGoNext ? 1 : 0.3
               }}
               aria-label="Next week"
-              title="Next week"
+              title={navigationLimits.canGoNext ? "Next week" : "Cannot go beyond current week or challenge end"}
             >
               &#8594;
             </button>
           </div>
+
           {/* Week Ticks */}
           <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>

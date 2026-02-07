@@ -8,8 +8,11 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
 
   // Application Gateway routes to /socialapp
-  basePath: isProduction ? '/socialapp' : '',
+  basePath: isProduction ? '/socialapp' : '/socialapp',
   
+  // CRITICAL: Add assetPrefix to match basePath
+  // This ensures all static assets (JS, CSS, fonts) use the correct path
+  assetPrefix: isProduction ? '/socialapp' : '/socialapp',
   // Removed output: "export" for Azure App Service deployment
   images: {
     unoptimized: true

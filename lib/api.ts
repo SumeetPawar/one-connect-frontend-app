@@ -1,6 +1,6 @@
 import { getAccessToken, logout, refreshAccessToken } from "./auth";
 
-const API_BASE=
+const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net";
 
 const PUSH_SUBSCRIBE_URL = `${API_BASE}/api/push/subscribe`;
@@ -152,6 +152,33 @@ export async function getWeeklySteps(): Promise<any> {
   });
 }
 
+export async function getChallengeWeeklySteps(
+  challengeId: string,
+  weekOffset: number = 0
+): Promise<any> {
+  // Calculate week start/end based on offset
+  const today = new Date();
+  const currentMonday = new Date(today);
+  currentMonday.setDate(today.getDate() - today.getDay() + 1);
+
+  const targetMonday = new Date(currentMonday);
+  targetMonday.setDate(currentMonday.getDate() + (weekOffset * 7));
+
+  const startDate = targetMonday.toISOString().split('T')[0];
+
+  const targetSunday = new Date(targetMonday);
+  targetSunday.setDate(targetMonday.getDate() + 6);
+  const endDate = targetSunday.toISOString().split('T')[0];
+
+  // Use the api helper - it handles auth, token refresh, errors automatically
+  return api(
+    `/api/challenges/${challengeId}/my-progress?start_date=${startDate}&end_date=${endDate}`,
+    {
+      method: "GET",
+      auth: true,
+    }
+  );
+}
 // ==========================================
 // GOALS API
 // ==========================================
