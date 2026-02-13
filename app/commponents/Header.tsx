@@ -6,9 +6,7 @@ import { useEffect, useState } from "react";
 type UserProfile = {
     id: string;
     email: string;
-    first_name?: string;
-    last_name?: string;
-    full_name?: string;
+    name?: string;
 };
 
 type HeaderProps = {
@@ -32,7 +30,7 @@ export default function Header({
             try {
                 const API_BASE =
                     process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
-                    "https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net";
+                    "https://cbiqa.dev.honeywellcloud.com/socialapi";
                 const token = localStorage.getItem("access_token");
 
                 if (!token) return;
@@ -175,8 +173,8 @@ export default function Header({
                             }}
                         >
                             {user ? (
-                                user.first_name && user.last_name
-                                    ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
+                                user.name && user.name.split(' ').length > 1
+                                    ? `${user.name[0]}${user.name.split(' ')[1]?.[0] || ''}`.toUpperCase()
                                     : user.email[0].toUpperCase()
                             ) : 'U'}
                         </div>
@@ -211,14 +209,14 @@ export default function Header({
                                         color: '#ffffff',
                                         marginBottom: '2px'
                                     }}>
-                                        {user?.first_name && user?.last_name
-                                            ? `${user.first_name} ${user.last_name}`
-                                            : user?.full_name || 'User'}
+                                        {user?.name|| 'User'}
                                     </div>
                                     <div style={{
                                         fontSize: '12px',
                                         color: 'rgba(255, 255, 255, 0.6)',
-                                        wordBreak: 'break-word'
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
                                     }}>
                                         {user?.email || ''}
                                     </div>

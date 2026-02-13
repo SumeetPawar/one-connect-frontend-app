@@ -46,7 +46,19 @@ export default function RootLayout({
       >
         <ServiceWorkerRegister />
         <TokenRefreshHandler />
-        {children}
+        <div
+          style={{
+            maxWidth: 430,
+            margin: '0 auto',
+            minHeight: '100vh',
+            boxShadow: '0 0 24px rgba(124,58,237,0.08)',
+            background: '#fafbfc',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {children}
+        </div>
       </body>
     </html>
   );

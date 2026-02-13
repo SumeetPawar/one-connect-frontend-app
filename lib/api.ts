@@ -1,7 +1,7 @@
 import { getAccessToken, logout, refreshAccessToken } from "./auth";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net";
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://cbiqa.dev.honeywellcloud.com/socialapi";
 
 const PUSH_SUBSCRIBE_URL = `${API_BASE}/api/push/subscribe`;
 class ApiError extends Error {
@@ -152,23 +152,42 @@ export async function getWeeklySteps(): Promise<any> {
   });
 }
 
+// Format date as YYYY-MM-DD in LOCAL timezone (avoids UTC shift bug)
+function toLocalISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export async function getChallengeWeeklySteps(
   challengeId: string,
   weekOffset: number = 0
 ): Promise<any> {
   // Calculate week start/end based on offset
+  // Week is Monday-Sunday, with Sunday included
   const today = new Date();
-  const currentMonday = new Date(today);
-  currentMonday.setDate(today.getDate() - today.getDay() + 1);
+  today.setHours(0, 0, 0, 0);
+  
+  const dayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, ...
+  const monday = new Date(today);
+  
+  if (dayOfWeek === 0) {
+    // If today is Sunday, it's the last day of the current week
+    // Current week's Monday is 6 days ago
+    monday.setDate(today.getDate() - 6);
+  } else {
+    // Otherwise, current week's Monday is (dayOfWeek - 1) days ago
+    monday.setDate(today.getDate() - (dayOfWeek - 1));
+  }
 
-  const targetMonday = new Date(currentMonday);
-  targetMonday.setDate(currentMonday.getDate() + (weekOffset * 7));
+  // Apply weekOffset
+  monday.setDate(monday.getDate() + (weekOffset * 7));
+  const startDate = toLocalISODate(monday);
 
-  const startDate = targetMonday.toISOString().split('T')[0];
-
-  const targetSunday = new Date(targetMonday);
-  targetSunday.setDate(targetMonday.getDate() + 6);
-  const endDate = targetSunday.toISOString().split('T')[0];
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6); // Sunday is 6 days after Monday
+  const endDate = toLocalISODate(sunday);
 
   // Use the api helper - it handles auth, token refresh, errors automatically
   return api(

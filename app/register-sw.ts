@@ -1,7 +1,7 @@
 // Helper: get VAPID public key from backend or config
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BMmVTo0GaTfa9QJSmxlmXrE3ukC6wfZKBRgxxkjBBpvEfBK8-9iNOSGxH04kZPaKCuRccatRgPGlrxnGDIr0O0Y';
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net";
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://cbiqa.dev.honeywellcloud.com/socialapi";
 
 const PUSH_SUBSCRIBE_URL = `${API_BASE_URL}/api/push/subscribe`;
 console.log('PUSH_SUBSCRIBE_URL:', PUSH_SUBSCRIBE_URL);

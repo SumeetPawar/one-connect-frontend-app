@@ -1,10 +1,13 @@
 "use client";
+import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 import { api, isApiError } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import router from 'next/router';
 import { useEffect, useState } from 'react';
 
 export default function WeeklyChallenge() {
-    const router = useRouter();
+    // Centralized login/API check
+    useAuthRedirect({ apiCheck: true });
     const [selectedGoal, setSelectedGoal] = useState<string | null>('easy');
     const [showSteps, setShowSteps] = useState(false);
     const [saving, setSaving] = useState(false);

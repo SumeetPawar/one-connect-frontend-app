@@ -5,7 +5,8 @@ import {
   startBackgroundRefresh, 
   stopBackgroundRefresh, 
   setupVisibilityRefresh,
-  isAuthed 
+  isAuthed,
+  refreshAccessToken
 } from "@/lib/auth";
 
 export default function TokenRefreshHandler() {
@@ -20,6 +21,9 @@ export default function TokenRefreshHandler() {
       
       if (authenticated) {
         console.log("✅ Session restored successfully");
+        
+        // Immediately refresh token to ensure it's fresh
+        await refreshAccessToken();
         
         // Start background refresh to keep user logged in
         startBackgroundRefresh();

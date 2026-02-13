@@ -72,27 +72,60 @@ function getSwipeablePages() {
     const today = new Date();
     const dayIndex = today.getDate() + today.getMonth() * 31 + today.getFullYear() * 372;
 
-    const funFacts = [
-        '💡 Walking 10,000 steps burns about 400-500 calories!',
-        '🦴 Walking strengthens your bones and improves balance.',
-        '❤️ Just 30 minutes of walking can reduce heart disease risk by 35%.',
-        '🧠 Walking boosts creativity by up to 60%!',
-        '😊 A 15-minute walk can reduce sugar cravings.',
-        '🌙 Regular walking improves sleep quality significantly.',
-        '💪 Walking tones your legs, abs, and arms naturally.',
-        '🚶‍♂️ Walking is the most popular form of exercise in India!',
-        '🌏 The average person walks about 100,000 miles in their lifetime.',
-        '👣 Mahatma Gandhi often walked 18 km a day during his campaigns.',
-        '🦶 2,000 steps is roughly 1 mile for most people.',
-        '🏃‍♀️ Walking briskly can burn as many calories as slow jogging.',
-        '🦚 Early morning walks in parks can boost your vitamin D naturally.',
-        '🎵 Listening to music while walking can increase your pace by 15%.',
-        '🌳 Walking in nature reduces stress and anxiety levels.',
-        '🧘‍♂️ Mindful walking is a form of meditation practiced worldwide.',
-        '🚶‍♀️ The world record for most steps in a day is over 100,000!',
-        '🏞️ India has over 100,000 km of walking trails and footpaths.',
-        '🦸‍♂️ Walking regularly can add years to your life.',
-        '🍀 People who walk daily report higher happiness levels.',
+    const quoteDay = [
+        'The journey of a thousand miles begins with a single step. – Lao Tzu',
+        'Walking is man’s best medicine. – Hippocrates',
+        'A walk a day keeps the doctor away.',
+        'Every step is progress, no matter how small.',
+        'Your body was made to move. Keep stepping!',
+        'Success is the sum of small efforts, repeated day in and day out. – Robert Collier',
+        'The best way to get ahead is to get started.',
+        'You are only one workout away from a good mood.',
+        'Health is the greatest wealth. – Virgil',
+        'Take care of your body. It’s the only place you have to live. – Jim Rohn',
+        'Walking 30 minutes a day can add years to your life.',
+        'A healthy outside starts from the inside. – Robert Urich',
+        'Movement is a medicine for creating change in a person’s physical, emotional, and mental states. – Carol Welch',
+        'The groundwork for all happiness is good health. – Leigh Hunt',
+        'Eat well, move daily, hydrate often, sleep lots, love your body.',
+        'Small daily improvements are the key to staggering long-term results. – Robin Sharma',
+        'A fit body, a calm mind, a house full of love. These things cannot be bought – they must be earned.',
+        'Those who think they have no time for exercise will sooner or later have to find time for illness. – Edward Stanley',
+        'The secret of getting ahead is getting started. – Mark Twain',
+        'It’s never too early or too late to work towards being the healthiest you.',
+        'Energy and persistence conquer all things. – Benjamin Franklin',
+        'Fitness is not about being better than someone else. It’s about being better than you used to be.',
+        'Your body achieves what your mind believes.',
+        'Exercise not only changes your body, it changes your mind, your attitude and your mood.',
+        'A little progress each day adds up to big results.',
+        'Push yourself, because no one else is going to do it for you.',
+        'You don’t have to be great to start, but you have to start to be great. – Zig Ziglar',
+        'Don’t limit your challenges. Challenge your limits.',
+        'Doubt kills more dreams than failure ever will.',
+        'Great things never come from comfort zones.',
+        'Dream big, work hard, stay focused, and surround yourself with good people.',
+        'The only bad workout is the one that didn’t happen.',
+        'You are stronger than you think.',
+        'Don’t stop when you’re tired. Stop when you’re done.',
+        'Difficult roads often lead to beautiful destinations.',
+        'Believe you can and you’re halfway there. – Theodore Roosevelt',
+        'Strength does not come from physical capacity. It comes from an indomitable will. – Mahatma Gandhi',
+        'The pain you feel today will be the strength you feel tomorrow.',
+        'You are capable of amazing things.',
+        'Start where you are. Use what you have. Do what you can. – Arthur Ashe',
+        'Don’t wish for it. Work for it.',
+        'Success doesn’t come from what you do occasionally, it comes from what you do consistently.',
+        'Your only limit is you.',
+        'Motivation gets you going, but discipline keeps you growing.',
+        'The difference between who you are and who you want to be is what you do.',
+        'Perseverance is not a long race; it is many short races one after the other. – Walter Elliot',
+        'You don’t have to go fast, you just have to go.',
+        'Every accomplishment starts with the decision to try.',
+        'Don’t count the days, make the days count. – Muhammad Ali',
+        'Discipline is choosing between what you want now and what you want most.',
+        'The best project you’ll ever work on is you.',
+        'Your future self will thank you for the steps you take today.',
+        'A little effort each day adds up to big results.'
     ];
 
     const dailyTips = [
@@ -116,13 +149,33 @@ function getSwipeablePages() {
         '🌲 Choose green, shaded routes for a refreshing experience.',
         '🚶‍♂️ Walk at a pace that lets you talk but not sing.',
         '🛑 If you feel pain, slow down or take a break.',
+          '💡 Walking 10,000 steps burns about 400-500 calories!',
+        '🦴 Walking strengthens your bones and improves balance.',
+        '❤️ Just 30 minutes of walking can reduce heart disease risk by 35%.',
+        '🧠 Walking boosts creativity by up to 60%!',
+        '😊 A 15-minute walk can reduce sugar cravings.',
+        '🌙 Regular walking improves sleep quality significantly.',
+        '💪 Walking tones your legs, abs, and arms naturally.',
+        '🚶‍♂️ Walking is the most popular form of exercise in India!',
+        '🌏 The average person walks about 100,000 miles in their lifetime.',
+        '👣 Mahatma Gandhi often walked 18 km a day during his campaigns.',
+        '🦶 2,000 steps is roughly 1 mile for most people.',
+        '🏃‍♀️ Walking briskly can burn as many calories as slow jogging.',
+        '🦚 Early morning walks in parks can boost your vitamin D naturally.',
+        '🎵 Listening to music while walking can increase your pace by 15%.',
+        '🌳 Walking in nature reduces stress and anxiety levels.',
+        '🧘‍♂️ Mindful walking is a form of meditation practiced worldwide.',
+        '🚶‍♀️ The world record for most steps in a day is over 100,000!',
+        '🏞️ India has over 100,000 km of walking trails and footpaths.',
+        '🦸‍♂️ Walking regularly can add years to your life.',
+        '🍀 People who walk daily report higher happiness levels.'
     ];
 
-    const dailyFunFact = funFacts[dayIndex % funFacts.length];
+    const dailyQuote = quoteDay[dayIndex % quoteDay.length];
     const dailyTip = dailyTips[dayIndex % dailyTips.length];
 
     return [
-        { title: 'Fun Fact', content: dailyFunFact },
+        { title: 'Quote of the day', content: dailyQuote },
         { title: 'Tip of the day', content: dailyTip }
     ];
 }
@@ -132,16 +185,18 @@ export default function StepsTracker() {
     const [stepsWeek, setStepsWeek] = useState(0);
 
     const [viewSteps, setViewSteps] = useState(0);
-    const [viewLabel, setViewLabel] = useState('Today');
-    const [selectedLabel, setSelectedLabel] = useState('Thu');
+    const [viewLabel, setViewLabel] = useState('');
+    const [selectedLabel, setSelectedLabel] = useState('');
 
     const [logOpen, setLogOpen] = useState(false);
     const [inputSteps, setInputSteps] = useState('');
+    const [addLoading, setAddLoading] = useState(false);
 
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [touchStart, setTouchStart] = useState(0);
     const [touchEnd, setTouchEnd] = useState(0);
     const [weekOffset, setWeekOffset] = useState(0);
+    const [showConfetti, setShowConfetti] = useState(false);
 
     const swipeablePages = useMemo(() => getSwipeablePages(), []);
     const params = useParams();
@@ -175,8 +230,12 @@ export default function StepsTracker() {
         const todaySteps = todayObj?.total_steps ?? 0;
 
         setStepsToday(todaySteps);
-        setViewSteps(todaySteps);
-    }, [apiWeek]);
+        
+        // Only update viewSteps if no specific day is selected
+        if (!selectedLabel) {
+            setViewSteps(todaySteps);
+        }
+    }, [apiWeek, selectedLabel]);
 
     useEffect(() => {
         if (!challengeId) return;
@@ -193,8 +252,6 @@ export default function StepsTracker() {
                 setApiLoading(false);
             });
     }, [challengeId, weekOffset]);
-
-    // Calculate navigation limits
     const navigationLimits = useMemo(() => {
         if (!apiWeek?.challenge_start || !apiWeek?.challenge_end) {
             return { canGoPrev: false, canGoNext: false };
@@ -248,6 +305,24 @@ export default function StepsTracker() {
         if (!apiWeek?.week_start || !apiWeek?.week_end) return '';
         const start = parseISODateLocal(apiWeek.week_start);
         const end = parseISODateLocal(apiWeek.week_end);
+        // Check if this is the current week
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - today.getDay() + 1);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        // Compare week start/end to current week
+        if (
+            start.getFullYear() === monday.getFullYear() &&
+            start.getMonth() === monday.getMonth() &&
+            start.getDate() === monday.getDate() &&
+            end.getFullYear() === sunday.getFullYear() &&
+            end.getMonth() === sunday.getMonth() &&
+            end.getDate() === sunday.getDate()
+        ) {
+            return 'This Week';
+        }
         return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     }, [apiWeek]);
 
@@ -326,73 +401,65 @@ export default function StepsTracker() {
         });
     }, [apiWeek, goalToday]);
 
-    // Sync state with backend data
-    useEffect(() => {
-        if (!apiWeek) return;
-
-        setStepsWeek(apiWeek.week_total_steps ?? 0);
-
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const todayObj = apiWeek.days?.find((d: any) => d.day === todayStr);
-        const todaySteps = todayObj?.total_steps ?? 0;
-
-        setStepsToday(todaySteps);
-
-        // ✅ Update viewSteps for the SELECTED day (not just today)
-        if (selectedLabel) {
-            const selectedDay = weekDays.find((d: any) => d.label === selectedLabel);
-            if (selectedDay) {
-                const selectedDayData = apiWeek.days?.find((d: any) => d.day === selectedDay.isoDay);
-                const selectedSteps = selectedDayData?.total_steps ?? 0;
-                setViewSteps(selectedSteps);
-            }
-        } else {
-            // No selection yet - default to today
-            setViewSteps(todaySteps);
-        }
-    }, [apiWeek, selectedLabel, weekDays]);
-
-
     const todayIdx = useMemo(() => weekDays.findIndex((d: any) => d.today), [weekDays]);
 
+    // Auto-select day only on week navigation, preserve selection on API refresh
     useEffect(() => {
         if (!weekDays || weekDays.length === 0) return;
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+
+        // If user has a selection, check if it's still valid in current week
+        if (selectedLabel) {
+            const currentSelection = weekDays.find((d: any) => d.label === selectedLabel);
+            if (currentSelection && currentSelection.inChallenge) {
+                // Check if selected day is not in the future
+                const selectedDate = new Date(currentSelection.isoDay);
+                selectedDate.setHours(0, 0, 0, 0);
+                const isNotFuture = selectedDate <= today;
+                
+                if (isNotFuture) {
+                    // Keep current selection, just update steps
+                    setViewSteps(currentSelection.steps);
+                    return;
+                }
+            }
+        }
+
+        // No valid selection - auto-select appropriate day
         const todayISO = toISODate(today);
 
         // Check if today is in this week
         const todayInWeek = weekDays.find((d: any) => d.isoDay === todayISO);
 
-        if (todayInWeek) {
-            // ✅ Current week - select TODAY
+        if (todayInWeek && todayInWeek.inChallenge) {
+            // Today is in this week and in challenge range
             setSelectedLabel(todayInWeek.label);
             setViewSteps(todayInWeek.steps);
-            setViewLabel('Today');
+            setViewLabel(todayInWeek.label); // Changed from 'Today' to day label
         } else {
-            // ✅ Past week - select SUNDAY (most recent day of that week)
-            // ✅ Future week - select MONDAY (first day)
+            // Select first valid day (not future, in challenge range)
+            let foundDay = false;
 
-            // Determine if this is a past or future week
-            const weekStart = new Date(weekDays[0].isoDay);
-            weekStart.setHours(0, 0, 0, 0);
+            // Go backwards from today to find most recent valid day
+            for (let i = weekDays.length - 1; i >= 0; i--) {
+                const day = weekDays[i];
+                const dayDate = new Date(day.isoDay);
+                dayDate.setHours(0, 0, 0, 0);
+                const isNotFuture = dayDate <= today;
 
-            const isPastWeek = weekStart < today;
-
-            if (isPastWeek) {
-                // Select last valid day (Sunday or last available)
-                for (let i = weekDays.length - 1; i >= 0; i--) {
-                    const day = weekDays[i];
-                    if (day.inChallenge) {
-                        setSelectedLabel(day.label);
-                        setViewSteps(day.steps);
-                        setViewLabel(day.label);
-                        break;
-                    }
+                if (day.inChallenge && isNotFuture) {
+                    setSelectedLabel(day.label);
+                    setViewSteps(day.steps);
+                    setViewLabel(day.label);
+                    foundDay = true;
+                    break;
                 }
-            } else {
-                // Future week - select first valid day (Monday)
+            }
+
+            // If no past/present day, select first valid day in challenge
+            if (!foundDay) {
                 for (let i = 0; i < weekDays.length; i++) {
                     const day = weekDays[i];
                     if (day.inChallenge) {
@@ -404,7 +471,20 @@ export default function StepsTracker() {
                 }
             }
         }
-    }, [weekDays]);
+    }, [weekOffset, weekDays]);
+
+    // Update steps for selected day from API data
+    useEffect(() => {
+        if (!apiWeek || !weekDays || weekDays.length === 0) return;
+        if (!selectedLabel) return;
+
+        const selectedDay = weekDays.find((d: any) => d.label === selectedLabel);
+        if (selectedDay && apiWeek?.days) {
+            const selectedDayData = apiWeek.days?.find((d: any) => d.day === selectedDay.isoDay);
+            const selectedSteps = selectedDayData?.total_steps ?? 0;
+            setViewSteps(selectedSteps);
+        }
+    }, [selectedLabel, apiWeek, weekDays]);
 
     const streak = useMemo(() => {
         const idx = weekDays.findIndex((d: any) => d.today);
@@ -460,16 +540,31 @@ export default function StepsTracker() {
         // Allow all past/present days within challenge
         setSelectedLabel(day.label);
         setViewSteps(day.steps);
-        setViewLabel(day.today ? 'Today' : day.label);
+        setViewLabel(day.label); // Always show day name (Wed, Thu, etc.) instead of "Today"
         setCurrentPageIndex(0);
     };
 
     // ✅ UPDATED: Add steps handler
     const onAddSteps = async () => {
         const n = Number(inputSteps);
-        if (!Number.isFinite(n) || n <= 0) return;
+        
+        // Validate input
+        if (!Number.isFinite(n) || n <= 0) {
+            alert('Please enter a valid positive number');
+            return;
+        }
+        
+        if (n > 50000) {
+            alert('Maximum allowed steps is 50,000 per entry');
+            return;
+        }
+        
+        if (n < 1) {
+            alert('Minimum steps must be at least 1');
+            return;
+        }
 
-        // Determine log_date
+        // Determine log_date (use local date, not UTC)
         const now = new Date();
         let log_date = now.toISOString().slice(0, 10);
 
@@ -493,7 +588,8 @@ export default function StepsTracker() {
             return;
         }
 
-        try {
+        setAddLoading(true);
+         try {
             await addSteps({
                 steps: n,
                 log_date,
@@ -505,14 +601,27 @@ export default function StepsTracker() {
             const updated = await getChallengeWeeklySteps(challengeId, weekOffset);
             setApiWeek(updated);
 
-            // ✅ DON'T change day selection - stay on current day
-            // The viewSteps will automatically update from the apiWeek state sync
+            // Update viewSteps for the current selected day
+            const selectedDay = weekDays.find((d: any) => d.label === selectedLabel);
+            if (selectedDay) {
+                const updatedDayData = updated.days?.find((d: any) => d.day === selectedDay.isoDay);
+                const updatedSteps = updatedDayData?.total_steps ?? 0;
+                setViewSteps(updatedSteps);
+                
+                // Check if target met and trigger confetti
+                if (updatedSteps >= goalToday && updatedSteps - n < goalToday) {
+                    setShowConfetti(true);
+                    setTimeout(() => setShowConfetti(false), 2000);
+                }
+            }
 
             setInputSteps('');
             setLogOpen(false);
         } catch (err) {
             console.error('Failed to add steps:', err);
             alert('Failed to add steps. Please try again.');
+        } finally {
+            setAddLoading(false);
         }
     };
 
@@ -545,22 +654,6 @@ export default function StepsTracker() {
         setTouchStart(0);
         setTouchEnd(0);
     };
-
-    // ✅ UPDATED: Load weekly data on mount
-    useEffect(() => {
-        setApiLoading(true);
-        getChallengeWeeklySteps(challengeId || '', weekOffset) // Pass weekOffset to your API
-            .then(data => {
-                console.log('Weekly steps data:', data);
-                setApiWeek(data);
-                setApiLoading(false);
-            })
-            .catch(err => {
-                console.error('Failed to load weekly steps:', err);
-                setApiError('Could not load weekly steps');
-                setApiLoading(false);
-            });
-    }, []);
 
     if (apiLoading) {
         return (
@@ -607,6 +700,39 @@ export default function StepsTracker() {
     }
     return (
         <div style={{ minHeight: '100vh', width: '100%', backgroundColor: '#0f172a', padding: '0' }}>
+            {/* Full-page Confetti Effect */}
+            {showConfetti && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    zIndex: 9999,
+                    overflow: 'hidden'
+                }}>
+                    {Array.from({ length: 40 }).map((_, i) => (
+                        <div
+                            key={i}
+                            style={{
+                                position: 'absolute',
+                                left: `${Math.random() * 100}%`,
+                                top: '-10px',
+                                width: `${4 + Math.random() * 2}px`,
+                                height: `${8 + Math.random() * 4}px`,
+                                backgroundColor: ['#fbbf24', '#34d399', '#60a5fa', '#f472b6', '#a78bfa'][i % 5],
+                                animation: `confettiFall ${2.5 + Math.random() * 1.5}s ease-out forwards`,
+                                animationDelay: `${Math.random() * 0.3}s`,
+                                transform: `rotate(${Math.random() * 360}deg)`,
+                                opacity: 0.7,
+                                borderRadius: '2px'
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
+            
             {/* ADD HEADER COMPONENT */}
             {/* <Header
         title="Steps"
@@ -628,7 +754,7 @@ export default function StepsTracker() {
                                 position: 'absolute',
                                 top: '18px',
                                 right: '0',
-                                display: 'flex',
+                                display: 'none',
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -695,7 +821,7 @@ export default function StepsTracker() {
 
                     {/* Title (No Flex Row Needed) */}
                     <div style={{
-                        paddingRight: '80px' // Space for streak badge
+                        paddingRight: '40px' // Space for streak badge
                     }}>
                         {/* Back Button with Text - Android Style */}
                         <button
@@ -741,6 +867,16 @@ export default function StepsTracker() {
 
                     {/* CSS Animations */}
                     <style>{`
+    @keyframes confettiFall {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
     @keyframes streakPulse {
       0%, 100% {
         transform: scale(1);
@@ -836,7 +972,7 @@ export default function StepsTracker() {
                             <span style={{ fontSize: '11px', color: '#94a3b8' }}>🔥 {streak} day streak</span>
                         </div> */}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
                             {weekDays.map((day: any, idx: number) => {
                                 const isToday = day.today;
                                 const isSelected = selectedLabel === day.label;
@@ -852,28 +988,101 @@ export default function StepsTracker() {
                                 const isOutOfRange = !day.inChallenge;
                                 const isDisabled = isOutOfRange || isFutureDay;
 
+                                // Calculate progress percentage for circular indicator
+                                const progressPercent = isOutOfRange ? 0 : Math.min((day.steps / goalToday) * 100, 100);
+                                const radius = 20;
+                                const circumference = 2 * Math.PI * radius;
+                                const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
+
                                 return (
                                     <div key={day.label} style={{ textAlign: 'center', opacity: isDisabled ? 0.25 : 1 }}>
                                         <button
                                             onClick={() => !isDisabled && onSelectDay(day, idx)}
                                             disabled={isDisabled}
                                             style={{
-                                                width: '44px',
-                                                height: '44px',
-                                                borderRadius: '50%',
-                                                background: day.done ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : '#ffffff',
-                                                border: isSelected ? '2px solid #7c3aed' : '1px solid #e2e8f0',
-                                                color: day.done ? '#ffffff' : '#94a3b8',
-                                                fontSize: '14px',
-                                                fontWeight: '600',
-                                                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                                transition: 'all 0.2s ease',
-                                                boxShadow: day.done ? '0 4px 12px rgba(124, 58, 237, 0.25)' : '0 1px 3px rgba(0,0,0,0.05)',
-                                                position: 'relative',
+                                                width: '100%',
+                                                maxWidth: '44px',
+                                                aspectRatio: '1',
                                                 margin: '0 auto',
+                                                display: 'block',
+                                                position: 'relative',
+                                                background: isSelected ? 'rgba(124, 58, 237, 0.2)' : 'transparent',
+                                                border: 'none',
+                                                padding: '0',
+                                                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                                borderRadius: '50%',
+                                                transition: 'background 0.2s ease',
                                             }}
                                         >
-                                            {isOutOfRange ? '—' : (day.done ? '✓' : day.date)}
+                                            {/* SVG Circular Progress Ring */}
+                                            <svg 
+                                                width="100%" 
+                                                height="100%" 
+                                                viewBox="0 0 48 48"
+                                                style={{
+                                                    display: 'block',
+                                                }}
+                                            >
+                                                {/* Background circle */}
+                                                <circle
+                                                    cx="24"
+                                                    cy="24"
+                                                    r={radius}
+                                                    fill="none"
+                                                    stroke="#e2e8f0"
+                                                    strokeWidth="2"
+                                                />
+                                                {/* Progress circle */}
+                                                {progressPercent > 0 && (
+                                                    <circle
+                                                        cx="24"
+                                                        cy="24"
+                                                        r={radius}
+                                                        fill="none"
+                                                        stroke="#a855f7"
+                                                        strokeWidth="3"
+                                                        strokeLinecap="round"
+                                                        strokeDasharray={circumference}
+                                                        strokeDashoffset={strokeDashoffset}
+                                                        transform="rotate(-90 24 24)"
+                                                        style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                                                    />
+                                                )}
+                                                {/* Selected state ring */}
+                                                {isSelected && (
+                                                    <circle
+                                                        cx="24"
+                                                        cy="24"
+                                                        r="22"
+                                                        fill="none"
+                                                        stroke="#c084fc"
+                                                        strokeWidth="3"
+                                                    />
+                                                )}
+                                                {/* Purple fill when complete */}
+                                                {day.done && (
+                                                    <circle
+                                                        cx="24"
+                                                        cy="24"
+                                                        r="17"
+                                                        fill="rgba(168, 85, 247, 0.9)"
+                                                    />
+                                                )}
+                                                {/* Day number text */}
+                                                <text
+                                                    x="24"
+                                                    y="24"
+                                                    textAnchor="middle"
+                                                    dominantBaseline="central"
+                                                    fill="#ffffff"
+                                                    fontSize="14"
+                                                    fontWeight="700"
+                                                >
+                                                    {isOutOfRange ? '—' : day.date}
+                                                </text>
+                                            </svg>
+                                            
+                                            {/* Today indicator */}
                                             {isToday && (
                                                 <div style={{
                                                     position: 'absolute',
@@ -884,6 +1093,7 @@ export default function StepsTracker() {
                                                     borderRadius: '50%',
                                                     background: '#10b981',
                                                     border: '2px solid #fafbfc',
+                                                    zIndex: 3,
                                                 }}
                                                 />
                                             )}
@@ -891,9 +1101,9 @@ export default function StepsTracker() {
 
                                         <p style={{
                                             fontSize: '9px',
-                                            color: isToday ? '#7c3aed' : '#94a3b8',
+                                            color: isSelected ? '#c084fc' : (isToday ? '#7c3aed' : '#94a3b8'),
                                             marginTop: '6px',
-                                            fontWeight: '600',
+                                            fontWeight: isSelected ? '700' : '600',
                                             textTransform: 'uppercase',
                                         }}>
                                             {day.short}
@@ -1100,7 +1310,7 @@ export default function StepsTracker() {
                         title="Coming soon"
                     >
                         <span>👥</span>
-                        Team Activity (Coming Soon)
+                        <span>Team Score (Coming Soon)</span>
                     </button>
 
                     {/* Modal */}
@@ -1163,8 +1373,11 @@ export default function StepsTracker() {
                                     type="number"
                                     value={inputSteps}
                                     onChange={(e) => setInputSteps(e.target.value)}
-                                    placeholder="Enter steps"
+                                    placeholder="Enter steps for the day"
                                     inputMode="numeric"
+                                    min="1"
+                                    max="50000"
+                                    step="1"
                                     style={{
                                         width: '100%',
                                         padding: '14px 16px',
@@ -1183,21 +1396,26 @@ export default function StepsTracker() {
                                 <div style={{ display: 'flex', gap: '12px' }}>
                                     <button
                                         onClick={onAddSteps}
-                                        disabled={!inputSteps.trim()}
+                                        disabled={!inputSteps.trim() || addLoading}
                                         style={{
                                             flex: 1,
                                             padding: '14px',
                                             fontSize: '15px',
                                             fontWeight: '600',
                                             color: '#ffffff',
-                                            background: inputSteps.trim() ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : '#e2e8f0',
+                                            background: inputSteps.trim() && !addLoading ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : '#e2e8f0',
                                             border: 'none',
                                             borderRadius: '12px',
-                                            cursor: inputSteps.trim() ? 'pointer' : 'not-allowed',
-                                            opacity: inputSteps.trim() ? 1 : 0.5,
+                                            cursor: inputSteps.trim() && !addLoading ? 'pointer' : 'not-allowed',
+                                            opacity: inputSteps.trim() && !addLoading ? 1 : 0.5,
                                         }}
                                     >
-                                        Add
+                                        {addLoading ? (
+                                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                                <span style={{ width: 16, height: 16, border: '3px solid #a855f7', borderTop: '3px solid #fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 1s linear infinite' }} />
+                                                Adding...
+                                            </span>
+                                        ) : 'Add'}
                                     </button>
 
                                     <button
@@ -1232,6 +1450,10 @@ export default function StepsTracker() {
             @keyframes dropdownIn {
               from { opacity: 0; transform: translateY(-10px); }
               to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
             }
           `}</style>
                 </div>

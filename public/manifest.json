@@ -1,7 +1,7 @@
 {
   "name": "GES Connect",
   "short_name": "GES Connect",
-  "start_url": "/socialapp",
+  "start_url": "/socialapp/login",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#7c3aed",

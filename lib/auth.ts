@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://cbiqa.dev.honeywellcloud.com/socialapi";
 
 interface AuthResponse {
   access_token: string;
@@ -222,7 +222,7 @@ export function startBackgroundRefresh(): void {
       console.log("❌ Token refresh failed");
       stopBackgroundRefresh();
     }
-  }, 10 * 60 * 1000);
+  }, 5 * 60 * 1000);  // Refresh every 5 minutes to keep user logged in
 
   refreshAccessToken().then((success) => {
     if (success) {

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getChallengeWeeklySteps, addSteps } from '../../lib/api';
 import Header from '../commponents/Header';
+import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 
 // Helper functions
 function clamp(n: number, min: number, max: number): number {
@@ -120,6 +121,8 @@ function getSwipeablePages() {
 }
 
 export default function StepsTracker() {
+    // Centralized login/API check (must be inside component)
+    useAuthRedirect({ apiCheck: true });
   const [stepsToday, setStepsToday] = useState(0);
   const [stepsWeek, setStepsWeek] = useState(0);
 
@@ -622,25 +625,25 @@ export default function StepsTracker() {
                   <div key={day.label} style={{ textAlign: 'center', opacity: isDisabled ? 0.25 : 1 }}>
 
                     <button
-                      onClick={() => !isDisabled && onSelectDay(day, idx)}
-                      disabled={isDisabled}
+                      onClick={() => onSelectDay(day, idx)}
+                      disabled={isEmptyFuture}
                       style={{
                         width: '44px',
                         height: '44px',
                         borderRadius: '50%',
                         background: day.done ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : '#ffffff',
                         border: isSelected ? '2px solid #7c3aed' : '1px solid #e2e8f0',
-                        color: day.done ? '#ffffff' : '#94a3b8',
+                        color: day.done ? '#ffffff' : '#94a3b8', 
                         fontSize: '14px',
                         fontWeight: '600',
-                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        cursor: isEmptyFuture ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s ease',
                         boxShadow: day.done ? '0 4px 12px rgba(124, 58, 237, 0.25)' : '0 1px 3px rgba(0,0,0,0.05)',
                         position: 'relative',
                         margin: '0 auto',
                       }}
                     >
-                      {isOutOfRange ? '—' : (day.done ? '✓' : day.date)}
+                      {day.done ? '✓' : day.date}
                       {isToday && (
                         <div
                           style={{

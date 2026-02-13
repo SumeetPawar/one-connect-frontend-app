@@ -3,7 +3,10 @@
 
 
 import React, { JSX, useMemo, useState } from 'react';
+import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 
+// Centralized login/API check
+useAuthRedirect({ apiCheck: true });
 
 interface Reading {
   date: string;

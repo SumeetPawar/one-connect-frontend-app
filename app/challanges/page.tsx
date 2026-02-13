@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Header from "../commponents/Header";
 import { api, isApiError } from "@/lib/api";
-import { useRouter } from 'next/navigation';
+    import { useAuthRedirect } from '@/hooks/useAuthRedirect';
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
     type ApiChallenge = {
@@ -28,6 +29,8 @@ export default function Dashboard() {
         name: string;
     };
 
+    // Centralized login/API check
+    useAuthRedirect({ apiCheck: true });
 
     const [challenges, setChallenges] = useState<ApiChallenge[]>([]);
     const [loading, setLoading] = useState(true);
@@ -48,9 +51,12 @@ export default function Dashboard() {
                 setLoading(true);
                 setError(null);
 
+                // Artificial delay to show loader
+                await new Promise((resolve) => setTimeout(resolve, 1500));
+
                 const API_BASE =
                     process.env.NEXT_PUBLIC_API_BASE_URL ||
-                    "https://social-webapi-b7ebhgakb6engxbh.eastus-01.azurewebsites.net";
+                    "https://cbiqa.dev.honeywellcloud.com/socialapi";
                 const token = localStorage.getItem("access_token");
 
                 const res = await fetch(
@@ -117,8 +123,8 @@ export default function Dashboard() {
 
             // Redirect to steps page after delay
             setTimeout(() => {
-                router.push("/steps");
-            }, 2000);
+                router.push(`/challanges/${challengeId}/steps`);
+            }, 2700);
 
         } catch (e: any) {
             if (isApiError(e) && e.status === 401) {
@@ -160,19 +166,42 @@ export default function Dashboard() {
                         margin: '0 auto 16px',
                         animation: 'spin 1s linear infinite'
                     }} />
-                    Loading challenges...
+                    <div style={{ marginBottom: '14px', marginTop: '2px' }}>
+                        {selectedChallenge && selectedChallenge.user_joined && (
+                            <div style={{
+                                display: 'inline-block',
+                                background: 'rgba(16, 185, 129, 0.25)',
+                                padding: '5px 12px',
+                                borderRadius: '12px',
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                color: '#10b981',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                marginBottom: '12px',
+                                border: '1px solid rgba(16, 185, 129, 0.4)'
+                            }}>
+                                ✓ Joined
+                            </div>
+                        )}
+                        <h2 style={{
+                            fontSize: '24px',
+                            fontWeight: '700',
+                            color: '#ffffff',
+                            marginBottom: '8px',
+                            letterSpacing: '-0.02em',
+                            lineHeight: '1.2'
+                        }}>
+                            {selectedChallenge ? selectedChallenge.title : ""}
+                        </h2>
+                    </div>
+                    <div>Loading...</div>
                 </div>
-                <style>{`
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                `}</style>
             </div>
         );
     }
 
-    // Error state
+    // Error state (show Retry button only on error, not during loading)
     if (error) {
         return (
             <div style={{
@@ -182,51 +211,32 @@ export default function Dashboard() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '20px'
+                flexDirection: 'column'
             }}>
                 <div style={{
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                    borderRadius: '12px',
-                    padding: '20px',
-                    maxWidth: '400px',
-                    textAlign: 'center'
+                    fontSize: '16px',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    textAlign: 'center',
+                    marginBottom: '18px'
                 }}>
-                    <div style={{
-                        fontSize: '40px',
-                        marginBottom: '12px'
-                    }}>⚠️</div>
-                    <div style={{
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        color: '#ef4444',
-                        marginBottom: '8px'
-                    }}>
-                        Failed to Load Challenges
-                    </div>
-                    <div style={{
-                        fontSize: '14px',
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        marginBottom: '16px'
-                    }}>
-                        {error}
-                    </div>
-                    <button
-                        onClick={() => window.location.reload()}
-                        style={{
-                            padding: '10px 20px',
-                            background: '#7c3aed',
-                            border: 'none',
-                            borderRadius: '8px',
-                            color: '#fff',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Retry
-                    </button>
+                    <div style={{ color: '#f87171', fontWeight: 600, marginBottom: 8 }}>Error</div>
+                    <div>{error}</div>
                 </div>
+                <button
+                    onClick={() => window.location.reload()}
+                    style={{
+                        padding: '10px 20px',
+                        background: '#7c3aed',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Retry
+                </button>
             </div>
         );
     }
@@ -311,17 +321,18 @@ export default function Dashboard() {
                                         letterSpacing: "0.5px",
                                         marginBottom: "14px"
                                     }}>
-                                        Featured
+                                        🔥 Featured
                                     </div>
                                 )}
 
-                                <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#fff", marginBottom: "8px" }}>
+                                <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>
                                     {ch.title}
                                 </h2>
-
-                                {/* <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", marginBottom: "12px" }}>
-                                    {ch.description || 'Join this challenge and compete with your colleagues!'}
-                                </p> */}
+                                {ch.description && (
+                                    <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "8px", fontWeight: 500 }}>
+                                        {ch.description}
+                                    </div>
+                                )}
 
                                 {/* <div style={{
                                     display: 'flex',
@@ -423,7 +434,7 @@ export default function Dashboard() {
                             letterSpacing: '-0.02em',
                             lineHeight: '1.2'
                         }}>
-                            Team Wellness Goals
+                            Team Challenges
                         </h2>
 
                         <p style={{
@@ -432,7 +443,8 @@ export default function Dashboard() {
                             marginBottom: '0',
                             lineHeight: '1.5'
                         }}>
-                            Unite your team, crush collective goals, and celebrate victories together!
+                            Compete together, motivate each other, and unlock achievements as a team!<br />
+                            <span role="img" aria-label="surprise">🎁</span> A little surprise awaits teams who finish strong!
                         </p>
                     </div>
                 </div>
@@ -452,8 +464,8 @@ export default function Dashboard() {
 
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: '10px'
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                        gap: '8px'
                     }}>
                         {/* Log Steps - Active if user joined a challenge */}
                         {challenges.some(ch => ch.user_joined) ? (
@@ -488,14 +500,14 @@ export default function Dashboard() {
                                 }}
                             >
                                 <div style={{
-                                    width: '42px',
-                                    height: '42px',
-                                    borderRadius: '11px',
+                                    width: '38px',
+                                    height: '38px',
+                                    borderRadius: '10px',
                                     background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(168, 85, 247, 0.18) 100%)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '21px',
+                                    fontSize: '18px',
                                     flexShrink: 0,
                                     fontWeight: '600',
                                     color: 'rgba(168, 85, 247, 0.9)',
@@ -510,7 +522,10 @@ export default function Dashboard() {
                                         color: '#ffffff',
                                         letterSpacing: '-0.01em',
                                         lineHeight: '1.2',
-                                        marginBottom: '4px'
+                                        marginBottom: '4px',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
                                     }}>
                                         Log Steps
                                     </div>
@@ -563,7 +578,10 @@ export default function Dashboard() {
                                         color: 'rgba(255, 255, 255, 0.6)',
                                         letterSpacing: '-0.01em',
                                         lineHeight: '1.2',
-                                        marginBottom: '4px'
+                                        marginBottom: '4px',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
                                     }}>
                                         Log Steps
                                     </div>
@@ -618,7 +636,10 @@ export default function Dashboard() {
                                     color: 'rgba(255, 255, 255, 0.6)',
                                     letterSpacing: '-0.01em',
                                     lineHeight: '1.2',
-                                    marginBottom: '4px'
+                                    marginBottom: '4px',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
                                 }}>
                                     Track Habit
                                 </div>
@@ -672,7 +693,10 @@ export default function Dashboard() {
                                     color: 'rgba(255, 255, 255, 0.6)',
                                     letterSpacing: '-0.01em',
                                     lineHeight: '1.2',
-                                    marginBottom: '4px'
+                                    marginBottom: '4px',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
                                 }}>
                                     Body Stats
                                 </div>
@@ -687,123 +711,62 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* Log Water - Active if user joined a challenge */}
-                        {challenges.some(ch => ch.user_joined) ? (
-                            <div
-                                // onClick={() => router.push('/home')}
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    backdropFilter: 'blur(20px)',
-                                    borderRadius: '16px',
-                                    padding: '18px 16px',
-                                    cursor: 'pointer',
-                                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                                    transition: 'all 0.2s',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    minHeight: '68px'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)';
-                                    e.currentTarget.style.transform = 'scale(1.02)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                }}
-                            >
+                        {/* Wellness Tip - Always disabled */}
+                        <div
+                            style={{
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                backdropFilter: 'blur(20px)',
+                                borderRadius: '16px',
+                                padding: '18px 16px',
+                                cursor: 'not-allowed',
+                                border: '1px solid rgba(255, 255, 255, 0.05)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                minHeight: '68px',
+                                opacity: '0.5'
+                            }}
+                        >
+                            <div style={{
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '11px',
+                                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(37, 99, 235, 0.18) 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '21px',
+                                flexShrink: 0,
+                                fontWeight: '600',
+                                color: 'rgba(59, 130, 246, 0.5)',
+                                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
+                            }}>
+                                💡
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{
-                                    width: '42px',
-                                    height: '42px',
-                                    borderRadius: '11px',
-                                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(37, 99, 235, 0.18) 100%)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '21px',
-                                    flexShrink: 0,
+                                    fontSize: '14px',
                                     fontWeight: '600',
-                                    color: 'rgba(59, 130, 246, 0.9)',
-                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
+                                    color: 'rgba(255, 255, 255, 0.6)',
+                                    letterSpacing: '-0.01em',
+                                    lineHeight: '1.2',
+                                    marginBottom: '4px',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
                                 }}>
-                                    W
+                                    Wellness Tip
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        color: '#ffffff',
-                                        letterSpacing: '-0.01em',
-                                        lineHeight: '1.2',
-                                        marginBottom: '4px'
-                                    }}>
-                                        Log Water
-                                    </div>
-                                    <div style={{
-                                        fontSize: '12px',
-                                        fontWeight: '400',
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        lineHeight: '1.3'
-                                    }}>
-                                        Stay hydrated
-                                    </div>
+                                <div style={{
+                                    fontSize: '11px',
+                                    fontWeight: '500',
+                                    color: 'rgba(255, 255, 255, 0.4)',
+                                    letterSpacing: '0.3px'
+                                }}>
+                                    Stay tuned for more!
                                 </div>
                             </div>
-                        ) : (
-                            <div
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.03)',
-                                    backdropFilter: 'blur(20px)',
-                                    borderRadius: '16px',
-                                    padding: '18px 16px',
-                                    cursor: 'not-allowed',
-                                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    minHeight: '68px',
-                                    opacity: '0.5'
-                                }}
-                            >
-                                <div style={{
-                                    width: '42px',
-                                    height: '42px',
-                                    borderRadius: '11px',
-                                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(37, 99, 235, 0.18) 100%)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '21px',
-                                    flexShrink: 0,
-                                    fontWeight: '600',
-                                    color: 'rgba(59, 130, 246, 0.5)',
-                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                                }}>
-                                    W
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        letterSpacing: '-0.01em',
-                                        lineHeight: '1.2',
-                                        marginBottom: '4px'
-                                    }}>
-                                        Log Water
-                                    </div>
-                                    <div style={{
-                                        fontSize: '11px',
-                                        fontWeight: '500',
-                                        color: 'rgba(255, 255, 255, 0.4)',
-                                        letterSpacing: '0.3px'
-                                    }}>
-                                        Join a challenge first
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -854,23 +817,8 @@ export default function Dashboard() {
                         }} />
 
                         {/* Challenge Hero */}
-                        <div
-                            style={{
-                                background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                                borderRadius: '16px',
-                                padding: '18px',
-                                marginBottom: '14px',
-                                position: 'relative',
-                                overflow: 'hidden'
-                            }}
-                        >
-                            <div style={{
-                                position: 'absolute',
-                                top: '-30px',
-                                right: '-30px',
-                                fontSize: '100px',
-                                opacity: '0.12'
-                            }}>💪</div>
+                        <div style={{ marginBottom: '20px' }}>
+
 
                             <div style={{ position: 'relative', zIndex: 1 }}>
                                 {selectedChallenge.user_joined && (
@@ -891,25 +839,9 @@ export default function Dashboard() {
                                     </div>
                                 )}
 
-                                <h2 style={{
-                                    fontSize: '24px',
-                                    fontWeight: '700',
-                                    color: '#ffffff',
-                                    marginBottom: '8px',
-                                    letterSpacing: '-0.02em',
-                                    lineHeight: '1.2'
-                                }}>
-                                    {selectedChallenge.title}
-                                </h2>
+                                {/* Title removed as requested */}
 
-                                <p style={{
-                                    fontSize: '14px',
-                                    color: 'rgba(255, 255, 255, 0.85)',
-                                    marginBottom: '0',
-                                    lineHeight: '1.5'
-                                }}>
-                                    {selectedChallenge.description || 'Join this challenge and compete with your team!'}
-                                </p>
+                                {/* Subtitle removed from modal */}
                             </div>
                         </div>
 
@@ -951,6 +883,7 @@ export default function Dashboard() {
                                 )}
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                               
                                     <div style={{
                                         width: '36px',
                                         height: '36px',
@@ -1052,43 +985,52 @@ export default function Dashboard() {
                                 <div style={{
                                     display: 'grid',
                                     gridTemplateColumns: 'repeat(2, 1fr)',
-                                    gap: '8px'
+                                    gap: '6px',
+                                    marginTop: '4px',
+                                    justifyContent: 'center',
                                 }}>
                                     {[
-                                        { value: 3000, label: '3,000', emoji: '🚶', desc: 'Easy' },
-                                        { value: 5000, label: '5,000', emoji: '🏃', desc: 'Medium' },
-                                        { value: 7500, label: '7,500', emoji: '⚡', desc: 'Hard' },
-                                        { value: 10000, label: '10,000', emoji: '🔥', desc: 'Expert' }
+                                        { value: 3000, label: '3,000', desc: 'Starter' },
+                                        { value: 5000, label: '5,000', desc: 'Challenger' },
+                                        { value: 7500, label: '7,500', desc: 'Achiever' },
+                                        { value: 10000, label: '10,000', desc: 'Champion' }
                                     ].map((target) => (
                                         <button
                                             key={target.value}
                                             onClick={() => setSelectedTarget(target.value)}
                                             style={{
-                                                padding: '12px 8px',
+                                                padding: '6px 0',
+                                                minHeight: '36px',
                                                 background: selectedTarget === target.value
-                                                    ? 'rgba(124, 58, 237, 0.3)'
-                                                    : 'rgba(255, 255, 255, 0.05)',
+                                                    ? 'linear-gradient(90deg, #7c3aed 0%, #a855f7 100%)'
+                                                    : '#f3f4f6',
                                                 border: selectedTarget === target.value
-                                                    ? '2px solid #7c3aed'
-                                                    : '1px solid rgba(255, 255, 255, 0.1)',
-                                                borderRadius: '10px',
-                                                color: '#ffffff',
+                                                    ? '2px solid #a855f7'
+                                                    : '1px solid #e2e8f0',
+                                                borderRadius: '999px',
+                                                color: selectedTarget === target.value ? '#fff' : '#7c3aed',
                                                 cursor: 'pointer',
                                                 transition: 'all 0.2s',
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 alignItems: 'center',
-                                                gap: '4px'
-                                            }}
-                                        >
-                                            <span style={{ fontSize: '20px' }}>{target.emoji}</span>
-                                            <span style={{ fontSize: '14px', fontWeight: '600' }}>
-                                                {target.label}
-                                            </span>
-                                            <span style={{
+                                                fontFamily: 'inherit',
+                                                fontWeight: 600,
                                                 fontSize: '11px',
-                                                color: 'rgba(255, 255, 255, 0.6)',
-                                                fontWeight: '500'
+                                                boxShadow: selectedTarget === target.value ? '0 1px 4px rgba(124,58,237,0.10)' : 'none',
+                                                outline: selectedTarget === target.value ? '2px solid #a855f7' : 'none',
+                                            }}
+                                            tabIndex={0}
+                                            aria-label={`Select ${target.label} steps (${target.desc})`}
+                                        >
+                                            {/* Emoji removed */}
+                                            <span style={{ fontWeight: '700', letterSpacing: '-0.01em' }}>{target.label}</span>
+                                            <span style={{
+                                                fontSize: '9px',
+                                                color: selectedTarget === target.value ? '#fff' : '#a855f7',
+                                                fontWeight: '500',
+                                                opacity: 0.85,
+                                                marginTop: '1px',
                                             }}>
                                                 {target.desc}
                                             </span>

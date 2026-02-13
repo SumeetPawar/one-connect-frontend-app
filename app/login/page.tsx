@@ -13,12 +13,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [currentWord, setCurrentWord] = useState("Fitness");
 
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      router.replace("/challanges");
-    }
-  }, [router]);
+  // useEffect(() => {
+  //   const token = localStorage.getItem("access_token");
+  //   if (token) {
+  //     router.replace("/challanges");
+  //   }
+  // }, [router]);
 
   useEffect(() => {
     const words = ["Fitness", "Connect", "Teams", "Insights"];
@@ -214,7 +214,7 @@ export default function LoginPage() {
                   setEmail(e.target.value);
                   setError("");
                 }}
-                placeholder="name@company.com"
+                placeholder="enter your email address"
                 disabled={loading}
                 style={inputStyle}
                 onFocus={(e) => {

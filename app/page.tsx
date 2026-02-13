@@ -9,17 +9,21 @@ export default function Home() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      console.log("🔍 Checking authentication status...");
-      const authed = await isAuthed();
-      
-      console.log("User is", authed ? "authenticated ✅" : "not authenticated ❌");
-      
+    // Check if app is installed
+    if (typeof window !== "undefined" && window.matchMedia('(display-mode: standalone)').matches) {
+      // App is installed, check auth and redirect
+      const checkAuth = async () => {
+        const authed = await isAuthed();
+        console.log("User authenticated:", authed);
+        setChecking(false);
+        router.replace(authed ? "/challanges" : "/login");
+      };
+      checkAuth();
+    } else {
+      // App is not installed, show install page
       setChecking(false);
-      router.replace(authed ? "/challanges" : "/login");
-    };
-
-    checkAuth();
+      router.replace("/install");
+    }
   }, [router]);
 
   if (checking) {

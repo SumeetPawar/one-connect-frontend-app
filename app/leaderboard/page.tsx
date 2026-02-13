@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 import { useState } from 'react';
 
 interface User {
@@ -14,6 +15,14 @@ export default function Leaderboard() {
   const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month'>('week');
   const [showAllUsers, setShowAllUsers] = useState(false);
 
+  // Centralized login/API check
+  useAuthRedirect({ apiCheck: true });
+
+  // Handle not found (404) by redirecting to login
+  if (typeof window !== 'undefined' && window.location.pathname === '/404') {
+    window.location.replace('/login');
+    return null;
+  }
   // Mock data - intentionally unordered (no ranking)
   const users: User[] = [
     { id: 2, name: 'Sumeet Kumar', steps: 38450, avatar: 'SK', activeDays: 4 },

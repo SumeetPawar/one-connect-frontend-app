@@ -16,12 +16,14 @@ export default function SignupPage() {
   const [error, setError] = useState<string>("");
   const [currentWord, setCurrentWord] = useState<string>("Fitness");
   const [loading, setLoading] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [showConsentDetails, setShowConsentDetails] = useState(false);
 
   // ✅ If already logged in, go home
-  useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    if (token) router.replace("/challanges");
-  }, [router]);
+  // useEffect(() => {
+  //   const token = localStorage.getItem("auth_token");
+  //   if (token) router.replace("/challanges");
+  // }, [router]);
 
   // Animated word loop
   useEffect(() => {
@@ -57,6 +59,11 @@ export default function SignupPage() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      return;
+    }
+
+    if (!consentAccepted) {
+      setError("You must accept the consent terms to create an account");
       return;
     }
 
@@ -157,9 +164,9 @@ export default function SignupPage() {
           >
             Create account
           </h2>
-          <p style={{ fontSize: "15px", color: "#64748b", marginBottom: "24px" }}>
+          {/* <p style={{ fontSize: "15px", color: "#64748b", marginBottom: "24px" }}>
             Get started with your fitness journey
-          </p>
+          </p> */}
 
           <form
             onSubmit={handleSignup}
@@ -381,27 +388,132 @@ export default function SignupPage() {
               </div>
             )}
 
+            {/* Consent Section - iOS Style */}
+            <div>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={consentAccepted}
+                  onChange={(e) => {
+                    setConsentAccepted(e.target.checked);
+                    if (e.target.checked) {
+                      setShowConsentDetails(false);
+                    }
+                    setError("");
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    accentColor: "#7c3aed",
+                    width: "20px",
+                    height: "20px",
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ 
+                  fontSize: "14px", 
+                  color: "#0f172a",
+                  fontWeight: "400",
+                  lineHeight: "1.5"
+                }}>
+                  I agree to the{" "}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowConsentDetails(!showConsentDetails);
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#7c3aed",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      cursor: "pointer",
+                      padding: "0",
+                      textDecoration: "none",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                    onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                  >
+                    terms & privacy policy
+                  </button>
+                </span>
+              </label>
+
+              {showConsentDetails && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "16px",
+                    background: "#fafbfc",
+                    borderRadius: "12px",
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      lineHeight: "1.7",
+                    }}
+                  >
+                    <p style={{ margin: "0 0 12px 0", color: "#0f172a", fontWeight: "500" }}>
+                      By creating an account, you acknowledge and agree:
+                    </p>
+                    <ul style={{ margin: "0", paddingLeft: "18px" }}>
+                      <li style={{ marginBottom: "8px" }}>
+                        Collection of steps data and health challenge information you voluntarily enter
+                      </li>
+                      <li style={{ marginBottom: "8px" }}>
+                       This data will be used solely for the purpose of managing, tracking, and promoting participation in health and wellness challenges organized by the company.
+                      </li>
+                      <li style={{ marginBottom: "8px" }}>
+                        Your information will be handled securely and in accordance with applicable data protection and privacy regulations.
+                      </li>
+                      <li style={{ marginBottom: "8px" }}>
+                        Participation is voluntary, and you may choose not to provide health-related data. However, certain features of the app may not be available without this information.
+                      </li>
+                      <li style={{ marginBottom: "0" }}>
+                        You may request access, correction, or deletion of your data anytime
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Signup Button */}
             <button 
             type="submit"
-             disabled={loading} 
+             disabled={loading || !consentAccepted} 
              style={{
                 width: "100%",
                 height: "48px",
                 borderRadius: "12px",
                 fontSize: "15px",
                 fontWeight: "bold",
-                background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
+                background: (loading || !consentAccepted) 
+                  ? "rgba(124, 58, 237, 0.4)" 
+                  : "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
                 color: "white",
                 border: "1px solid rgba(255,255,255,0.20)",
-                boxShadow: "0 4px 12px 0 rgba(124, 58, 237, 0.25)",
-                // cursor: "pointer",
+                boxShadow: (loading || !consentAccepted) 
+                  ? "none" 
+                  : "0 4px 12px 0 rgba(124, 58, 237, 0.25)",
                 transition: "all 0.2s",
-                opacity: loading ? 0.75 : 1,
-                cursor: loading ? "not-allowed" : "pointer"
+                opacity: (loading || !consentAccepted) ? 0.6 : 1,
+                cursor: (loading || !consentAccepted) ? "not-allowed" : "pointer"
              }}
             >
-               {loading ? "Creating..." : "Create Account"}
+               {loading ? "Creating..." : (consentAccepted ? "Create Account" : "Accept terms to Continue")}
               </button>
             {/* <button
               type="submit"
