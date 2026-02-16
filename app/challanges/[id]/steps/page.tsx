@@ -149,7 +149,7 @@ function getSwipeablePages() {
         '🌲 Choose green, shaded routes for a refreshing experience.',
         '🚶‍♂️ Walk at a pace that lets you talk but not sing.',
         '🛑 If you feel pain, slow down or take a break.',
-          '💡 Walking 10,000 steps burns about 400-500 calories!',
+        '💡 Walking 10,000 steps burns about 400-500 calories!',
         '🦴 Walking strengthens your bones and improves balance.',
         '❤️ Just 30 minutes of walking can reduce heart disease risk by 35%.',
         '🧠 Walking boosts creativity by up to 60%!',
@@ -175,8 +175,8 @@ function getSwipeablePages() {
     const dailyTip = dailyTips[dayIndex % dailyTips.length];
 
     return [
-        { title: 'Quote of the day', content: dailyQuote },
-        { title: 'Tip of the day', content: dailyTip }
+        { title: '', content: dailyQuote },
+        { title: '', content: dailyTip }
     ];
 }
 
@@ -230,7 +230,7 @@ export default function StepsTracker() {
         const todaySteps = todayObj?.total_steps ?? 0;
 
         setStepsToday(todaySteps);
-        
+
         // Only update viewSteps if no specific day is selected
         if (!selectedLabel) {
             setViewSteps(todaySteps);
@@ -418,7 +418,7 @@ export default function StepsTracker() {
                 const selectedDate = new Date(currentSelection.isoDay);
                 selectedDate.setHours(0, 0, 0, 0);
                 const isNotFuture = selectedDate <= today;
-                
+
                 if (isNotFuture) {
                     // Keep current selection, just update steps
                     setViewSteps(currentSelection.steps);
@@ -501,7 +501,8 @@ export default function StepsTracker() {
     const [showAchievementAnim, setShowAchievementAnim] = useState(false);
 
     const allPages = useMemo(() => {
-        return hasSteps
+        // return hasSteps
+        return false
             ? [{ title: 'Your Achievement', content: buildAiSummary(viewSteps, goalToday, true) }, ...swipeablePages]
             : swipeablePages;
     }, [hasSteps, swipeablePages, viewSteps, goalToday]);
@@ -547,18 +548,18 @@ export default function StepsTracker() {
     // ✅ UPDATED: Add steps handler
     const onAddSteps = async () => {
         const n = Number(inputSteps);
-        
+
         // Validate input
         if (!Number.isFinite(n) || n <= 0) {
             alert('Please enter a valid positive number');
             return;
         }
-        
+
         if (n > 50000) {
             alert('Maximum allowed steps is 50,000 per entry');
             return;
         }
-        
+
         if (n < 1) {
             alert('Minimum steps must be at least 1');
             return;
@@ -589,7 +590,7 @@ export default function StepsTracker() {
         }
 
         setAddLoading(true);
-         try {
+        try {
             await addSteps({
                 steps: n,
                 log_date,
@@ -607,7 +608,7 @@ export default function StepsTracker() {
                 const updatedDayData = updated.days?.find((d: any) => d.day === selectedDay.isoDay);
                 const updatedSteps = updatedDayData?.total_steps ?? 0;
                 setViewSteps(updatedSteps);
-                
+
                 // Check if target met and trigger confetti
                 if (updatedSteps >= goalToday && updatedSteps - n < goalToday) {
                     setShowConfetti(true);
@@ -732,7 +733,7 @@ export default function StepsTracker() {
                     ))}
                 </div>
             )}
-            
+
             {/* ADD HEADER COMPONENT */}
             {/* <Header
         title="Steps"
@@ -748,43 +749,30 @@ export default function StepsTracker() {
             }}>
                 <div style={{ maxWidth: '400px', margin: '0 auto', position: 'relative' }}>
                     {/* Streak Badge - Top Right (Absolute Position) */}
-                    {true && (
+                    {apiWeek?.streak && apiWeek.streak.current_streak > 0 && (
                         <div
                             style={{
                                 position: 'absolute',
                                 top: '18px',
                                 right: '0',
-                                display: 'none',
+                                display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 padding: '8px 12px',
                                 borderRadius: '12px',
-                                background: 'linear-gradient(135deg, rgba(255, 149, 0, 0.25) 0%, rgb(168, 85, 247)) 100%)',
+                                background: 'linear-gradient(135deg, rgba(255, 149, 0, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%)',
                                 backdropFilter: 'blur(10px)',
-                                // border: '1px solid rgba(255, 149, 0, 0.4)',
+                                border: '1px solid rgba(255, 149, 0, 0.4)',
                                 boxShadow: '0 4px 12px rgba(255, 149, 0, 0.3)',
                                 minWidth: '64px',
-                                // animation: 'streakPulse 2s ease-in-out infinite',
                                 zIndex: 10
                             }}
                         >
-                            {/* <div style={{
-                                fontSize: '24px',
-                                fontWeight: '700',
-                                color: '#fff',
-                                lineHeight: '1',
-                                marginBottom: '2px',
-                                letterSpacing: '-0.5px',
-                                textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                            }}>
-                                {streak}
-                            </div> */}
                             <div style={{
                                 fontSize: '10px',
                                 fontWeight: '600',
                                 color: 'rgba(255,255,255,0.9)',
-                                // textTransform: 'uppercase',
                                 letterSpacing: '0.5px',
                                 lineHeight: '1',
                                 display: 'flex',
@@ -792,36 +780,14 @@ export default function StepsTracker() {
                                 gap: '3px'
                             }}>
                                 <span style={{ fontSize: '12px' }}>🔥</span>
-                                <span> 5 Streak</span>
+                                <span>{apiWeek.streak.current_streak} Streak</span>
                             </div>
                         </div>
                     )}
 
-                    {/* Back Button */}
-                    {/* <button
-                        onClick={() => router.push('/challanges')}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#a855f7',
-                            fontSize: '13px',
-                            cursor: 'pointer',
-                            padding: '4px 0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontWeight: '400',
-                            marginBottom: '2px',
-                            WebkitTapHighlightColor: 'transparent'
-                        }}
-                    >
-                        <span style={{ fontSize: '20px', fontWeight: '300' }}>‹</span>
-                        <span>Back</span>
-                    </button> */}
-
-                    {/* Title (No Flex Row Needed) */}
+                    {/* Title with Back Button */}
                     <div style={{
-                        paddingRight: '40px' // Space for streak badge
+                        paddingRight: '80px' // Space for streak badge
                     }}>
                         {/* Back Button with Text - Android Style */}
                         <button
@@ -864,39 +830,6 @@ export default function StepsTracker() {
                             </span>
                         </button>
                     </div>
-
-                    {/* CSS Animations */}
-                    <style>{`
-    @keyframes confettiFall {
-      0% {
-        transform: translateY(0) rotate(0deg);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(100vh) rotate(360deg);
-        opacity: 0;
-      }
-    }
-    @keyframes streakPulse {
-      0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
-      }
-      50% {
-        transform: scale(1.05);
-        box-shadow: 0 6px 20px rgba(255, 149, 0, 0.5);
-      }
-    }
-    
-    @keyframes streakGlow {
-      0%, 100% {
-        box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
-      }
-      50% {
-        box-shadow: 0 4px 20px rgba(255, 149, 0, 0.6), 0 0 30px rgba(255, 149, 0, 0.4);
-      }
-    }
-  `}</style>
                 </div>
             </div>
 
@@ -1015,9 +948,9 @@ export default function StepsTracker() {
                                             }}
                                         >
                                             {/* SVG Circular Progress Ring */}
-                                            <svg 
-                                                width="100%" 
-                                                height="100%" 
+                                            <svg
+                                                width="100%"
+                                                height="100%"
                                                 viewBox="0 0 48 48"
                                                 style={{
                                                     display: 'block',
@@ -1081,7 +1014,7 @@ export default function StepsTracker() {
                                                     {isOutOfRange ? '—' : day.date}
                                                 </text>
                                             </svg>
-                                            
+
                                             {/* Today indicator */}
                                             {isToday && (
                                                 <div style={{
@@ -1287,30 +1220,36 @@ export default function StepsTracker() {
 
                     {/* Team Activity Button */}
                     <button
-                        disabled
+                        onClick={() => router.push(`/challanges/${challengeId}/leaderboard`)}
                         style={{
                             width: '100%',
                             padding: '16px',
                             fontSize: '15px',
                             fontWeight: '600',
-                            color: '#bdbdbd',
-                            background: 'rgba(255,255,255,0.07)',
-                            border: '1px dashed #bdbdbd',
+                            // color: '#a855f7',
+                            background: 'rgba(168, 85, 247, 0.1)',
+                            border: '1px solid rgba(168, 85, 247, 0.3)',
                             borderRadius: '12px',
-                            cursor: 'not-allowed',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
                             transition: 'all 0.2s ease',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            opacity: 0.7,
                             marginBottom: '8px',
                         }}
-                        title="Coming soon"
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)';
+                            e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(168, 85, 247, 0.1)';
+                            e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                        }}
                     >
-                        <span>👥</span>
-                        <span>Team Score (Coming Soon)</span>
+                         
+                        <span>Rankings ⭐</span>
                     </button>
 
                     {/* Modal */}

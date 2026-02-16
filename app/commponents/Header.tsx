@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 type UserProfile = {
     id: string;
+    role?: string | 'user' | 'admin';
     email: string;
     name?: string;
 };
@@ -23,6 +24,11 @@ export default function Header({
     const [currentWord, setCurrentWord] = useState<string>('Fitness');
     const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
     const [user, setUser] = useState<UserProfile | null>(null);
+    const [showAdminPanel, setShowAdminPanel] = useState(false);
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+    const [resetUserId, setResetUserId] = useState('');
+    const [newPassword, setNewPassword] = useState('');
     const router = useRouter();
     // Fetch user profile
     useEffect(() => {
@@ -50,6 +56,32 @@ export default function Header({
 
         fetchUserProfile();
     }, []);
+
+    // Add this useEffect
+    useEffect(() => {
+        if (showAdminPanel && user?.role === 'admin') {
+            fetchAllUsers();
+        }
+    }, [showAdminPanel]);
+
+    const fetchAllUsers = async () => {
+        try {
+            const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
+                "https://cbiqa.dev.honeywellcloud.com/socialapi";
+            const token = localStorage.getItem("access_token");
+
+            const res = await fetch(`${API_BASE}/api/admin/users`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const users = await res.json();
+                setAllUsers(users);
+            }
+        } catch (e) {
+            console.error('Failed to fetch users:', e);
+        }
+    };
 
     // Animated word loop
     useEffect(() => {
@@ -83,6 +115,16 @@ export default function Header({
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         router.push("/login");
+    };
+
+    // Update the isPasswordValid function:
+    const isPasswordValid = (password: string) => {
+        if (password.length < 7) return false;
+        if (!/[A-Z]/.test(password)) return false;
+        if (!/[a-z]/.test(password)) return false;
+        if (!/[0-9]/.test(password)) return false;
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return false;
+        return true;
     };
 
     return (
@@ -209,7 +251,7 @@ export default function Header({
                                         color: '#ffffff',
                                         marginBottom: '2px'
                                     }}>
-                                        {user?.name|| 'User'}
+                                        {user?.name || 'User'}
                                     </div>
                                     <div style={{
                                         fontSize: '12px',
@@ -221,6 +263,37 @@ export default function Header({
                                         {user?.email || ''}
                                     </div>
                                 </div>
+
+                                {/* After User Info, before Logout */}
+                                {user?.role === 'admin' && (
+                                    <button
+                                        onClick={() => {
+                                            setShowAdminPanel(true);
+                                            setShowUserMenu(false);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 12px',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            fontSize: '14px',
+                                            fontWeight: '500',
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                            transition: 'background 0.2s',
+                                            marginBottom: '4px'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'rgba(167, 139, 250, 0.1)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'transparent';
+                                        }}
+                                    >
+                                        Manage Users
+                                    </button>
+                                )}
 
                                 {/* Logout Button */}
                                 <button
@@ -252,6 +325,301 @@ export default function Header({
                     </div>
                 </div>
             </div>
+
+            {/* Admin Popup */}
+            {showAdminPanel && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '20px'
+                }} onClick={() => setShowAdminPanel(false)}>
+                    <div style={{
+                        background: 'rgba(30, 41, 59, 0.98)',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        padding: '24px',
+                        maxWidth: '500px',
+                        width: '100%',
+                        maxHeight: '80vh',
+                        overflow: 'auto'
+                    }} onClick={(e) => e.stopPropagation()}>
+
+                        {/* Header */}
+                        <div style={{ marginBottom: '20px' }}>
+                            <h2 style={{
+                                fontSize: '20px',
+                                fontWeight: '600',
+                                color: '#ffffff',
+                                margin: 0
+                            }}>Reset User Password</h2>
+                        </div>
+
+                        {/* User Selection */}
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{
+                                fontSize: '13px',
+                                fontWeight: '500',
+                                color: 'rgba(167, 139, 250, 0.9)',
+                                marginBottom: '8px',
+                                display: 'block',
+                                letterSpacing: '0.3px'
+                            }}>Select User</label>
+                            <select
+                                value={resetUserId}
+                                onChange={(e) => setResetUserId(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 14px',
+                                    background: 'rgba(15, 23, 42, 0.8)',
+                                    border: '1.5px solid rgba(167, 139, 250, 0.2)',
+                                    borderRadius: '10px',
+                                    color: '#ffffff',
+                                    fontSize: '14px',
+                                    outline: 'none'
+                                }}
+                            >
+                                <option value="">-- Select a user --</option>
+                                {allUsers.map(u => (
+                                    <option key={u.id} value={u.id}>
+                                        {u.name || u.email} ({u.email})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* New Password */}
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{
+                                fontSize: '13px',
+                                fontWeight: '500',
+                                color: 'rgba(167, 139, 250, 0.9)',
+                                marginBottom: '8px',
+                                display: 'block',
+                                letterSpacing: '0.3px'
+                            }}>New Password</label>
+                            <input
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Enter new password"
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 14px',
+                                    background: 'rgba(15, 23, 42, 0.8)',
+                                    border: '1.5px solid rgba(167, 139, 250, 0.2)',
+                                    borderRadius: '10px',
+                                    color: '#ffffff',
+                                    fontSize: '14px',
+                                    outline: 'none',
+                                    transition: 'all 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.currentTarget.style.border = '1.5px solid rgba(167, 139, 250, 0.5)';
+                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.currentTarget.style.border = '1.5px solid rgba(167, 139, 250, 0.2)';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                }}
+                            />
+                            {newPassword && !isPasswordValid(newPassword) && (
+                                <div style={{ marginTop: '6px' }}>
+                                    <p style={{
+                                        fontSize: '11px',
+                                        color: 'rgba(239, 68, 68, 0.9)',
+                                        margin: '2px 0',
+                                        fontWeight: '500'
+                                    }}>Password must contain:</p>
+                                    <ul style={{
+                                        fontSize: '11px',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        margin: '4px 0',
+                                        paddingLeft: '20px'
+                                    }}>
+                                        <li style={{ color: newPassword.length >= 7 ? '#10b981' : '#ef4444' }}>
+                                            At least 7 characters
+                                        </li>
+                                        <li style={{ color: /[A-Z]/.test(newPassword) ? '#10b981' : '#ef4444' }}>
+                                            One uppercase letter
+                                        </li>
+                                        <li style={{ color: /[a-z]/.test(newPassword) ? '#10b981' : '#ef4444' }}>
+                                            One lowercase letter
+                                        </li>
+                                        <li style={{ color: /[0-9]/.test(newPassword) ? '#10b981' : '#ef4444' }}>
+                                            One number
+                                        </li>
+                                        <li style={{ color: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? '#10b981' : '#ef4444' }}>
+                                            One special character (!@#$%^&*...)
+                                        </li>
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{
+                                fontSize: '13px',
+                                fontWeight: '500',
+                                color: 'rgba(167, 139, 250, 0.9)',
+                                marginBottom: '8px',
+                                display: 'block',
+                                letterSpacing: '0.3px'
+                            }}>Confirm Password</label>
+                            <input
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Re-enter new password"
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 14px',
+                                    background: 'rgba(15, 23, 42, 0.8)',
+                                    border: confirmPassword && newPassword !== confirmPassword
+                                        ? '1.5px solid rgba(239, 68, 68, 0.6)'
+                                        : '1.5px solid rgba(167, 139, 250, 0.2)',
+                                    borderRadius: '10px',
+                                    color: '#ffffff',
+                                    fontSize: '14px',
+                                    outline: 'none',
+                                    transition: 'all 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    if (!(confirmPassword && newPassword !== confirmPassword)) {
+                                        e.currentTarget.style.border = '1.5px solid rgba(167, 139, 250, 0.5)';
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
+                                    }
+                                }}
+                                onBlur={(e) => {
+                                    if (!(confirmPassword && newPassword !== confirmPassword)) {
+                                        e.currentTarget.style.border = '1.5px solid rgba(167, 139, 250, 0.2)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }
+                                }}
+                            />
+                            {confirmPassword && newPassword !== confirmPassword && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    marginTop: '6px'
+                                }}>
+                                    <span style={{ fontSize: '14px' }}>⚠️</span>
+                                    <p style={{
+                                        fontSize: '12px',
+                                        color: '#ef4444',
+                                        margin: 0,
+                                        fontWeight: '500'
+                                    }}>Passwords do not match</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Buttons */}
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={async () => {
+                                    if (!resetUserId || !newPassword) {
+                                        alert('Please select user and enter password');
+                                        return;
+                                    }
+
+                                    if (!isPasswordValid(newPassword)) {
+                                        alert('Password does not meet security requirements');
+                                        return;
+                                    }
+
+                                    if (newPassword !== confirmPassword) {
+                                        alert('Passwords do not match');
+                                        return;
+                                    }
+
+                                    try {
+                                        const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
+                                            "https://cbiqa.dev.honeywellcloud.com/socialapi";
+                                        const token = localStorage.getItem("access_token");
+
+                                        const res = await fetch(`${API_BASE}/api/admin/users/reset-password`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${token}`
+                                            },
+                                            body: JSON.stringify({
+                                                user_id: resetUserId,
+                                                new_password: newPassword
+                                            })
+                                        });
+
+                                        if (res.ok) {
+                                            alert('Password reset successful!');
+                                            setResetUserId('');
+                                            setNewPassword('');
+                                            setConfirmPassword('');
+                                            setShowAdminPanel(false);
+                                        } else {
+                                            const error = await res.json();
+                                            alert(error.detail || 'Failed to reset password');
+                                        }
+                                    } catch (e) {
+                                        alert('Error resetting password');
+                                    }
+                                }}
+                                disabled={!resetUserId || !newPassword || !isPasswordValid(newPassword) || newPassword !== confirmPassword}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px',
+                                    background: (resetUserId && newPassword && isPasswordValid(newPassword) && newPassword === confirmPassword)
+                                        ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)'
+                                        : 'rgba(255, 255, 255, 0.1)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    color: '#ffffff',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: (resetUserId && newPassword && isPasswordValid(newPassword) && newPassword === confirmPassword)
+                                        ? 'pointer'
+                                        : 'not-allowed',
+                                    opacity: (resetUserId && newPassword && isPasswordValid(newPassword) && newPassword === confirmPassword)
+                                        ? 1
+                                        : 0.5
+                                }}
+                            >
+                                Reset Password
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowAdminPanel(false);
+                                    setResetUserId('');
+                                    setNewPassword('');
+                                    setConfirmPassword('');
+                                }}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px',
+                                    background: 'transparent',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    borderRadius: '8px',
+                                    color: '#ffffff',
+                                    fontSize: '14px',
+                                    fontWeight: '500',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Animations */}
             <style>{`

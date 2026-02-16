@@ -123,7 +123,7 @@ export async function signup(
 export function logout(): void {
   stopBackgroundRefresh();
   clearTokens();
-  
+
   if (typeof window !== "undefined") {
     window.location.href = "/login";
   }
@@ -131,7 +131,7 @@ export function logout(): void {
 
 export async function isAuthed(): Promise<boolean> {
   const token = getAccessToken();
-  
+
   if (!token) {
     return false;
   }
@@ -163,7 +163,7 @@ export async function refreshAccessToken(): Promise<boolean> {
     }
 
     const data: AuthResponse = await response.json();
-    
+
     localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("auth_token", data.access_token);
     localStorage.setItem("refresh_token", data.refresh_token);
@@ -182,10 +182,10 @@ export async function refreshAccessToken(): Promise<boolean> {
 
 export function getCurrentUser() {
   if (typeof window === "undefined") return null;
-  
+
   const userData = localStorage.getItem("user_data");
   if (!userData) return null;
-  
+
   try {
     return JSON.parse(userData);
   } catch {
@@ -204,9 +204,11 @@ export function startBackgroundRefresh(): void {
     return;
   }
 
+  // Backend: ACCESS_TOKEN_MIN=2 (expires in 2 minutes)
+  // Refresh every 1 minute to stay ahead of expiration
   refreshIntervalId = setInterval(async () => {
     const token = getAccessToken();
-    
+
     if (!token) {
       console.log("⚠️ No token found, stopping refresh");
       stopBackgroundRefresh();
@@ -215,24 +217,24 @@ export function startBackgroundRefresh(): void {
 
     console.log("🔄 Refreshing token...");
     const success = await refreshAccessToken();
-    
+
     if (success) {
       console.log("✅ Token refreshed successfully");
     } else {
       console.log("❌ Token refresh failed");
       stopBackgroundRefresh();
     }
-  }, 5 * 60 * 1000);  // Refresh every 5 minutes to keep user logged in
+  }, 13 * 60 * 1000);  // Refresh every 1 minute (token expires in 2 min)
 
+  // Do initial refresh immediately
   refreshAccessToken().then((success) => {
     if (success) {
       console.log("✅ Initial token refresh successful");
     }
   });
 
-  console.log("🔄 Background token refresh started");
+  console.log("🔄 Background token refresh started (every 1 minute)");
 }
-
 export function stopBackgroundRefresh(): void {
   if (refreshIntervalId) {
     clearInterval(refreshIntervalId);
@@ -254,7 +256,7 @@ export function setupVisibilityRefresh(): (() => void) | undefined {
     if (document.visibilityState === "visible") {
       console.log("👀 Tab became visible, checking token...");
       const token = getAccessToken();
-      
+
       if (token) {
         const success = await refreshAccessToken();
         if (success) {
@@ -265,7 +267,7 @@ export function setupVisibilityRefresh(): (() => void) | undefined {
   };
 
   document.addEventListener("visibilitychange", handleVisibilityChange);
-  
+
   return () => {
     document.removeEventListener("visibilitychange", handleVisibilityChange);
   };
