@@ -1386,6 +1386,10 @@ export default function StepsTracker() {
               from { transform: translateY(100%); opacity: 0; }
               to { transform: translateY(0); opacity: 1; }
             }
+            @keyframes confettiFall {
+            0% { top: -10px; opacity: 0.7; }
+            100% { top: 100vh; opacity: 0.2; }
+            }
             @keyframes dropdownIn {
               from { opacity: 0; transform: translateY(-10px); }
               to { opacity: 1; transform: translateY(0); }

@@ -6,7 +6,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-
+  // output: "standalone",
   // Application Gateway routes to /socialapp
   basePath: isProduction ? '/socialapp' : '/socialapp',
   

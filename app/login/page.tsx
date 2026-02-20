@@ -13,12 +13,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [currentWord, setCurrentWord] = useState("Fitness");
 
-  // useEffect(() => {
-  //   const token = localStorage.getItem("access_token");
-  //   if (token) {
-  //     router.replace("/challanges");
-  //   }
-  // }, [router]);
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      router.replace("/challanges");
+    }
+  }, [router]);
 
   useEffect(() => {
     const words = ["Fitness", "Connect", "Teams", "Insights"];

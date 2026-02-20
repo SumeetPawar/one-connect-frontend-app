@@ -695,7 +695,7 @@ export default function StepsTracker() {
               <defs>
                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#7c3aed" />
-                  <stop offset="100%" stopColor="#a855f7" />
+                  <stop offset="100%" stopColor="#a855f7" /> 
                 </linearGradient>
               </defs>
             </svg>
@@ -707,7 +707,7 @@ export default function StepsTracker() {
             </div>
           </div>
 
-          <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '20px' }}>
+          <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '20px' }}> 
             Goal: {formatNumber(goalToday)} • {formatNumber(Math.max(goalToday - viewSteps, 0))} left
           </div>
 
@@ -728,8 +728,8 @@ export default function StepsTracker() {
                   transition: 'width 0.5s ease',
                 }}
               />
-            </div>
-
+            </div> 
+ 
             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '8px' }}>
               {formatNumber(stepsWeek)} / {formatNumber(goalWeek)} steps
             </div>
@@ -771,18 +771,18 @@ export default function StepsTracker() {
                       letterSpacing: '0.5px',
                       textAlign: 'center',
                     }}
-                  >
+                  > 
                     {p.title}
                   </div>
 
                   <p
                     style={{
                       fontSize: '15px',
-                      color: '#e9d5ff',
+                      color: '#e9d5ff', 
                       lineHeight: '1.6',
                       fontWeight: '500',
                       margin: '0 0 14px 0',
-                      textAlign: 'center',
+                      textAlign: 'center', 
                       minHeight: '44px',
                       display: 'flex',
                       alignItems: 'center',
@@ -810,7 +810,7 @@ export default function StepsTracker() {
                     background: index === safePageIndex ? '#7c3aed' : 'rgba(255,255,255,0.3)',
                     transition: 'all 0.3s ease',
                     border: 'none',
-                    cursor: 'pointer',
+                    cursor: 'pointer', 
                     padding: 0,
                   }}
                   aria-label={`Go to ${page.title}`}
@@ -852,7 +852,7 @@ export default function StepsTracker() {
           <button
             disabled
             style={{
-              width: '100%',
+              width: '100%', 
               padding: '16px',
               fontSize: '15px',
               fontWeight: '600',
@@ -864,7 +864,7 @@ export default function StepsTracker() {
               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
               transition: 'all 0.2s ease',
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'center', 
               justifyContent: 'center',
               gap: '8px',
               opacity: 0.7,
@@ -895,7 +895,7 @@ export default function StepsTracker() {
                 setInputSteps('');
               }}
             >
-              <div
+              <div 
                 style={{
                   background: '#ffffff',
                   border: '1px solid #e2e8f0',

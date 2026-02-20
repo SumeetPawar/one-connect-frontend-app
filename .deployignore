@@ -1,3 +1,5 @@
 # Override .gitignore for Azure deployment
 # We need to deploy the built .next folder
 !.next/
+.env.local
+
