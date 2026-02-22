@@ -204,8 +204,8 @@ export function startBackgroundRefresh(): void {
     return;
   }
 
-  // Backend: ACCESS_TOKEN_MIN=2 (expires in 2 minutes)
-  // Refresh every 1 minute to stay ahead of expiration
+  // Backend: ACCESS_TOKEN_MIN=30 (expires in 30 minutes)
+  // Refresh every 25 minutes to keep a safety buffer before expiry
   refreshIntervalId = setInterval(async () => {
     const token = getAccessToken();
 
@@ -224,7 +224,7 @@ export function startBackgroundRefresh(): void {
       console.log("❌ Token refresh failed");
       stopBackgroundRefresh();
     }
-  }, 13 * 60 * 1000);  // Refresh every 1 minute (token expires in 2 min)
+  }, 25 * 60 * 1000);
 
   // Do initial refresh immediately
   refreshAccessToken().then((success) => {
@@ -272,3 +272,4 @@ export function setupVisibilityRefresh(): (() => void) | undefined {
     document.removeEventListener("visibilitychange", handleVisibilityChange);
   };
 }
+

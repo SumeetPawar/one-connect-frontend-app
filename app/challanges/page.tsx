@@ -54,31 +54,9 @@ export default function Dashboard() {
                 // Artificial delay to show loader
                 await new Promise((resolve) => setTimeout(resolve, 1500));
 
-                const API_BASE =
-                    process.env.NEXT_PUBLIC_API_BASE_URL ||
-                    "https://cbiqa.dev.honeywellcloud.com/socialapi";
-                const token = localStorage.getItem("access_token");
-
-                const res = await fetch(
-                    `${API_BASE}/api/challenges/available`,
-                    {
-                        headers: token ? { Authorization: `Bearer ${token}` } : {},
-                    }
-                );
-
-                if (res.status === 401) {
-                    localStorage.removeItem("access_token");
-                    localStorage.removeItem("refresh_token");
-                    router.push("/login");
-                    return;
-                }
-
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    throw new Error(errorText || 'Failed to load challenges');
-                }
-
-                const data: ApiChallenge[] = await res.json();
+                const data = await api<ApiChallenge[]>("/api/challenges/available", {
+                    method: "GET",
+                });
 
                 // Sort: active first, then by start date
                 const sorted = [...data].sort((a, b) => {
@@ -128,9 +106,6 @@ export default function Dashboard() {
 
         } catch (e: any) {
             if (isApiError(e) && e.status === 401) {
-                localStorage.removeItem("access_token");
-                localStorage.removeItem("refresh_token");
-                router.push("/login");
                 return;
             }
             setError(`Failed to join: ${e.message || 'Unknown error'}`);
