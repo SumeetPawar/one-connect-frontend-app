@@ -157,8 +157,17 @@ export async function refreshAccessToken(): Promise<boolean> {
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
-    if (!response.ok) {
+    // Only clear tokens if refresh token itself is rejected (401)
+    // Do NOT clear on network errors or 5xx — keep the refresh token alive
+    if (response.status === 401) {
+      console.log("❌ Refresh token expired or invalid, clearing session");
       clearTokens();
+      return false;
+    }
+
+    if (!response.ok) {
+      // Server error or network issue — don't wipe tokens, just return false
+      console.warn("⚠️ Token refresh failed with status:", response.status, "— keeping existing tokens");
       return false;
     }
 
@@ -170,8 +179,8 @@ export async function refreshAccessToken(): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error("Token refresh error:", error);
-    clearTokens();
+    // Network error — do NOT clear tokens, user may just be offline temporarily
+    console.warn("⚠️ Token refresh network error — keeping existing tokens:", error);
     return false;
   }
 }
@@ -207,10 +216,11 @@ export function startBackgroundRefresh(): void {
   // Backend: ACCESS_TOKEN_MIN=30 (expires in 30 minutes)
   // Refresh every 25 minutes to keep a safety buffer before expiry
   refreshIntervalId = setInterval(async () => {
-    const token = getAccessToken();
+    const refreshToken = getRefreshToken();
 
-    if (!token) {
-      console.log("⚠️ No token found, stopping refresh");
+    // If refresh token is gone, session is truly over
+    if (!refreshToken) {
+      console.log("⚠️ No refresh token found, stopping refresh");
       stopBackgroundRefresh();
       return;
     }
@@ -221,8 +231,18 @@ export function startBackgroundRefresh(): void {
     if (success) {
       console.log("✅ Token refreshed successfully");
     } else {
-      console.log("❌ Token refresh failed");
-      stopBackgroundRefresh();
+      // Only stop if refresh token was cleared (401 = truly expired)
+      // On network errors, refreshAccessToken keeps tokens and returns false — keep retrying
+      const stillHasRefreshToken = getRefreshToken();
+      if (!stillHasRefreshToken) {
+        console.log("❌ Refresh token invalidated, stopping refresh and logging out");
+        stopBackgroundRefresh();
+        if (typeof window !== "undefined") {
+          window.location.href = "/socialapp/login";
+        }
+      } else {
+        console.log("⚠️ Token refresh failed (network/server issue) — will retry next cycle");
+      }
     }
   }, 25 * 60 * 1000);
 

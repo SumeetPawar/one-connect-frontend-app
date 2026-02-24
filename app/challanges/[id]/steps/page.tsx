@@ -1249,7 +1249,7 @@ export default function StepsTracker() {
                         }}
                     >
                          
-                        <span>Rankings ⭐</span>
+                        <span>Rankings</span>
                     </button>
 
                     {/* Modal */}

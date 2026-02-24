@@ -1,3 +1,4 @@
+
 // app/challanges/[id]/leaderboard/page.tsx
 
 'use client';
@@ -21,6 +22,9 @@ interface LeaderboardUser {
     completion_pct: number;       // NEW
     is_me: boolean;
     is_top: boolean;
+    consistency_rank?: number; // Calculated in frontend for consistency tab
+    previous_consistency_rank?: number; // Previous value for badge logic
+        previous_rank?: number; // Previous steps rank for badge logic
 }
 
 interface LeaderboardResponse {
@@ -70,18 +74,17 @@ export default function LeaderboardPage() {
 
     const fetchLeaderboard = async () => {
         try {
-            const result = await api<LeaderboardResponse>(
+            const response = await api<LeaderboardResponse>(
                 `/api/challenges/${challengeId}/leaderboard`,
                 {
                     method: "GET",
                     auth: true,
                 }
             );
-
-            setData(result);
-            setLoading(false);
+            setData(response);
         } catch (error) {
-            console.error('Error fetching leaderboard:', error);
+            setData(null);
+        } finally {
             setLoading(false);
         }
     };
@@ -133,24 +136,21 @@ export default function LeaderboardPage() {
     const getSortedLeaderboard = () => {
         if (!data) return [];
 
-        const sorted = [...data.leaderboard].sort((a, b) => {
-            if (activeTab === 'consistency') {
-                // Sort by completion_pct (descending), then by total_steps as tiebreaker
-                if (b.completion_pct !== a.completion_pct) {
-                    return b.completion_pct - a.completion_pct;
-                }
-                return b.total_steps - a.total_steps;
-            } else {
-                // Sort by steps (descending)
-                return b.total_steps - a.total_steps;
-            }
-        });
-
-        // Re-assign ranks based on current sort
-        return sorted.map((user, index) => ({
-            ...user,
-            rank: index + 1
-        }));
+        if (activeTab === 'consistency') {
+            // Use consistency_rank from backend, remap rank field for display
+            return [...data.leaderboard]
+                .filter(u => u.consistency_rank !== undefined)
+                .sort((a, b) => (a.consistency_rank! - b.consistency_rank!))
+                .map(u => ({ ...u, rank: u.consistency_rank! }));
+        } else {
+            // Sort by steps (descending)
+            const sorted = [...data.leaderboard].sort((a, b) => b.total_steps - a.total_steps);
+            // Re-assign ranks based on current sort
+            return sorted.map((user, index) => ({
+                ...user,
+                rank: index + 1
+            }));
+        }
     };
 
     const getMyRankInTab = () => {
@@ -431,26 +431,62 @@ export default function LeaderboardPage() {
                                         </div>
                                         <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                                             {activeTab === 'steps' ? (
-                                                <>
-                                                    <span className={index === 0 ? 'text-yellow-200' : ''}>
-                                                        {formatNumber(user.total_steps)} steps
-                                                    </span>
-                                                    {/* <span className="text-gray-700">•</span>
-                                                    <span>{user.completion_pct}% consistent</span> */}
-                                                </>
+                                                <span className={index === 0 ? 'text-yellow-200' : ''}>
+                                                    {formatNumber(user.total_steps)} steps
+                                                </span>
                                             ) : (
                                                 <>
                                                     <span className={index === 0 ? 'text-yellow-200' : ''}>
                                                         {user.completion_pct}%
-
                                                     </span>
                                                     <span className="text-gray-700">•</span>
                                                     <span>{user.days_met_goal} / {data.total_challenge_days} days</span>
-
                                                 </>
                                             )}
                                         </div>
                                     </div>
+                                    {/* Badge logic for steps and consistency tabs - extreme right */}
+                                    {activeTab === 'steps' ? (
+                                        user.previous_rank !== undefined ? (
+                                            user.previous_rank !== user.rank ? (
+                                                (() => {
+                                                    const diff = user.previous_rank - user.rank;
+                                                    const improved = diff > 0;
+                                                    const worsened = diff < 0;
+                                                    return (
+                                                        <div className={`px-2 py-1 rounded-md border ml-2 flex items-center gap-1
+                                                            ${improved ? 'bg-green-500/20 border-green-500/30' : 'bg-red-500/20 border-red-500/30'}`}
+                                                        >
+                                                            <span className={`text-xs font-bold ${improved ? 'text-green-400' : 'text-red-400'}`}>{improved ? '▲' : '▼'}</span>
+                                                            <span className={`text-xs font-bold ${improved ? 'text-green-400' : 'text-red-400'}`}>{Math.abs(diff)}</span>
+                                                        </div>
+                                                    );
+                                                })()
+                                            ) : (
+                                                <span className="text-xs text-gray-400 ml-2">↔</span>
+                                            )
+                                        ) : null
+                                    ) : (
+                                        user.previous_consistency_rank !== undefined && user.consistency_rank !== undefined ? (
+                                            user.previous_consistency_rank !== user.consistency_rank ? (
+                                                (() => {
+                                                    const diff = user.previous_consistency_rank - user.consistency_rank;
+                                                    const improved = diff > 0;
+                                                    const worsened = diff < 0;
+                                                    return (
+                                                        <div className={`px-2 py-1 rounded-md border ml-2 flex items-center gap-1
+                                                            ${improved ? 'bg-green-500/20 border-green-500/30' : 'bg-red-500/20 border-red-500/30'}`}
+                                                        >
+                                                            <span className={`text-xs font-bold ${improved ? 'text-green-400' : 'text-red-400'}`}>{improved ? '▲' : '▼'}</span>
+                                                            <span className={`text-xs font-bold ${improved ? 'text-green-400' : 'text-red-400'}`}>{Math.abs(diff)}</span>
+                                                        </div>
+                                                    );
+                                                })()
+                                            ) : (
+                                                <span className="text-xs text-gray-400 ml-2">↔</span>
+                                            )
+                                        ) : null
+                                    )}
                                 </div>
                             </motion.div>
                         ))}
@@ -523,26 +559,61 @@ export default function LeaderboardPage() {
                                         </div>
                                     </div>
 
-                                    {/* Show progress bar for consistency tab */}
-                                    {activeTab === 'consistency' && (
-                                        <div className="w-16">
-                                            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full transition-all duration-300"
-                                                    style={{ width: `${user.completion_pct}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
+                                    {/* Progress bar for consistency tab removed as requested */}
 
-                                    {/* Show streak badge for steps tab */}
-                                    {activeTab === 'steps' && user.streak >= 7 && (
-                                        <div className="bg-orange-500/20 px-2 py-1 rounded-md border border-orange-500/30">
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-xs">🔥</span>
-                                                <span className="text-xs font-bold text-orange-300">{user.streak}</span>
-                                            </div>
-                                        </div>
+                                    {/* Badge logic for steps and consistency tabs */}
+                                    {activeTab === 'steps' ? (
+                                        user.previous_rank !== undefined ? (
+                                            user.previous_rank !== user.rank ? (
+                                                (() => {
+                                                    const diff = user.previous_rank - user.rank;
+                                                    const improved = diff > 0;
+                                                    const worsened = diff < 0;
+                                                    return (
+                                                        <div className={`px-2 py-1 rounded-md border ml-2 flex items-center gap-1
+                                                            ${improved ? 'bg-green-500/20 border-green-500/30' : 'bg-red-500/20 border-red-500/30'}`}
+                                                        >
+                                                            <span className={`text-xs font-bold 
+                                                                ${improved ? 'text-green-400' : 'text-red-400'}`}
+                                                            >
+                                                                {improved ? '▲' : '▼'}
+                                                            </span>
+                                                            <span className={`text-xs font-bold ${improved ? 'text-green-400' : 'text-red-400'}`}>
+                                                                {Math.abs(diff)}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })()
+                                            ) : (
+                                                <span className="text-xs text-gray-400 ml-2">↔</span>
+                                            )
+                                        ) : null
+                                    ) : (
+                                        user.previous_consistency_rank !== undefined && user.consistency_rank !== undefined ? (
+                                            user.previous_consistency_rank !== user.consistency_rank ? (
+                                                (() => {
+                                                    const diff = user.previous_consistency_rank - user.consistency_rank;
+                                                    const improved = diff > 0;
+                                                    const worsened = diff < 0;
+                                                    return (
+                                                        <div className={`px-2 py-1 rounded-md border ml-2 flex items-center gap-1
+                                                            ${improved ? 'bg-green-500/20 border-green-500/30' : 'bg-red-500/20 border-red-500/30'}`}
+                                                        >
+                                                            <span className={`text-xs font-bold 
+                                                                ${improved ? 'text-green-400' : 'text-red-400'}`}
+                                                            >
+                                                                {improved ? '▲' : '▼'}
+                                                            </span>
+                                                            <span className={`text-xs font-bold ${improved ? 'text-green-400' : 'text-red-400'}`}>
+                                                                {Math.abs(diff)}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })()
+                                            ) : (
+                                                <span className="text-xs text-gray-400 ml-2">↔</span>
+                                            )
+                                        ) : null
                                     )}
                                 </div>
                             </motion.div>

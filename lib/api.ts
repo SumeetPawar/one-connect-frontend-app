@@ -52,18 +52,18 @@ export async function api<T>(
 
   // If access expired -> refresh -> retry #2
   if (res.status === 401 && opts.auth !== false) {
-    try {
-      const ok = await refreshAccessToken();
-      if (ok) {
-        ({ res, data } = await doFetch());
-      } else {
+    const ok = await refreshAccessToken();
+    if (ok) {
+      ({ res, data } = await doFetch());
+    } else {
+      // Only logout if refresh token is also gone (truly expired session)
+      const hasRefreshToken = typeof window !== "undefined" && !!localStorage.getItem("refresh_token");
+      if (!hasRefreshToken) {
         logout();
         throw new ApiError("Session expired. Please login again.", 401, null);
       }
-    } catch (refreshError) {
-      console.error("Token refresh failed:", refreshError);
-      logout();
-      throw new ApiError("Session expired. Please login again.", 401, null);
+      // Refresh token still present but refresh failed (network issue) — don't logout
+      throw new ApiError("Request failed, please try again.", 401, null);
     }
   }
 
