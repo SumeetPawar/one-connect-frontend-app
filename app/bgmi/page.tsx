@@ -48,7 +48,21 @@ interface TrendPt {
 
 
 /* Map API scan → SCAN_VALUES shape */
-function scanToValues(s: BodyMetricScan) {
+function scanToValues(s: BodyMetricScan | undefined | null) {
+  if (!s) {
+    return {
+      weight: 0,
+      bmi: 0,
+      visceral: 0,
+      fat: 0,
+      muscle: 0,
+      water: 0,
+      bmr: 0,
+      protein: 0,
+      metage: 0,
+      bone: 0,
+    };
+  }
   return {
     weight: s.weight_kg ?? 0,
     bmi: s.bmi ?? 0,
@@ -427,14 +441,23 @@ export default function ScanReport() {
   const [activity, setActivity] = useState<Activity>("moderate");
   const [height, setHeight] = useState("177");
 
+  // ── API error + startup state ─────────────────────────────────
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [showStartup, setShowStartup] = useState(false);
+  const [showStartMeasure, setShowStartMeasure] = useState(false);
+
   // ── Derived ───────────────────────────────────────────────────
   const ageNum = parseInt(age) || 32;
   const heightNum = parseInt(height) || 177;
-  const ranges = computeRanges(ageNum, gender, activity, heightNum, scanValues.weight);
-  const METRICS = buildMetrics(ranges, scanValues);
+  let METRICS: Metric[] = [];
+  let ranges: Record<string, [number, number]> = {};
+  if (!showStartMeasure) {
+    ranges = computeRanges(ageNum, gender, activity, heightNum, scanValues.weight);
+    METRICS = buildMetrics(ranges, scanValues);
+  }
 
   const [form, setForm] = useState<Record<string, string>>(() =>
-    Object.fromEntries(METRICS.map(m => [m.key, String(m.value)]))
+    METRICS.length > 0 ? Object.fromEntries(METRICS.map(m => [m.key, String(m.value)])) : {}
   );
 
   // ── Load profile + latest scan + history on mount ─────────────
@@ -450,27 +473,46 @@ export default function ScanReport() {
 
         if (cancelled) return;
 
+        // Defensive: check for missing/null/undefined profile fields
+        if (!profileRes || profileRes.age == null || profileRes.gender == null || profileRes.activity_level == null || profileRes.height_cm == null) {
+          setShowStartup(true);
+          setLoading(false);
+          return;
+        }
+
         if (profileRes.age) setAge(String(profileRes.age));
         if (profileRes.gender) setGender(profileRes.gender as Gender);
         if (profileRes.activity_level) setActivity(profileRes.activity_level as Activity);
         if (profileRes.height_cm) setHeight(String(Math.round(profileRes.height_cm)));
 
-        if (latestRes) {
+        if (!latestRes) {
+          setShowStartMeasure(true);
+          setLoading(false);
+          return;
+        }
+
+        // Defensive: check for undefined properties before mapping
+        try {
           const sv = scanToValues(latestRes);
           setScanValues(sv);
           setForm(Object.fromEntries(Object.entries(sv).map(([k, v]) => [k, String(v)])));
           setLastScanDate(new Date(latestRes.recorded_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }));
+        } catch (e) {
+          setApiError("Scan data is incomplete or malformed. Please check your latest measurement.");
+          setLoading(false);
+          return;
         }
 
         setTrendData({
-          all: historyToTrend(historyRes.all),
-          y1: historyToTrend(historyRes.y1),
-          m6: historyToTrend(historyRes.m6),
-          m3: historyToTrend(historyRes.m3),
+          all: historyToTrend(historyRes.all || []),
+          y1: historyToTrend(historyRes.y1 || []),
+          m6: historyToTrend(historyRes.m6 || []),
+          m3: historyToTrend(historyRes.m3 || []),
         });
 
       } catch (err: any) {
         if (err?.status === 401) router.push("/login");
+        setApiError("Failed to load data from server. Please try again later.");
         console.error(err);
       } finally {
         if (!cancelled) setLoading(false);
@@ -565,6 +607,41 @@ export default function ScanReport() {
       </div>
     </div>
   );
+
+  if (apiError) return (
+    <div style={{
+      minHeight: "100vh", background: "#0F0F11", display: "flex",
+      alignItems: "center", justifyContent: "center", fontFamily: "Figtree,sans-serif"
+    }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.08)",
+          borderTopColor: "rgba(255,255,255,0.50)", margin: "0 auto"
+        }} />
+        <div style={{ fontSize: 15, color: "#FF453A", marginTop: 18, fontWeight: 600 }}>{apiError}</div>
+      </div>
+    </div>
+  );
+
+  if (showStartMeasure) {
+    return (
+      <div style={{
+        minHeight: "100vh", background: C.bg, color: C.text, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "Figtree, sans-serif" }}>
+        <h2 style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>Start Body Measurement</h2>
+        <p style={{ fontSize: 16, color: C.sub, marginBottom: 32 }}>No measurements found. Begin by adding your first body scan to track your progress!</p>
+        <button
+          onClick={() => setShowModal(true)}
+          style={{
+            background: "#7B5CF5", color: "#fff", border: "none", borderRadius: 14, fontSize: 17, fontWeight: 600,
+            padding: "14px 36px", cursor: "pointer", boxShadow: "0 2px 12px rgba(123,92,245,0.12)",
+            transition: "opacity 0.15s"
+          }}
+          onMouseDown={e => { (e.currentTarget as HTMLElement).style.opacity = "0.75"; }}
+          onMouseUp={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+        >Add First Measurement</button>
+      </div>
+    );
+  }
 
   return (
     <>
