@@ -168,10 +168,10 @@ export async function getChallengeWeeklySteps(
   // Week is Monday-Sunday, with Sunday included
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const dayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, ...
   const monday = new Date(today);
-  
+
   if (dayOfWeek === 0) {
     // If today is Sunday, it's the last day of the current week
     // Current week's Monday is 6 days ago
@@ -237,5 +237,106 @@ export async function getCurrentGoal(): Promise<CurrentGoalResponse> {
   return api<CurrentGoalResponse>("/api/goals/current", {
     method: "GET",
     auth: true,
+  });
+}
+
+// ==========================================
+// BODY COMPOSITION API
+// ==========================================
+
+export interface BodyMetricScan {
+  id: string;
+  user_id: string;
+  recorded_date: string;
+  weight_kg: number | null;
+  bmi: number | null;
+  body_fat_pct: number | null;
+  visceral_fat: number | null;
+  muscle_mass_kg: number | null;
+  bone_mass_kg: number | null;
+  hydration_pct: number | null;
+  protein_pct: number | null;
+  bmr_kcal: number | null;
+  metabolic_age: number | null;
+}
+
+export interface BodyMetricHistory {
+  all: BodyMetricScan[];
+  y1: BodyMetricScan[];
+  m6: BodyMetricScan[];
+  m3: BodyMetricScan[];
+}
+
+export interface BodyMetricCreateRequest {
+  recorded_date?: string;       // YYYY-MM-DD, defaults to today
+  weight_kg?: number | null;
+  body_fat_pct?: number | null;
+  visceral_fat?: number | null;
+  muscle_mass_kg?: number | null;
+  bone_mass_kg?: number | null;
+  hydration_pct?: number | null;
+  protein_pct?: number | null;
+  bmr_kcal?: number | null;
+  metabolic_age?: number | null;
+  height_cm?: number | null; // override user's stored height
+}
+
+export interface BodyProfile {
+  age: number | null;
+  gender: string | null;  // "male" | "female"
+  activity_level: string | null;  // "sedentary"|"light"|"moderate"|"active"|"athlete"
+  height_cm: number | null;
+}
+
+export interface BodyProfileUpdateRequest {
+  age?: number;
+  gender?: string;
+  activity_level?: string;
+  height_cm?: number;
+}
+
+// GET /api/body-metrics/latest
+export async function getLatestScan(): Promise<BodyMetricScan> {
+  return api<BodyMetricScan>("/api/body-metrics/latest", {
+    method: "GET",
+    auth: true,
+  });
+}
+
+// GET /api/body-metrics/history  — returns all periods in one call
+export async function getScanHistory(): Promise<BodyMetricHistory> {
+  return api<BodyMetricHistory>("/api/body-metrics/history", {
+    method: "GET",
+    auth: true,
+  });
+}
+
+// POST /api/body-metrics  — save a new scan
+export async function saveScan(data: BodyMetricCreateRequest): Promise<BodyMetricScan> {
+  return api<BodyMetricScan>("/api/body-metrics", {
+    method: "POST",
+    auth: true,
+    body: JSON.stringify(data),
+  });
+}
+
+// ==========================================
+// BODY PROFILE API
+// ==========================================
+
+// GET /api/users/me/profile
+export async function getBodyProfile(): Promise<BodyProfile> {
+  return api<BodyProfile>("/api/me/profile", {
+    method: "GET",
+    auth: true,
+  });
+}
+
+// PUT /api/users/me/profile
+export async function updateBodyProfile(data: BodyProfileUpdateRequest): Promise<BodyProfile> {
+  return api<BodyProfile>("/api/me/profile", {
+    method: "PUT",
+    auth: true,
+    body: JSON.stringify(data),
   });
 }

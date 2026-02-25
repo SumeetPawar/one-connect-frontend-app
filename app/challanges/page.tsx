@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Header from "../commponents/Header";
 import { api, isApiError } from "@/lib/api";
-    import { useAuthRedirect } from '@/hooks/useAuthRedirect';
+import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
@@ -631,18 +631,19 @@ export default function Dashboard() {
 
                         {/* Body Stats - Coming Soon */}
                         <div
+                            onClick={() => router.push('/bgmi')}  
                             style={{
                                 background: 'rgba(255, 255, 255, 0.03)',
                                 backdropFilter: 'blur(20px)',
                                 borderRadius: '16px',
                                 padding: '18px 16px',
-                                cursor: 'not-allowed',
+                                cursor: 'pointer',                          // was 'not-allowed'
                                 border: '1px solid rgba(255, 255, 255, 0.05)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '12px',
                                 minHeight: '68px',
-                                opacity: '0.5'
+                                opacity: '1'                                // was '0.5'
                             }}
                         >
                             <div style={{
@@ -858,7 +859,7 @@ export default function Dashboard() {
                                 )}
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                               
+
                                     <div style={{
                                         width: '36px',
                                         height: '36px',
