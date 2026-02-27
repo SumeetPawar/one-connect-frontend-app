@@ -2,7 +2,7 @@
 
 import { useState, useEffect, type CSSProperties, type FormEvent, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/lib/auth";
+import { login, isAccessTokenExpiredOrExpiring } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,8 +14,9 @@ export default function LoginPage() {
   const [currentWord, setCurrentWord] = useState("Fitness");
 
   useEffect(() => {
+    // Only redirect away if the access token exists AND is not expired
     const token = localStorage.getItem("access_token");
-    if (token) {
+    if (token && !isAccessTokenExpiredOrExpiring(0)) {
       router.replace("/challanges");
     }
   }, [router]);

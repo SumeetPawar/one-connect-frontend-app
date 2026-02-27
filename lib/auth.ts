@@ -1,5 +1,9 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://cbiqa.dev.honeywellcloud.com/socialapi";
 
+// Must match basePath in next.config.ts — used for window.location.href redirects
+// (Next.js router.replace() handles basePath automatically, but window.location.href does not)
+const LOGIN_URL = '/socialapp/login';
+
 interface AuthResponse {
   access_token: string;
   refresh_token: string;
@@ -24,6 +28,33 @@ interface SignupResult {
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("access_token");
+}
+
+/**
+ * Decode a JWT and return its payload, or null if invalid.
+ */
+function decodeJwt(token: string): Record<string, any> | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns true if the access token is expired or will expire within `bufferSeconds`.
+ * If no token or can't decode, treat as expired.
+ */
+export function isAccessTokenExpiredOrExpiring(bufferSeconds = 300): boolean {
+  const token = getAccessToken();
+  if (!token) return true;
+  const payload = decodeJwt(token);
+  if (!payload || !payload.exp) return true;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  return payload.exp - nowSeconds < bufferSeconds;
 }
 
 export function getRefreshToken(): string | null {
@@ -125,7 +156,7 @@ export function logout(): void {
   clearTokens();
 
   if (typeof window !== "undefined") {
-    window.location.href = "/socialapp/login";
+    window.location.href = LOGIN_URL;
   }
 }
 
@@ -205,55 +236,50 @@ export function getCurrentUser() {
 // ==========================================
 // BACKGROUND TOKEN REFRESH (PERSISTENT)
 // ==========================================
+// Access token: 30 minutes | Refresh token: 90 days
+// Check every 5 minutes; only call the API if token expires within 5 minutes.
 
 let refreshIntervalId: NodeJS.Timeout | null = null;
 
 export function startBackgroundRefresh(): void {
-  if (refreshIntervalId) {
-    return;
-  }
+  if (refreshIntervalId) return;
 
-  // Backend: ACCESS_TOKEN_MIN=30 (expires in 30 minutes)
-  // Refresh every 25 minutes to keep a safety buffer before expiry
+  const CHECK_INTERVAL_MS = 5 * 60 * 1000;  // check every 5 minutes
+  const EXPIRY_BUFFER_SECONDS = 5 * 60;     // refresh if < 5 min left on token
+
   refreshIntervalId = setInterval(async () => {
     const refreshToken = getRefreshToken();
-
-    // If refresh token is gone, session is truly over
     if (!refreshToken) {
       console.log("⚠️ No refresh token found, stopping refresh");
       stopBackgroundRefresh();
       return;
     }
 
-    console.log("🔄 Refreshing token...");
+    // Only hit the API if the access token is actually near expiry
+    if (!isAccessTokenExpiredOrExpiring(EXPIRY_BUFFER_SECONDS)) {
+      return; // token still has plenty of life, skip
+    }
+
+    console.log("🔄 Access token expiring soon — refreshing...");
     const success = await refreshAccessToken();
 
     if (success) {
       console.log("✅ Token refreshed successfully");
     } else {
-      // Only stop if refresh token was cleared (401 = truly expired)
-      // On network errors, refreshAccessToken keeps tokens and returns false — keep retrying
       const stillHasRefreshToken = getRefreshToken();
       if (!stillHasRefreshToken) {
-        console.log("❌ Refresh token invalidated, stopping refresh and logging out");
+        console.log("❌ Refresh token invalidated — logging out");
         stopBackgroundRefresh();
         if (typeof window !== "undefined") {
-          window.location.href = "/socialapp/login";
+          window.location.href = LOGIN_URL;
         }
       } else {
         console.log("⚠️ Token refresh failed (network/server issue) — will retry next cycle");
       }
     }
-  }, 25 * 60 * 1000);
+  }, CHECK_INTERVAL_MS);
 
-  // Do initial refresh immediately
-  refreshAccessToken().then((success) => {
-    if (success) {
-      console.log("✅ Initial token refresh successful");
-    }
-  });
-
-  console.log("🔄 Background token refresh started (every 1 minute)");
+  console.log("🔄 Background token refresh started (checking every 5 minutes)");
 }
 export function stopBackgroundRefresh(): void {
   if (refreshIntervalId) {
@@ -275,13 +301,33 @@ export function setupVisibilityRefresh(): (() => void) | undefined {
   const handleVisibilityChange = async () => {
     if (document.visibilityState === "visible") {
       console.log("👀 Tab became visible, checking token...");
-      const token = getAccessToken();
 
-      if (token) {
-        const success = await refreshAccessToken();
-        if (success) {
-          console.log("✅ Token refreshed on tab focus");
+      const refreshToken = getRefreshToken();
+      if (!refreshToken) {
+        console.log("❌ No refresh token on focus — redirecting to login");
+        clearTokens();
+        window.location.href = LOGIN_URL;
+        return;
+      }
+
+      // Only refresh if the access token is expired or expiring within 5 minutes
+      // This handles the "opens app after days" case where access token is long-expired
+      if (!isAccessTokenExpiredOrExpiring(5 * 60)) {
+        console.log("✅ Access token still valid — no refresh needed");
+        return;
+      }
+
+      console.log("🔄 Access token expired/expiring — refreshing on focus...");
+      const success = await refreshAccessToken();
+      if (success) {
+        console.log("✅ Token refreshed on tab focus");
+      } else {
+        const stillHasRefreshToken = getRefreshToken();
+        if (!stillHasRefreshToken) {
+          console.log("❌ Session expired on focus — redirecting to login");
+          window.location.href = "/login";
         }
+        // else: network error — keep tokens, user can retry
       }
     }
   };

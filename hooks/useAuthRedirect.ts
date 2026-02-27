@@ -2,6 +2,15 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { refreshAccessToken } from '@/lib/auth';
 
+function forceRedirectToLogin(router: ReturnType<typeof useRouter>) {
+  // Clear the access token so the login page doesn't bounce the user back
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('auth_token');
+  }
+  router.replace('/login');
+}
+
 export function useAuthRedirect({ apiCheck = false }: { apiCheck?: boolean } = {}) {
   const router = useRouter();
   const isClient = typeof window !== "undefined";
@@ -12,7 +21,7 @@ export function useAuthRedirect({ apiCheck = false }: { apiCheck?: boolean } = {
     const token = isClient ? localStorage.getItem("access_token") : null;
     if (!token) {
       if (!isLoginPath) {
-        router.replace("/login");
+        forceRedirectToLogin(router);
       }
       return;
     }
@@ -30,7 +39,7 @@ export function useAuthRedirect({ apiCheck = false }: { apiCheck?: boolean } = {
             const refreshed = await refreshAccessToken();
             if (!refreshed) {
               if (!isLoginPath) {
-                router.replace("/login");
+                forceRedirectToLogin(router);
               }
               return;
             }
@@ -38,7 +47,7 @@ export function useAuthRedirect({ apiCheck = false }: { apiCheck?: boolean } = {
             accessToken = localStorage.getItem("access_token");
             if (!accessToken) {
               if (!isLoginPath) {
-                router.replace("/login");
+                forceRedirectToLogin(router);
               }
               return;
             }
@@ -47,7 +56,7 @@ export function useAuthRedirect({ apiCheck = false }: { apiCheck?: boolean } = {
               headers: { Authorization: `Bearer ${accessToken}` },
             });
             if (res.status === 401 && !isLoginPath) {
-              router.replace("/login");
+              forceRedirectToLogin(router);
               return;
             }
           }
