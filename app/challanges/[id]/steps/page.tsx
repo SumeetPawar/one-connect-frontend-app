@@ -629,6 +629,10 @@ export default function StepsTracker() {
     const weekProgress = goalWeek > 0 ? (stepsWeek / goalWeek) * 100 : 0;
     const dayProgress = goalToday > 0 ? (viewSteps / goalToday) * 100 : 0;
 
+    const totalChallengeTarget = apiWeek?.total_challenge_target ?? 0;
+    const totalChallengeSteps = apiWeek?.total_challenge_steps ?? 0;
+    const monthlyProgress = totalChallengeTarget > 0 ? (totalChallengeSteps / totalChallengeTarget) * 100 : 0;
+
     const handleTouchStart = (e: React.TouchEvent) => {
         setTouchStart(e.targetTouches[0].clientX);
         setTouchEnd(0);
@@ -657,15 +661,77 @@ export default function StepsTracker() {
     };
 
     if (apiLoading) {
-        return (
+        const Sk = ({ w = '100%', h = '14px', r = '8px', mb = '0px' }: { w?: string; h?: string; r?: string; mb?: string }) => (
             <div style={{
-                minHeight: '100vh',
-                background: '#0f172a',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}>
-                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Loading challenge data...</p>
+                width: w, height: h, borderRadius: r, marginBottom: mb, flexShrink: 0,
+                background: 'linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.05) 75%)',
+                backgroundSize: '200% 100%', animation: 'steps-shimmer 1.4s infinite',
+            }} />
+        );
+        return (
+            <div style={{ minHeight: '100vh', background: '#0f172a', padding: '16px' }}>
+                <style>{`@keyframes steps-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+                <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+
+                    {/* Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <div>
+                            <Sk w="80px" h="22px" r="8px" mb="8px" />
+                            <Sk w="130px" h="12px" r="5px" />
+                        </div>
+                        <Sk w="38px" h="38px" r="50%" />
+                    </div>
+
+                    {/* Week day ticks */}
+                    <div style={{ marginBottom: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <Sk w="70px" h="12px" r="5px" />
+                            <Sk w="80px" h="12px" r="5px" />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+                            {Array.from({ length: 7 }).map((_, i) => (
+                                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                                    <Sk w="44px" h="44px" r="50%" />
+                                    <Sk w="24px" h="9px" r="4px" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Progress ring placeholder */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                        <Sk w="160px" h="160px" r="50%" />
+                    </div>
+
+                    {/* Goal text */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                        <Sk w="180px" h="13px" r="5px" />
+                    </div>
+
+                    {/* Weekly progress bar */}
+                    <div style={{ marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                            <Sk w="100px" h="12px" r="5px" />
+                            <Sk w="40px" h="12px" r="5px" />
+                        </div>
+                        <Sk w="100%" h="8px" r="999px" mb="8px" />
+                        <Sk w="140px" h="11px" r="5px" />
+                    </div>
+
+                    {/* Health tip card */}
+                    <div style={{ borderRadius: '16px', padding: '16px', marginBottom: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}><Sk w="70px" h="11px" r="5px" /></div>
+                        <Sk w="90%" h="14px" r="5px" mb="6px" />
+                        <Sk w="70%" h="14px" r="5px" mb="14px" />
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                            {[1,2,3].map(i => <Sk key={i} w="6px" h="6px" r="3px" />)}
+                        </div>
+                    </div>
+
+                    {/* Buttons */}
+                    <Sk w="100%" h="52px" r="12px" mb="12px" />
+                    <Sk w="100%" h="52px" r="12px" />
+                </div>
             </div>
         );
     }
@@ -1033,8 +1099,8 @@ export default function StepsTracker() {
                                         </button>
 
                                         <p style={{
-                                            fontSize: '9px',
-                                            color: isSelected ? '#c084fc' : (isToday ? '#7c3aed' : '#94a3b8'),
+                                            fontSize: '11px',
+                                            color: isSelected ? '#c084fc' : (isToday ? '#a855f7' : '#94a3b8'),
                                             marginTop: '6px',
                                             fontWeight: isSelected ? '700' : '600',
                                             textTransform: 'uppercase',
@@ -1050,7 +1116,7 @@ export default function StepsTracker() {
                     {/* Progress Ring */}
                     <div style={{ position: 'relative', width: '160px', height: '160px', margin: '0 auto 20px' }}>
                         <svg viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)' }}>
-                            <circle cx="80" cy="80" r="64" fill="none" stroke="#e2e8f0" strokeWidth="11" />
+                            <circle cx="80" cy="80" r="64" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="11" />
                             <circle
                                 cx="80"
                                 cy="80"
@@ -1072,17 +1138,17 @@ export default function StepsTracker() {
 
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{ fontSize: '32px', fontWeight: '700', color: '#ffffff', lineHeight: '1' }}>{formatNumber(viewSteps)}</div>
-                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: '6px' }}>{viewLabel}</div>
-                            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>{Math.round(dayProgress)}% of goal</div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', marginTop: '6px' }}>{viewLabel}</div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginTop: '4px' }}>{Math.round(dayProgress)}% of goal</div>
                         </div>
                     </div>
 
-                    <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '20px' }}>
+                    <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.72)', marginBottom: '20px' }}>
                         Goal: {formatNumber(goalToday)} • {formatNumber(Math.max(goalToday - viewSteps, 0))} left
                     </div>
 
                     {/* Weekly Progress */}
-                    <div style={{ marginBottom: '16px' }}>
+                    {/* <div style={{ marginBottom: '16px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                             <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Weekly Progress</span>
                             <span style={{ fontSize: '12px', color: '#a855f7', fontWeight: '600' }}>{Math.round(weekProgress)}%</span>
@@ -1100,8 +1166,30 @@ export default function StepsTracker() {
                             />
                         </div>
 
-                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.62)', marginTop: '8px' }}>
                             {formatNumber(stepsWeek)} / {formatNumber(goalWeek)} steps
+                        </div>
+                    </div> */}
+
+                    {/* Monthly Progress */}
+                    <div style={{ marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Monthly Progress</span>
+                            <span style={{ fontSize: '12px', color: '#a855f7', fontWeight: '600' }}>{Math.round(monthlyProgress)}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '999px', overflow: 'hidden' }}>
+                            <div
+                                style={{
+                                    height: '100%',
+                                    width: `${monthlyProgress}%`,
+                                    background: 'linear-gradient(90deg, #7c3aed 0%, #a855f7 100%)',
+                                    borderRadius: '999px',
+                                    transition: 'width 0.5s ease',
+                                }}
+                            />
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.62)', marginTop: '8px' }}>
+                            {formatNumber(totalChallengeSteps)} / {formatNumber(totalChallengeTarget)} steps
                         </div>
                     </div>
 

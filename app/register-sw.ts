@@ -23,84 +23,108 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 // Register the service worker for PWA and push notifications
 export function registerServiceWorker(onPushSubscription?: (sub: PushSubscription) => void) {
-    console.log("Registering service worker from registerServiceWorker.ts...");
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        console.log("Service workers are supported.");
-        window.addEventListener('load', () => {
-            console.log("Window loaded, registering service worker...");
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(async reg => {
-                    console.log('Service worker registered:', reg);
-                    // Request notification permission
-                    if (Notification.permission === 'default') {
-                        await Notification.requestPermission();
-                    }
-                    // Subscribe for push if allowed
-                    if (Notification.permission === 'granted' && VAPID_PUBLIC_KEY) {
-                        console.log('===========Vapid public key:===========', VAPID_PUBLIC_KEY);
-                        const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({
+    console.log("[registerServiceWorker] Starting registration...");
+    if (typeof window === 'undefined') {
+        console.warn("[registerServiceWorker] Not running in browser context.");
+        return;
+    }
+    if (!('serviceWorker' in navigator)) {
+        console.warn("[registerServiceWorker] Service workers not supported in this browser.");
+        return;
+    }
+    console.log("[registerServiceWorker] Service workers supported.");
+    window.addEventListener('load', () => {
+        console.log("[registerServiceWorker] Window loaded, registering service worker...");
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(async reg => {
+                console.log('[registerServiceWorker] Service worker registered:', reg);
+                console.log('[registerServiceWorker] Notification permission:', Notification.permission);
+                if (Notification.permission === 'default') {
+                    console.log('[registerServiceWorker] Requesting notification permission...');
+                    await Notification.requestPermission();
+                    console.log('[registerServiceWorker] New notification permission:', Notification.permission);
+                }
+                if (Notification.permission !== 'granted') {
+                    console.warn('[registerServiceWorker] Notification permission not granted. Push will not work.');
+                    return;
+                }
+                if (!VAPID_PUBLIC_KEY) {
+                    console.error('[registerServiceWorker] VAPID_PUBLIC_KEY missing.');
+                    return;
+                }
+                console.log('[registerServiceWorker] Using VAPID_PUBLIC_KEY:', VAPID_PUBLIC_KEY);
+                let sub = null;
+                try {
+                    sub = await reg.pushManager.getSubscription();
+                    if (sub) {
+                        console.log('[registerServiceWorker] Existing push subscription found:', sub);
+                    } else {
+                        console.log('[registerServiceWorker] No push subscription, subscribing...');
+                        sub = await reg.pushManager.subscribe({
                             userVisibleOnly: true,
                             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource
                         });
-                        console.log('Push subscription:', sub);
-
-                        // Send subscription to backend
-                        try {
-                            const token = localStorage.getItem("access_token");
-                            if (!token) {
-                                console.warn('No auth token available, skipping push subscription save');
-                                if (onPushSubscription) onPushSubscription(sub);
-                                return;
-                            }
-
-                            const sendSubscription = async (accessToken: string) => {
-                                return fetch(PUSH_SUBSCRIBE_URL, {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json",
-                                        "Authorization": `Bearer ${accessToken}`
-                                    },
-                                    body: JSON.stringify({
-                                        endpoint: sub.endpoint,
-                                        keys: {
-                                            p256dh: sub.toJSON().keys?.p256dh,
-                                            auth: sub.toJSON().keys?.auth
-                                        }
-                                    })
-                                });
-                            };
-
-                            let response = await sendSubscription(token);
-
-                            if (response.status === 401) {
-                                const refreshed = await refreshAccessToken();
-                                if (refreshed) {
-                                    const newToken = localStorage.getItem("access_token");
-                                    if (newToken) {
-                                        response = await sendSubscription(newToken);
-                                    }
-                                }
-                            }
-
-                            if (response.ok) {
-                                console.log('Push subscription saved to backend');
-                            } else if (response.status === 401) {
-                                console.error('Authentication failed after refresh, redirecting to login...');
-                                window.location.href = "/socialapp/login";
-                                return;
-                            } else {
-                                console.error('Failed to save subscription to backend:', await response.text());
-                            }
-                        } catch (error) {
-                            console.error('Error saving subscription to backend:', error);
-                        }
-
-                        if (onPushSubscription) onPushSubscription(sub);
+                        console.log('[registerServiceWorker] New push subscription:', sub);
                     }
-                })
-                .catch(err => {
-                    console.error('Service worker registration failed:', err);
-                });
-        });
-    }
+                } catch (err) {
+                    console.error('[registerServiceWorker] Error during push subscription:', err);
+                    return;
+                }
+                // Send subscription to backend
+                try {
+                    const token = localStorage.getItem("access_token");
+                    if (!token) {
+                        console.warn('[registerServiceWorker] No auth token available, skipping push subscription save');
+                        if (onPushSubscription) onPushSubscription(sub);
+                        return;
+                    }
+                    const sendSubscription = async (accessToken: string) => {
+                        console.log('[registerServiceWorker] Sending subscription to backend with token:', accessToken);
+                        return fetch(PUSH_SUBSCRIBE_URL, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${accessToken}`
+                            },
+                            body: JSON.stringify({
+                                endpoint: sub.endpoint,
+                                keys: {
+                                    p256dh: sub.toJSON().keys?.p256dh,
+                                    auth: sub.toJSON().keys?.auth
+                                }
+                            })
+                        });
+                    };
+                    let response = await sendSubscription(token);
+                    console.log('[registerServiceWorker] Backend response status:', response.status);
+                    if (response.status === 401) {
+                        console.warn('[registerServiceWorker] Token expired, refreshing...');
+                        const refreshed = await refreshAccessToken();
+                        if (refreshed) {
+                            const newToken = localStorage.getItem("access_token");
+                            if (newToken) {
+                                response = await sendSubscription(newToken);
+                                console.log('[registerServiceWorker] Backend response after refresh:', response.status);
+                            }
+                        }
+                    }
+                    if (response.ok) {
+                        console.log('[registerServiceWorker] Push subscription saved to backend');
+                    } else if (response.status === 401) {
+                        console.error('[registerServiceWorker] Authentication failed after refresh, redirecting to login...');
+                        window.location.href = "/socialapp/login";
+                        return;
+                    } else {
+                        console.error('[registerServiceWorker] Failed to save subscription to backend:', await response.text());
+                    }
+                } catch (error) {
+                    console.error('[registerServiceWorker] Error saving subscription to backend:', error);
+                }
+                if (onPushSubscription) onPushSubscription(sub);
+            })
+            .catch(err => {
+                console.error('[registerServiceWorker] Service worker registration failed:', err);
+            });
+    });
 }
+

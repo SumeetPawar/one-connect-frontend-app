@@ -7,6 +7,35 @@ import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
+        // Use same user/admin detection logic as Header
+        const [user, setUser] = useState(null);
+        const [isAdmin, setIsAdmin] = useState(false);
+        useEffect(() => {
+            const fetchUserProfile = async () => {
+                try {
+                    const API_BASE =
+                        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
+                        "https://cbiqa.dev.honeywellcloud.com/socialapi";
+                    const token = localStorage.getItem("access_token");
+
+                    if (!token) return;
+
+                    const res = await fetch(`${API_BASE}/api/me`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+
+                    if (res.ok) {
+                        const userData = await res.json();
+                        setUser(userData);
+                        setIsAdmin(userData.role === "admin");
+                    }
+                } catch (e) {
+                    setUser(null);
+                    setIsAdmin(false);
+                }
+            };
+            fetchUserProfile();
+        }, []);
     type ApiChallenge = {
         id: string;
         title: string;
@@ -37,10 +66,11 @@ export default function Dashboard() {
     const [error, setError] = useState<string | null>(null);
     const [selectedChallenge, setSelectedChallenge] = useState<ApiChallenge | null>(null);
     const [isJoining, setIsJoining] = useState(false);
-    const [selectedTarget, setSelectedTarget] = useState<number>(3000);
+    const [selectedTarget, setSelectedTarget] = useState<number>(5000);
     const [showTargetSelector, setShowTargetSelector] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [joinedChallengeName, setJoinedChallengeName] = useState<string>("");
+    const [navigating, setNavigating] = useState(false);
 
     const router = useRouter();
 
@@ -58,10 +88,9 @@ export default function Dashboard() {
                     method: "GET",
                 });
 
-                // Sort: active first, then by start date
+                // Sort by start date descending (latest first)
                 const sorted = [...data].sort((a, b) => {
-                    if (a.status !== b.status) return a.status === "active" ? -1 : 1;
-                    return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+                    return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
                 });
 
                 setChallenges(sorted);
@@ -78,7 +107,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (selectedChallenge && !selectedChallenge.user_joined) {
-            setSelectedTarget(3000); // Reset to default when opening modal
+            setSelectedTarget(5000); // Reset to default when opening modal
         }
     }, [selectedChallenge]);
 
@@ -116,61 +145,82 @@ export default function Dashboard() {
         }
     };
 
-    // Loading state
+    // Loading state — skeleton
     if (loading) {
-        return (
+        const SkeletonBlock = ({ w = '100%', h = '14px', radius = '8px', mb = '0px' }: { w?: string; h?: string; radius?: string; mb?: string }) => (
             <div style={{
-                minHeight: '100vh',
-                width: '100%',
-                backgroundColor: '#0f172a',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
+                width: w, height: h, borderRadius: radius, marginBottom: mb,
+                background: 'linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.05) 75%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 1.4s infinite',
+            }} />
+        );
+        return (
+            <div style={{ minHeight: '100vh', width: '100%', backgroundColor: '#0f172a' }}>
+                <style>{`
+                    @keyframes shimmer {
+                        0%   { background-position: 200% 0; }
+                        100% { background-position: -200% 0; }
+                    }
+                `}</style>
+
+                {/* Skeleton Header */}
                 <div style={{
-                    fontSize: '16px',
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    textAlign: 'center'
+                    padding: '20px 20px 18px',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                 }}>
-                    <div style={{
-                        width: '40px',
-                        height: '40px',
-                        border: '3px solid rgba(124, 58, 237, 0.3)',
-                        borderTop: '3px solid #7c3aed',
-                        borderRadius: '50%',
-                        margin: '0 auto 16px',
-                        animation: 'spin 1s linear infinite'
-                    }} />
-                    <div style={{ marginBottom: '14px', marginTop: '2px' }}>
-                        {selectedChallenge && selectedChallenge.user_joined && (
-                            <div style={{
-                                display: 'inline-block',
-                                background: 'rgba(16, 185, 129, 0.25)',
-                                padding: '5px 12px',
-                                borderRadius: '12px',
-                                fontSize: '11px',
-                                fontWeight: '600',
-                                color: '#10b981',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px',
-                                marginBottom: '12px',
-                                border: '1px solid rgba(16, 185, 129, 0.4)'
-                            }}>
-                                ✓ Joined
-                            </div>
-                        )}
-                        <h2 style={{
-                            fontSize: '24px',
-                            fontWeight: '700',
-                            color: '#ffffff',
-                            marginBottom: '8px',
-                            letterSpacing: '-0.02em',
-                            lineHeight: '1.2'
+                    <SkeletonBlock w="80px" h="22px" radius="8px" />
+                    <SkeletonBlock w="36px" h="36px" radius="50%" />
+                </div>
+
+                {/* Skeleton Content */}
+                <div style={{
+                    background: 'linear-gradient(180deg, rgba(124,58,237,0.08) 0%, rgba(15,23,42,1) 100%)',
+                    padding: '24px 20px 28px',
+                }}>
+                    {/* Two challenge card skeletons */}
+                    {[1, 2].map(i => (
+                        <div key={i} style={{
+                            borderRadius: '18px',
+                            padding: '28px 22px',
+                            marginBottom: '12px',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.07)',
                         }}>
-                            {selectedChallenge ? selectedChallenge.title : ""}
-                        </h2>
+                            {/* Badge */}
+                            <SkeletonBlock w="80px" h="22px" radius="11px" mb="16px" />
+                            {/* Title */}
+                            <SkeletonBlock w="70%" h="24px" radius="8px" mb="10px" />
+                            {/* Description */}
+                            <SkeletonBlock w="90%" h="14px" radius="6px" mb="6px" />
+                            <SkeletonBlock w="60%" h="14px" radius="6px" mb="20px" />
+                            {/* Join pill */}
+                            <SkeletonBlock w="90px" h="30px" radius="12px" />
+                        </div>
+                    ))}
+
+                    {/* Quick Actions skeleton */}
+                    <div style={{ marginTop: '24px' }}>
+                        <SkeletonBlock w="110px" h="16px" radius="6px" mb="14px" />
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px' }}>
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} style={{
+                                    borderRadius: '16px',
+                                    padding: '18px 16px',
+                                    background: 'rgba(255,255,255,0.03)',
+                                    border: '1px solid rgba(255,255,255,0.06)',
+                                    display: 'flex', alignItems: 'center', gap: '12px', minHeight: '68px'
+                                }}>
+                                    <SkeletonBlock w="38px" h="38px" radius="10px" />
+                                    <div style={{ flex: 1 }}>
+                                        <SkeletonBlock w="70%" h="13px" radius="5px" mb="8px" />
+                                        <SkeletonBlock w="50%" h="11px" radius="5px" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div>Loading...</div>
                 </div>
             </div>
         );
@@ -216,6 +266,17 @@ export default function Dashboard() {
         );
     }
 
+    // Find the challenge with the latest start date
+    let latestIdx = -1;
+    let latestDate = 0;
+    challenges.forEach((ch, idx) => {
+        const start = new Date(ch.start_date).getTime();
+        if (start > latestDate) {
+            latestDate = start;
+            latestIdx = idx;
+        }
+    });
+
     return (
         <div style={{
             minHeight: '100vh',
@@ -254,15 +315,23 @@ export default function Dashboard() {
                     </div>
                 ) : (
                     challenges.map((ch, idx) => {
-                        const isFeatured = idx === 0;
+                        const isFeatured = idx === latestIdx;
                         const bgGradient = idx % 2 === 0
                             ? "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)"
                             : "linear-gradient(135deg, rgba(59, 130, 246, 0.85) 0%, rgba(37, 99, 235, 0.85) 100%)";
 
+                        const isExpired = new Date(ch.end_date).getTime() < Date.now();
+                        const isJoined = ch.user_joined;
                         return (
                             <div
                                 key={ch.id}
-                                onClick={() => setSelectedChallenge(ch)}
+                                onClick={() => {
+                                    if (isExpired || ch.status === "completed" || isJoined) {
+                                        router.push(`/challanges/${ch.id}/steps`);
+                                    } else {
+                                        setSelectedChallenge(ch);
+                                    }
+                                }}
                                 style={{
                                     borderRadius: "18px",
                                     padding: "28px 22px",
@@ -343,17 +412,24 @@ export default function Dashboard() {
                                             <span style={{ fontSize: 11, fontWeight: 600, color: "#fff" }}>Joined</span>
                                         </div>
                                     ) : (
-                                        <div style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: 6,
-                                            background: "rgba(255,255,255,0.15)",
-                                            padding: "5px 13px",
-                                            borderRadius: "12px",
-                                            border: "1px solid rgba(255,255,255,0.25)"
-                                        }}>
-                                            <span style={{ fontSize: 11, fontWeight: 600, color: "#fff" }}>Join Now</span>
-                                        </div>
+                                        (() => {
+                                            const now = new Date();
+                                            const start = new Date(ch.start_date);
+                                            const end = new Date(ch.end_date);
+                                            return now >= start && now <= end;
+                                        })() && (
+                                            <div style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                background: "rgba(255,255,255,0.15)",
+                                                padding: "5px 13px",
+                                                borderRadius: "12px",
+                                                border: "1px solid rgba(255,255,255,0.25)"
+                                            }}>
+                                                <span style={{ fontSize: 11, fontWeight: 600, color: "#fff" }}>Join Now</span>
+                                            </div>
+                                        )
                                     )}
                                 </div>
                             </div>
@@ -362,7 +438,7 @@ export default function Dashboard() {
                 )}
 
                 {/* STATIC COMING SOON CARD */}
-                <div
+                {/* <div
                     style={{
                         background: 'rgba(255, 255, 255, 0.04)',
                         borderRadius: '18px',
@@ -422,9 +498,8 @@ export default function Dashboard() {
                             <span role="img" aria-label="surprise">🎁</span> A little surprise awaits teams who finish strong!
                         </p>
                     </div>
-                </div>
+                </div> */}
 
-                {/* Quick Actions */}
                 {/* Quick Actions */}
                 <div style={{ marginTop: '24px' }}>
                     <h3 style={{
@@ -445,11 +520,32 @@ export default function Dashboard() {
                         {/* Log Steps - Active if user joined a challenge */}
                         {challenges.some(ch => ch.user_joined) ? (
                             <div
+                                onMouseDown={(e) => {
+                                    e.currentTarget.style.transform = 'scale(0.96)';
+                                    e.currentTarget.style.opacity = '0.75';
+                                }}
+                                onMouseUp={(e) => {
+                                    if (!navigating) {
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                        e.currentTarget.style.opacity = '1';
+                                    }
+                                }}
+                                onTouchStart={(e) => {
+                                    e.currentTarget.style.transform = 'scale(0.96)';
+                                    e.currentTarget.style.opacity = '0.75';
+                                }}
+                                onTouchEnd={(e) => {
+                                    if (!navigating) {
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                        e.currentTarget.style.opacity = '1';
+                                    }
+                                }}
                                 onClick={() => {
-                                    // Find the first joined challenge
+                                    if (navigating) return;
                                     const joinedChallenge = challenges.find(ch => ch.user_joined);
                                     if (joinedChallenge) {
-                                        router.push(`/challanges/${joinedChallenge.id}/steps`);  // ✅ Fixed
+                                        setNavigating(true);
+                                        router.push(`/challanges/${joinedChallenge.id}/steps`);
                                     }
                                 }}
                                 style={{
@@ -457,23 +553,30 @@ export default function Dashboard() {
                                     backdropFilter: 'blur(20px)',
                                     borderRadius: '16px',
                                     padding: '18px 16px',
-                                    cursor: 'pointer',
+                                    cursor: navigating ? 'default' : 'pointer',
                                     border: '1px solid rgba(255, 255, 255, 0.08)',
-                                    transition: 'all 0.2s',
+                                    transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '12px',
-                                    minHeight: '68px'
+                                    minHeight: '68px',
+                                    userSelect: 'none',
+                                    WebkitUserSelect: 'none',
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)';
-                                    e.currentTarget.style.transform = 'scale(1.02)';
+                                    if (!navigating) {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)';
+                                    }
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                    e.currentTarget.style.transform = 'scale(1)';
+                                    if (!navigating) {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                        e.currentTarget.style.opacity = '1';
+                                    }
                                 }}
                             >
+                                <style>{`@keyframes qa-spin { to { transform: rotate(360deg); } }`}</style>
                                 <div style={{
                                     width: '38px',
                                     height: '38px',
@@ -482,13 +585,25 @@ export default function Dashboard() {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '18px',
                                     flexShrink: 0,
-                                    fontWeight: '600',
-                                    color: 'rgba(168, 85, 247, 0.9)',
-                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
                                 }}>
-                                    S
+                                    {navigating ? (
+                                        <div style={{
+                                            width: '18px',
+                                            height: '18px',
+                                            borderRadius: '50%',
+                                            border: '2px solid rgba(168, 85, 247, 0.25)',
+                                            borderTopColor: 'rgba(168, 85, 247, 0.9)',
+                                            animation: 'qa-spin 0.7s linear infinite',
+                                        }} />
+                                    ) : (
+                                        <span style={{
+                                            fontSize: '18px',
+                                            fontWeight: '600',
+                                            color: 'rgba(168, 85, 247, 0.9)',
+                                            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
+                                        }}>S</span>
+                                    )}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{
@@ -510,7 +625,7 @@ export default function Dashboard() {
                                         color: 'rgba(255, 255, 255, 0.6)',
                                         lineHeight: '1.3'
                                     }}>
-                                        Track your activity
+                                        {navigating ? 'Opening...' : 'Track your activity'}
                                     </div>
                                 </div>
                             </div>
@@ -629,63 +744,165 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* Body Stats - Coming Soon */}
-                        <div
-                            onClick={() => router.push('/bgmi')}  
-                            style={{
-                                background: 'rgba(255, 255, 255, 0.03)',
-                                backdropFilter: 'blur(20px)',
-                                borderRadius: '16px',
-                                padding: '18px 16px',
-                                cursor: 'pointer',                          // was 'not-allowed'
-                                border: '1px solid rgba(255, 255, 255, 0.05)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                minHeight: '68px',
-                                opacity: '1'                                // was '0.5'
-                            }}
-                        >
-                            <div style={{
-                                width: '42px',
-                                height: '42px',
-                                borderRadius: '11px',
-                                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.1) 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '21px',
-                                flexShrink: 0,
-                                fontWeight: '600',
-                                color: 'rgba(6, 182, 212, 0.6)',
-                                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                            }}>
-                                B
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
+                        {/* Body Stats - Only active for admin */}
+                        {isAdmin ? (
+                            <div
+                                onMouseDown={e => {
+                                    e.currentTarget.style.transform = 'scale(0.96)';
+                                    e.currentTarget.style.opacity = '0.75';
+                                }}
+                                onMouseUp={e => {
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                    e.currentTarget.style.opacity = '1';
+                                }}
+                                onTouchStart={e => {
+                                    e.currentTarget.style.transform = 'scale(0.96)';
+                                    e.currentTarget.style.opacity = '0.75';
+                                }}
+                                onTouchEnd={e => {
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                    e.currentTarget.style.opacity = '1';
+                                }}
+                                onClick={() => router.push('/bgmi')}
+                                style={{
+                                    background: 'rgba(6, 182, 212, 0.06)',
+                                    backdropFilter: 'blur(20px)',
+                                    borderRadius: '16px',
+                                    padding: '18px 16px',
+                                    cursor: 'pointer',
+                                    border: '1px solid rgba(6, 182, 212, 0.25)',
+                                    boxShadow: '0 0 10px rgba(6, 182, 212, 0.08)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    minHeight: '68px',
+                                    opacity: '1',
+                                    position: 'relative',
+                                    userSelect: 'none',
+                                    WebkitUserSelect: 'none',
+                                    transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
+                                }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.background = 'rgba(6, 182, 212, 0.12)';
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.background = 'rgba(6, 182, 212, 0.06)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                    e.currentTarget.style.opacity = '1';
+                                }}
+                            >
+                                {/* New badge */}
                                 <div style={{
-                                    fontSize: '14px',
+                                    position: 'absolute',
+                                    top: '8px',
+                                    right: '10px',
+                                    background: 'rgba(6, 182, 212, 0.18)',
+                                    border: '1px solid rgba(6, 182, 212, 0.35)',
+                                    borderRadius: '6px',
+                                    padding: '2px 6px',
+                                    fontSize: '9px',
+                                    fontWeight: '700',
+                                    color: 'rgba(6, 182, 212, 0.9)',
+                                    letterSpacing: '0.4px',
+                                    textTransform: 'uppercase',
+                                }}>New</div>
+                                <div style={{
+                                    width: '42px',
+                                    height: '42px',
+                                    borderRadius: '11px',
+                                    background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(8, 145, 178, 0.15) 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '21px',
+                                    flexShrink: 0,
                                     fontWeight: '600',
-                                    color: 'rgba(255, 255, 255, 0.6)',
-                                    letterSpacing: '-0.01em',
-                                    lineHeight: '1.2',
-                                    marginBottom: '4px',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis'
+                                    color: 'rgba(6, 182, 212, 0.85)',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
                                 }}>
-                                    Body Stats
+                                    B
                                 </div>
-                                <div style={{
-                                    fontSize: '11px',
-                                    fontWeight: '500',
-                                    color: 'rgba(255, 255, 255, 0.4)',
-                                    letterSpacing: '0.3px'
-                                }}>
-                                    Coming Soon
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        color: '#ffffff',
+                                        letterSpacing: '-0.01em',
+                                        lineHeight: '1.2',
+                                        marginBottom: '4px',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                    }}>
+                                        Body Stats
+                                    </div>
+                                    <div style={{
+                                        fontSize: '11px',
+                                        fontWeight: '500',
+                                        color: 'rgba(6, 182, 212, 0.7)',
+                                        letterSpacing: '0.3px'
+                                    }}>
+                                        View metrics
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.03)',
+                                    backdropFilter: 'blur(20px)',
+                                    borderRadius: '16px',
+                                    padding: '18px 16px',
+                                    cursor: 'not-allowed',
+                                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    minHeight: '68px',
+                                    opacity: '0.5'
+                                }}
+                            >
+                                <div style={{
+                                    width: '42px',
+                                    height: '42px',
+                                    borderRadius: '11px',
+                                    background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.1) 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '21px',
+                                    flexShrink: 0,
+                                    fontWeight: '600',
+                                    color: 'rgba(6, 182, 212, 0.6)',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
+                                }}>
+                                    B
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        letterSpacing: '-0.01em',
+                                        lineHeight: '1.2',
+                                        marginBottom: '4px',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                    }}>
+                                        Body Stats
+                                    </div>
+                                    <div style={{
+                                        fontSize: '11px',
+                                        fontWeight: '500',
+                                        color: 'rgba(255, 255, 255, 0.4)',
+                                        letterSpacing: '0.3px'
+                                    }}>
+                                        Coming Soon
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Wellness Tip - Always disabled */}
                         <div
@@ -966,10 +1183,10 @@ export default function Dashboard() {
                                     justifyContent: 'center',
                                 }}>
                                     {[
-                                        { value: 3000, label: '3,000', desc: 'Starter' },
+                                        // { value: 3000, label: '3,000', desc: 'Starter' },
                                         { value: 5000, label: '5,000', desc: 'Challenger' },
-                                        { value: 7500, label: '7,500', desc: 'Achiever' },
-                                        { value: 10000, label: '10,000', desc: 'Champion' }
+                                        { value: 8000, label: '8,000', desc: 'Achiever' },
+                                        // { value: 10000, label: '10,000', desc: 'Champion' }
                                     ].map((target) => (
                                         <button
                                             key={target.value}

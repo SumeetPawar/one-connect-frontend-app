@@ -1,4 +1,3 @@
-
 // app/challanges/[id]/leaderboard/page.tsx
 
 'use client';
@@ -219,143 +218,9 @@ export default function LeaderboardPage() {
                 </div>
             </div>
 
-
-
-            {/* Challenge Overview Card */}
-            <div className="px-5 mb-6 mt-4">
-                <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="relative overflow-hidden bg-gradient-to-br from-purple-600/15 to-blue-600/10 rounded-2xl border border-purple-500/30 shadow-xl"
-                >
-                    {/* Challenge Info */}
-                    <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-5 py-4 border-b border-purple-500/20">
-                        <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2.5">
-                                {/* <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
-                                    <Trophy className="w-5 h-5 text-purple-300" />
-                                </div> */}
-                                <div>
-                                    <h3 className="text-base font-bold text-white">{data.challenge_title}</h3>
-                                    <p className="text-xs text-purple-200">
-                                        Reach {formatNumber(data.challenge_goal)} steps by {new Date(data.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-2xl font-bold text-white">{data.completion_pct}%</p>
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Complete</p>
-                            </div>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="relative h-2 bg-black/20 rounded-full overflow-hidden mb-3">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${getProgressPercentage()}%` }}
-                                transition={{ duration: 1, ease: "easeOut" }}
-                                className="h-full bg-gradient-to-r from-white/90 to-white/70 rounded-full"
-                            />
-                        </div>
-
-                        {/* Milestones */}
-                        <div className="flex items-center justify-between text-[10px]">
-                            {(() => {
-                                const goal = data.challenge_goal;
-                                const current = data.my_total_steps;
-
-                                // Create milestones array
-                                const milestones = [
-                                    { value: goal * 0.25, label: `${(goal * 0.25 / 1000).toFixed(0)}K`, isCurrent: false },
-                                    { value: goal * 0.5, label: `${(goal * 0.5 / 1000).toFixed(0)}K`, isCurrent: false },
-                                    { value: goal * 0.75, label: `${(goal * 0.75 / 1000).toFixed(0)}K`, isCurrent: false },
-                                    { value: goal, label: `${(goal / 1000).toFixed(0)}K`, isCurrent: false }
-                                ];
-
-                                // Add current position
-                                milestones.push({
-                                    value: current,
-                                    label: `${(current / 1000).toFixed(0)}K`,
-                                    isCurrent: true
-                                });
-
-                                // SORT by value (ascending)
-                                milestones.sort((a, b) => a.value - b.value);
-
-                                // Take only first 5 to avoid overflow
-                                const displayMilestones = milestones.slice(0, 5);
-
-                                return displayMilestones.map((milestone, idx) => (
-                                    <div key={idx} className="flex flex-col items-center">
-                                        <span className={`mb-0.5 ${milestone.isCurrent ? 'text-purple-300' :
-                                            current >= milestone.value ? 'text-green-400' : 'text-gray-600'
-                                            }`}>
-                                            {milestone.isCurrent ? '●' : current >= milestone.value ? '✅' : '○'}
-                                        </span>
-                                        <span className={
-                                            milestone.isCurrent ? 'text-white font-bold' :
-                                                current >= milestone.value ? 'text-gray-400' : 'text-gray-500'
-                                        }>
-                                            {milestone.label}
-                                        </span>
-                                    </div>
-                                ));
-                            })()}
-                        </div>
-                        {/* Meta Info */}
-                        <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-purple-500/20">
-                            <div className="flex items-center gap-1.5 text-xs text-purple-200">
-                                <span>⏰</span>
-                                <span className="font-medium">{data.days_left} days left</span>
-                            </div>
-                            <div className="w-1 h-1 rounded-full bg-purple-400"></div>
-                            <div className="flex items-center gap-1.5 text-xs text-purple-200">
-                                <span>👥</span>
-                                <span className="font-medium">{data.total_participants} competing</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* My Stats */}
-                    <div className="px-5 py-4">
-                        <div className="grid grid-cols-3 gap-2">
-                            <div className="text-center">
-                                <div className={`w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-br ${tier.color} flex items-center justify-center shadow-lg shadow-purple-500/30`}>
-                                    <span className="text-xl">{tier.emoji}</span>
-                                </div>
-                                <p className="text-[11px] text-white font-semibold">{tier.label}</p>
-                                <p className="text-[9px] text-gray-500 font-medium">Rank #{myRankInCurrentTab || '-'}</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                                    <span className="text-xl">{activeTab === 'steps' ? '🏆' : '📊'}</span>
-                                </div>
-                                <p className="text-[11px] text-white font-semibold">
-                                    {activeTab === 'steps' ? `${data.my_longest_streak}d` : `${data.my_completion_pct}%`}
-                                </p>
-                                <p className="text-[9px] text-gray-500 font-medium">
-                                    {activeTab === 'steps' ? 'Best Streak' : 'Consistency'}
-                                </p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                                    <span className="text-sm font-bold text-white tracking-tight">
-                                        {(data.my_daily_avg / 1000).toFixed(1)}K
-                                    </span>
-                                </div>
-                                <p className="text-[11px] text-white font-semibold">Daily Avg</p>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-            </div>
-
             {/* Rankings Title */}
-            <div className="px-5">
-                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+            <div className="px-5 mt-5">
+                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
                     {'Top Performers'}
                 </h2>
             </div>
@@ -387,7 +252,7 @@ export default function LeaderboardPage() {
             </div>
 
             {/* Top 3 */}
-            <div className="px-5 mb-3">
+            <div className="px-5 mb-3" style={{ marginBottom: '32px' }}>
                 <div className="space-y-2">
                     <AnimatePresence mode="wait">
                         {topThree.map((user, index) => (
@@ -477,8 +342,14 @@ export default function LeaderboardPage() {
                                                         <div className={`px-2 py-1 rounded-md border ml-2 flex items-center gap-1
                                                             ${improved ? 'bg-green-500/20 border-green-500/30' : 'bg-red-500/20 border-red-500/30'}`}
                                                         >
-                                                            <span className={`text-xs font-bold ${improved ? 'text-green-400' : 'text-red-400'}`}>{improved ? '▲' : '▼'}</span>
-                                                            <span className={`text-xs font-bold ${improved ? 'text-green-400' : 'text-red-400'}`}>{Math.abs(diff)}</span>
+                                                            <span className={`text-xs font-bold 
+                                                                ${improved ? 'text-green-400' : 'text-red-400'}`}
+                                                            >
+                                                                {improved ? '▲' : '▼'}
+                                                            </span>
+                                                            <span className={`text-xs font-bold ${improved ? 'text-green-400' : 'text-red-400'}`}>
+                                                                {Math.abs(diff)}
+                                                            </span>
                                                         </div>
                                                     );
                                                 })()

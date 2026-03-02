@@ -438,15 +438,77 @@ export default function StepsTracker() {
   }, []);
 
   if (apiLoading) {
-    return (
+    const Sk = ({ w = '100%', h = '14px', r = '8px', mb = '0px' }: { w?: string; h?: string; r?: string; mb?: string }) => (
       <div style={{
-        minHeight: '100vh',
-        background: '#0f172a',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <p style={{ color: 'rgba(255,255,255,0.7)' }}>Loading challenge data...</p>
+        width: w, height: h, borderRadius: r, marginBottom: mb, flexShrink: 0,
+        background: 'linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.05) 75%)',
+        backgroundSize: '200% 100%', animation: 'steps-shimmer 1.4s infinite',
+      }} />
+    );
+    return (
+      <div style={{ minHeight: '100vh', background: '#0f172a', padding: '16px' }}>
+        <style>{`@keyframes steps-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+        <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div>
+              <Sk w="80px" h="22px" r="8px" mb="8px" />
+              <Sk w="130px" h="12px" r="5px" />
+            </div>
+            <Sk w="38px" h="38px" r="50%" />
+          </div>
+
+          {/* Week day ticks */}
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <Sk w="70px" h="12px" r="5px" />
+              <Sk w="80px" h="12px" r="5px" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                  <Sk w="44px" h="44px" r="50%" />
+                  <Sk w="24px" h="9px" r="4px" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Progress ring placeholder */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <Sk w="160px" h="160px" r="50%" />
+          </div>
+
+          {/* Goal text */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+            <Sk w="180px" h="13px" r="5px" />
+          </div>
+
+          {/* Weekly progress bar */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <Sk w="100px" h="12px" r="5px" />
+              <Sk w="40px" h="12px" r="5px" />
+            </div>
+            <Sk w="100%" h="8px" r="999px" mb="8px" />
+            <Sk w="140px" h="11px" r="5px" />
+          </div>
+
+          {/* Health tip card */}
+          <div style={{ borderRadius: '16px', padding: '16px', marginBottom: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}><Sk w="70px" h="11px" r="5px" /></div>
+            <Sk w="90%" h="14px" r="5px" mb="6px" />
+            <Sk w="70%" h="14px" r="5px" mb="14px" />
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+              {[1,2,3].map(i => <Sk key={i} w="6px" h="6px" r="3px" />)}
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <Sk w="100%" h="52px" r="12px" mb="12px" />
+          <Sk w="100%" h="52px" r="12px" />
+        </div>
       </div>
     );
   }

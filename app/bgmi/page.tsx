@@ -253,11 +253,11 @@ function RangeBar({ m }: { m: Metric }) {
       </div>
       {/* Labels */}
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)" }}>{m.min}</span>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>{m.min}</span>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.36)", fontWeight: 500, letterSpacing: "0.01em" }}>
           {m.ideal[0]}–{m.ideal[1]}{m.unit === "kg/m²" ? "" : ` ${m.unit}`}
         </span>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)" }}>{m.max}</span>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>{m.max}</span>
       </div>
     </div>
   );
@@ -311,7 +311,7 @@ function HistoryGraph({ m, trendData }: { m: Metric; trendData: { all: TrendPt[]
             fontFamily: "Figtree,sans-serif", fontSize: 11, fontWeight: 600,
             border: "none", minHeight: 28,
             background: p === period ? "rgba(255,255,255,0.12)" : "transparent",
-            color: p === period ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.28)",
+            color: p === period ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.50)",
             transition: "all 0.15s",
           }}>{p}</button>
         ))}
@@ -357,7 +357,7 @@ function HistoryGraph({ m, trendData }: { m: Metric; trendData: { all: TrendPt[]
       }}>
         {/* Start — label + value stacked */}
         <div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.24)", marginBottom: 1 }}>{data[0].label}</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", marginBottom: 1 }}>{data[0].label}</div>
           <div style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.50)" }}>
             {data[0].value}{m.unit}
           </div>
@@ -371,7 +371,7 @@ function HistoryGraph({ m, trendData }: { m: Metric; trendData: { all: TrendPt[]
         </div>
         {/* Now — label + value stacked */}
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.24)", marginBottom: 1 }}>Now</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", marginBottom: 1 }}>Now</div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>
             {values[values.length - 1]}{m.unit}
           </div>
@@ -424,7 +424,7 @@ function MetricRow({ m, last, trendData }: { m: Metric; last: boolean; trendData
               }}>
                 {m.value}
               </span>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.28)" }}>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.50)" }}>
                 {m.unit === "kg/m²" ? "bmi" : m.unit}
               </span>
             </div>
@@ -438,7 +438,7 @@ function MetricRow({ m, last, trendData }: { m: Metric; last: boolean; trendData
             {diff3m === 0 || d3m.length < 2 ? (
               <div style={{
                 fontSize: 11, fontWeight: 500,
-                color: "rgba(255,255,255,0.14)",
+                color: "rgba(255,255,255,0.40)",
                 letterSpacing: "0.04em",
               }}>—</div>
             ) : (
@@ -486,6 +486,7 @@ export default function ScanReport() {
   const router = useRouter();
 
   // ── UI state ──────────────────────────────────────────────────
+  const [userName, setUserName] = useState<string>('');
   const [mounted, setMounted] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -537,6 +538,17 @@ export default function ScanReport() {
       : daysUntilScan > 0 ? C.warn
         : daysUntilScan === 0 ? C.bad
           : "rgba(255,69,58,0.60)";
+
+  // ── Fetch user name ────────────────────────────────────────────
+  useEffect(() => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'https://cbiqa.dev.honeywellcloud.com/socialapi';
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    fetch(`${API_BASE}/api/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.name) setUserName(d.name.split(' ')[0]); })
+      .catch(() => {});
+  }, []);
 
   // ── Load profile + latest scan + history on mount ─────────────
   useEffect(() => {
@@ -727,6 +739,7 @@ export default function ScanReport() {
             <div style={{ width: 36, height: 4, borderRadius: 100, background: "rgba(255,255,255,0.22)" }} />
           </div>
 
+
           {/* Step dots */}
           <div style={{ display: "flex", justifyContent: "center", gap: 6, paddingBottom: 8 }}>
             {([1, 2] as const).map(s => (
@@ -849,7 +862,7 @@ export default function ScanReport() {
                       }}>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: activity === val ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.44)" }}>{label}</div>
-                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.26)", marginTop: 1 }}>{sub}</div>
+                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 1 }}>{sub}</div>
                         </div>
                         {activity === val && (
                           <div style={{
@@ -885,7 +898,7 @@ export default function ScanReport() {
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   padding: "11px 4px 13px", borderBottom: "1px solid rgba(255,255,255,0.06)"
                 }}>
-                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.34)" }}>Date</span>
+                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>Date</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.60)", letterSpacing: "-0.01em" }}>
                     {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                   </span>
@@ -899,7 +912,7 @@ export default function ScanReport() {
                   return (
                     <div key={group.label} style={{ marginTop: 24 }}>
                       <div style={{
-                        fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.28)",
+                        fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.50)",
                         letterSpacing: "0.05em", textTransform: "uppercase", paddingLeft: 2, marginBottom: 7
                       }}>
                         {group.label}
@@ -933,7 +946,7 @@ export default function ScanReport() {
                                     </span>
                                   )}
                                 </div>
-                                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.24)", marginTop: 2 }}>
+                                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 2 }}>
                                   Ideal {m.ideal[0]}–{m.ideal[1]} {displayUnit}
                                 </div>
                               </div>
@@ -986,7 +999,7 @@ export default function ScanReport() {
                                     e.currentTarget.style.background = hasError ? "rgba(255,69,58,0.10)" : "rgba(255,255,255,0.07)";
                                   }}
                                 />
-                                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", minWidth: 28 }}>{displayUnit}</span>
+                                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", minWidth: 28 }}>{displayUnit}</span>
                               </div>
                             </div>
                           );
@@ -1054,7 +1067,7 @@ export default function ScanReport() {
           width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.08)",
           borderTopColor: "rgba(255,255,255,0.50)", animation: "spin 0.8s linear infinite", margin: "0 auto"
         }} />
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.30)", marginTop: 16 }}>Loading your data…</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", marginTop: 16 }}>Loading your data…</div>
       </div>
     </div>
   );
@@ -1145,7 +1158,7 @@ export default function ScanReport() {
           padding: "16px 20px", marginBottom: 32, animation: "fadeUp 0.4s ease 0.21s both"
         }}>
           <div style={{
-            fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.24)",
+            fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.50)",
             letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 14
           }}>
             You will track
@@ -1163,7 +1176,7 @@ export default function ScanReport() {
                 background: "rgba(255,255,255,0.20)", flexShrink: 0
               }} />
               <span style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.60)" }}>{label}</span>
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.24)", marginLeft: "auto" }}>{sub}</span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginLeft: "auto" }}>{sub}</span>
             </div>
           ))}
         </div>
@@ -1185,7 +1198,7 @@ export default function ScanReport() {
         </button>
 
         <div style={{
-          fontSize: 12, color: "rgba(255,255,255,0.20)", marginTop: 16,
+          fontSize: 12, color: "rgba(255,255,255,0.50)", marginTop: 16,
           animation: "fadeUp 0.4s ease 0.32s both"
         }}>
           Takes about 2 minutes
@@ -1201,7 +1214,7 @@ export default function ScanReport() {
     <>
       <div style={{
         minHeight: "100vh", background: C.bg, color: C.text,
-        fontFamily: "Figtree, sans-serif", maxWidth: 390, margin: "0 auto", paddingBottom: 60
+        fontFamily: "Figtree, sans-serif", width: "100%", paddingBottom: 60
       }}>
         <style>{`
         * { box-sizing:border-box }
@@ -1256,7 +1269,7 @@ export default function ScanReport() {
               }}>
                 <span style={{
                   fontSize: 12, fontWeight: 500,
-                  color: "rgba(255,255,255,0.30)", letterSpacing: "-0.01em",
+                  color: "rgba(255,255,255,0.55)", letterSpacing: "-0.01em",
                 }}>Guide</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <circle cx="8" cy="8" r="7" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" />
@@ -1312,7 +1325,7 @@ export default function ScanReport() {
                       fontSize: 13, fontWeight: 400,
                       color: "rgba(255,255,255,0.36)",
                       letterSpacing: "-0.01em",
-                    }}>Hello, Alex</div>
+                    }}>Hello, {userName || 'there'}</div>
 
 
                   </div>

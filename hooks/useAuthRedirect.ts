@@ -3,10 +3,13 @@ import { useEffect } from 'react';
 import { refreshAccessToken } from '@/lib/auth';
 
 function forceRedirectToLogin(router: ReturnType<typeof useRouter>) {
-  // Clear the access token so the login page doesn't bounce the user back
+  // Clear all auth tokens so the login page doesn't bounce the user back
+  // and TokenRefreshHandler doesn't try to silently re-auth
   if (typeof window !== 'undefined') {
     localStorage.removeItem('access_token');
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
   }
   router.replace('/login');
 }

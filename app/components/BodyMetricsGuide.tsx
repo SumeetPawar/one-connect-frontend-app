@@ -243,7 +243,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
           <div style={{ flexShrink: 0, padding: "52px 22px 0", background: "#0D0D0F" }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
               <div>
-                <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.14em", color: "rgba(255,255,255,0.20)", textTransform: "uppercase", marginBottom: 7 }}>Health Guide</div>
+                <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.14em", color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 7 }}>Health Guide</div>
                 <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.035em", lineHeight: 1.1 }}>
                   <span style={{ color: "rgba(255,255,255,0.92)" }}>Understanding</span>
                   <br/>
@@ -264,10 +264,11 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
               </div>
               {onClose && (
                 <button onClick={onClose} style={{
-                  width: 32, height: 32, borderRadius: "50%", marginTop: 4,
-                  background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.06)",
+                  width: 44, height: 44, borderRadius: "50%", marginTop: 0,
+                  background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.08)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0, cursor: "pointer",
+                  WebkitTapHighlightColor: "transparent",
                 }}>
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                     <path d="M1 1l8 8M9 1L1 9" stroke="rgba(255,255,255,0.45)" strokeWidth="1.6" strokeLinecap="round"/>
@@ -282,10 +283,10 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                 const active = activeCategory === cat;
                 return (
                   <button key={cat ?? "all"} className="bmg-pill" onClick={() => setActiveCategory(cat)} style={{
-                    height: 30, padding: "0 13px", borderRadius: 100, flexShrink: 0,
+                    height: 36, padding: "0 14px", borderRadius: 100, flexShrink: 0,
                     border: active ? "1px solid rgba(255,255,255,0.22)" : "1px solid rgba(255,255,255,0.07)",
                     background: active ? "rgba(255,255,255,0.09)" : "transparent",
-                    color: active ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.28)",
+                    color: active ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.52)",
                     fontSize: 11.5, fontWeight: active ? 600 : 400,
                     fontFamily: "'DM Sans', sans-serif",
                     display: "flex", alignItems: "center", gap: 6,
@@ -309,7 +310,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
           {/* ── LIST ── */}
           <div className="bmg-scroll" style={{ overflowY: "auto", flex: 1 }}>
             <div style={{ padding: "10px 22px 4px" }}>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.16)", letterSpacing: "0.04em" }}>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em" }}>
                 {filtered.length} metrics{activeCategory ? ` · ${activeCategory}` : ""}
               </span>
             </div>
@@ -343,7 +344,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                         Ideal: {personalRange}
                       </div>
                     ) : (
-                      <div style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.26)", letterSpacing: "-0.01em", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.55)", letterSpacing: "-0.01em", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {g.tagline}
                       </div>
                     )}
@@ -352,11 +353,11 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                   {/* Meta */}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M5.5 3.5L9 7l-3.5 3.5" stroke="rgba(255,255,255,0.16)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M5.5 3.5L9 7l-3.5 3.5" stroke="rgba(255,255,255,0.35)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <div style={{ width: 4, height: 4, borderRadius: "50%", background: CAT_COLOR[g.category], opacity: 0.55 }}/>
-                      <span style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", letterSpacing: "0.05em" }}>{g.category}</span>
+                      <span style={{ fontSize: 9, color: "rgba(255,255,255,0.50)", letterSpacing: "0.05em" }}>{g.category}</span>
                     </div>
                   </div>
                 </button>
@@ -365,7 +366,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
 
             {/* Disclaimer */}
             <div style={{ padding: "24px 22px 52px", borderTop: "1px solid rgba(255,255,255,0.04)", marginTop: 8 }}>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 300, color: "rgba(255,255,255,0.16)", lineHeight: 1.75, letterSpacing: "-0.01em" }}>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.55)", lineHeight: 1.75, letterSpacing: "-0.01em" }}>
                 All values are estimates from your smart scale's BIA measurement.
                 For medical-grade accuracy, ask your doctor about a DEXA scan.
                 This is a guide to help you understand your numbers — not medical advice.
@@ -401,7 +402,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                   display: "flex", alignItems: "center", gap: 5,
                   background: "none", border: "none", cursor: "pointer",
                   padding: "0 0 16px 0",
-                  color: "rgba(255,255,255,0.22)",
+                  color: "rgba(255,255,255,0.55)",
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12, fontWeight: 400, letterSpacing: "-0.01em",
                   WebkitTapHighlightColor: "transparent",
@@ -426,7 +427,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                   </div>
                 </div>
 
-                <div style={{ fontSize: 13, fontWeight: 300, fontStyle: "italic", color: "rgba(255,255,255,0.34)", letterSpacing: "-0.01em", lineHeight: 1.5, marginBottom: 16 }}>{selected.tagline}</div>
+                <div style={{ fontSize: 13, fontWeight: 400, fontStyle: "italic", color: "rgba(255,255,255,0.60)", letterSpacing: "-0.01em", lineHeight: 1.5, marginBottom: 16 }}>{selected.tagline}</div>
                 <div style={{ height: 1, borderRadius: 100, background: `linear-gradient(90deg, ${selected.color}88 0%, transparent 60%)` }}/>
               </div>
 
@@ -470,7 +471,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                         border: "1px solid rgba(255,255,255,0.06)",
                         borderRadius: 11,
                       }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.22)", textTransform: "uppercase", flexShrink: 0, minWidth: 42 }}>{row.label}</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.52)", textTransform: "uppercase", flexShrink: 0, minWidth: 42 }}>{row.label}</div>
                         <div style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.68)", letterSpacing: "-0.015em", lineHeight: 1.4 }}>{row.value}</div>
                       </div>
                     ))}
@@ -490,7 +491,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                         border: `1px solid ${row.color}14`,
                       }}>
                         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", color: row.color, textTransform: "uppercase", flexShrink: 0, minWidth: 44, paddingTop: 2, opacity: 0.85 }}>{row.label}</div>
-                        <div style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.46)", letterSpacing: "-0.01em", lineHeight: 1.65 }}>{row.text}</div>
+                        <div style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.68)", letterSpacing: "-0.01em", lineHeight: 1.65 }}>{row.text}</div>
                       </div>
                     ))}
                   </div>
@@ -499,7 +500,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                 <div style={{ padding: "0 22px" }}>
                   <div style={{ background: `${selected.color}06`, border: `1px solid ${selected.color}12`, borderRadius: 14, padding: "14px 16px" }}>
                     <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: selected.color, textTransform: "uppercase", marginBottom: 8, opacity: 0.75 }}>Tip to remember</div>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 300, color: "rgba(255,255,255,0.46)", lineHeight: 1.78, letterSpacing: "-0.01em" }}>{selected.tip}</p>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.68)", lineHeight: 1.78, letterSpacing: "-0.01em" }}>{selected.tip}</p>
                   </div>
                 </div>
 
@@ -515,7 +516,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
 function Block({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ padding: "0 22px 20px" }}>
-      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.13em", color: "rgba(255,255,255,0.16)", textTransform: "uppercase", marginBottom: 9 }}>{label}</div>
+      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.13em", color: "rgba(255,255,255,0.48)", textTransform: "uppercase", marginBottom: 9 }}>{label}</div>
       {children}
     </div>
   );
@@ -523,6 +524,6 @@ function Block({ label, children }: { label: string; children: React.ReactNode }
 
 function Body({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ margin: 0, fontSize: 13.5, fontWeight: 300, color: "rgba(255,255,255,0.48)", lineHeight: 1.78, letterSpacing: "-0.01em" }}>{children}</p>
+    <p style={{ margin: 0, fontSize: 13.5, fontWeight: 400, color: "rgba(255,255,255,0.70)", lineHeight: 1.78, letterSpacing: "-0.01em" }}>{children}</p>
   );
 }

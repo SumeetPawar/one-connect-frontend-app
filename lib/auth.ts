@@ -244,8 +244,8 @@ let refreshIntervalId: NodeJS.Timeout | null = null;
 export function startBackgroundRefresh(): void {
   if (refreshIntervalId) return;
 
-  const CHECK_INTERVAL_MS = 5 * 60 * 1000;  // check every 5 minutes
-  const EXPIRY_BUFFER_SECONDS = 5 * 60;     // refresh if < 5 min left on token
+  const CHECK_INTERVAL_MS = 4 * 60 * 1000;  // check every 4 minutes
+  const EXPIRY_BUFFER_SECONDS = 10 * 60;    // refresh if < 10 min left on token (must be > check interval)
 
   refreshIntervalId = setInterval(async () => {
     const refreshToken = getRefreshToken();
@@ -325,7 +325,7 @@ export function setupVisibilityRefresh(): (() => void) | undefined {
         const stillHasRefreshToken = getRefreshToken();
         if (!stillHasRefreshToken) {
           console.log("❌ Session expired on focus — redirecting to login");
-          window.location.href = "/login";
+          window.location.href = LOGIN_URL;
         }
         // else: network error — keep tokens, user can retry
       }
