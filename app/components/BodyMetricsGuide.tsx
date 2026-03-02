@@ -1,25 +1,6 @@
-"use client";
 import { useState } from "react";
 
-interface MetricGuide {
-  key: string;
-  label: string;
-  abbr: string;
-  category: "Foundation" | "Composition" | "Metabolic" | "Cellular";
-  color: string;
-  tagline: string;
-  what: string;
-  why: string;
-  how: string;
-  idealMale: string;
-  idealFemale: string;
-  unit: string;
-  lowMeans: string;
-  highMeans: string;
-  tip: string;
-}
-
-const GUIDES: MetricGuide[] = [
+const GUIDES = [
   {
     key: "weight", label: "Body Weight", abbr: "kg",
     category: "Foundation", color: "#5AC8FA",
@@ -29,6 +10,7 @@ const GUIDES: MetricGuide[] = [
     how: "Weigh yourself every morning after using the toilet, before eating anything. Use the same scale each time. Look at your average over a whole week — your weight can go up or down 1–3 kg in a single day just from water and food.",
     idealMale: "BMI 18.5–22.9 for your height",
     idealFemale: "BMI 18.5–22.9 for your height",
+    source: "WHO / Asia-Pacific BMI guidelines",
     unit: "kg",
     lowMeans: "You may not be eating enough, or you might be losing muscle — check if you're getting enough protein and total calories each day",
     highMeans: "Higher weight can put strain on your heart and raise diabetes risk — but check your fat % first for the real picture",
@@ -43,6 +25,7 @@ const GUIDES: MetricGuide[] = [
     how: "We calculate it automatically from your weight and height. You don't need to do anything extra.",
     idealMale: "18.5–22.9 (Asian Pacific guideline)",
     idealFemale: "18.5–22.9 (Asian Pacific guideline)",
+    source: "WHO Western Pacific Region / IOTF Asia-Pacific BMI guidelines",
     unit: "",
     lowMeans: "You may be underweight — this can mean you're not eating enough or that you're losing muscle or bone strength",
     highMeans: "Don't panic — check your body fat % first. If you exercise regularly, a high BMI often just means you have more muscle, not more fat",
@@ -55,8 +38,9 @@ const GUIDES: MetricGuide[] = [
     what: "This tells you what percentage of your body is actually fat. Some fat is essential — your body needs it to protect organs and make hormones. The rest is stored energy from food you've eaten.",
     why: "Too much fat, especially around your belly and organs, makes it harder for your body to manage blood sugar, raises your heart disease risk, and causes low-level inflammation throughout your body. This number matters far more than just your weight on a scale.",
     how: "Your smart scale measures this by sending a tiny, completely painless electrical signal through your body (this is called BIA). For the most accurate reading: measure first thing in the morning, after using the toilet, before eating, and try to drink a similar amount of water each day.",
-    idealMale: "18–24% (age 30–39) · 19–27% (40–49) · 20–28% (50–59)",
-    idealFemale: "25–31% (age 30–39) · 26–34% (40–49) · 27–35% (50–59)",
+    idealMale: "8–19% (age 20–39) · 11–21% (40–59) · 13–24% (60–79)",
+    idealFemale: "21–33% (age 20–39) · 23–34% (40–59) · 24–35% (60–79)",
+    source: "American College of Sports Medicine (ACSM) — Health-Related Physical Fitness Assessment Manual",
     unit: "%",
     lowMeans: "Very athletic build — but if it drops too low (below 8% for men, 15% for women), it can disrupt your hormones and energy levels",
     highMeans: "Higher health risk — the most effective fix is adding strength training and improving your diet. This is very achievable",
@@ -69,43 +53,31 @@ const GUIDES: MetricGuide[] = [
     what: "This is fat stored deep inside your belly, wrapped around organs like your liver, stomach, and intestines. It's rated on a scale from 1 to 30. You can't see or feel it from outside your body.",
     why: "This type of fat is the most dangerous kind because it doesn't just sit there — it actively releases harmful chemicals into your blood that cause heart disease, type 2 diabetes, poor memory, and hormonal problems.",
     how: "Your smart scale estimates this during your regular BIA measurement. Levels 1–9 are healthy. If you're at level 10 or above, it's worth taking action — starting with daily walking and cutting back on sugar and white rice.",
-    idealMale: "Level 1–12 (under 40) · 1–10 (40–49) · 1–9 (50+)",
-    idealFemale: "Level 1–9 (under 40) · 1–8 (40–49) · 1–7 (50+)",
+    idealMale: "1–9 (healthy) · 10–14 (elevated) · 15+ (high risk)",
+    idealFemale: "1–9 (healthy) · 10–14 (elevated) · 15+ (high risk)",
+    source: "Tanita BIA validation studies + Asian cardiovascular risk research (stricter 1–9 healthy ceiling vs. Western 1–12)",
     unit: "lvl",
     lowMeans: "Great — your organ fat is in a healthy range. Keep doing what you're doing",
     highMeans: "This is a health warning sign. Daily walks and eating less sugar and refined carbs (white bread, rice, sweets) will help bring this down",
     tip: "Good news: this fat shrinks faster than the fat you can pinch on your stomach. Just 30 minutes of brisk walking every day can produce a noticeable drop in 6–8 weeks — even before you see changes on the scale.",
   },
   {
-    key: "muscle", label: "Muscle Mass", abbr: "kg",
-    category: "Composition", color: "#30D158",
-    tagline: "Your body's engine — and your best health investment.",
-    what: "This is the total weight of all the muscles in your body. Muscle isn't just for looking fit — it's what keeps your body running efficiently and strongly as you age.",
-    why: "More muscle means your body burns more calories even while you sleep, your blood sugar stays more stable, your bones become stronger, and you stay active and independent as you get older. It's the most overlooked health metric.",
-    how: "Your smart scale estimates this from the resistance your body gives to the BIA signal. Drink a consistent amount of water before measuring each time for more accurate tracking.",
-    idealMale: "SMI ≥ 8.87 kg/m² (adjusted for height) · Active: +6–10%",
-    idealFemale: "SMI ≥ 6.42 kg/m² (adjusted for height) · Active: +6–10%",
-    unit: "kg",
-    lowMeans: "Low muscle mass increases your risk of weakness and health problems as you age — start adding strength training and eat more protein",
-    highMeans: "Excellent — strong muscles are one of the best signs of long-term good health and longevity",
-    tip: "Building muscle is slow — expect about 0.5–1 kg per month if you're training and eating well. Aim for 1.6–2.2g of protein per kg of your body weight each day. Even 2 gym sessions a week makes a real difference.",
-  },
-  {
-    key: "water", label: "Hydration", abbr: "%",
-    category: "Cellular", color: "#0A84FF",
-    tagline: "How well-hydrated your body is right now.",
-    what: "This shows how much of your body weight is water — both inside your cells and in your blood and tissues. About 60% of your body is water, and it plays a role in literally everything your body does.",
-    why: "Being just 2% dehydrated noticeably affects your memory, focus, physical energy, and even your heart rate. Every single process in your body — digesting food, removing waste, regulating temperature — needs water to work properly.",
-    how: "Your smart scale measures this through the BIA signal during your regular scan. For the most consistent results, measure at the same time each morning before eating.",
-    idealMale: "55–65% (sedentary) · 57–67% (active) · 59–69% (athlete)",
-    idealFemale: "50–60% (sedentary) · 52–62% (active) · 54–64% (athlete)",
+    key: "skeletal", label: "Skeletal Muscle", abbr: "sm%",
+    category: "Composition", color: "#34C759",
+    tagline: "The muscle that moves you — your functional strength.",
+    what: "Skeletal muscle is the muscle attached to your bones that you consciously control — used for every movement from walking to lifting. It's measured as a percentage of your total body weight and is the most functionally important type of muscle for health and longevity.",
+    why: "Higher skeletal muscle percentage means better strength, faster metabolism, improved insulin sensitivity, and greater physical independence as you age. It's one of the strongest predictors of long-term health outcomes — people with more skeletal muscle live longer and stay active further into old age.",
+    how: "Your smart scale estimates this via BIA by measuring the resistance of muscle tissue to the electrical signal. Note: clinicians typically use Skeletal Muscle Index (SMI in kg/m²) rather than percentage — so if you see different numbers in medical literature, that's why. For consistent scale readings, measure at the same time each day under the same hydration conditions.",
+    idealMale: "33–39% (age 20–39) · 31–37% (40–59) · 29–35% (60+)",
+    idealFemale: "24–30% (age 20–39) · 23–29% (40–59) · 21–27% (60+)",
+    source: "Derived from population BIA studies (Janssen et al., 2000; Tanita reference data) — no single global standard exists for SM%",
     unit: "%",
-    lowMeans: "You're dehydrated — drink more water through the day and consider adding electrolytes (like a pinch of salt, coconut water, or an electrolyte drink)",
-    highMeans: "Well hydrated — great. If it's consistently very high (above 68%), check with a doctor as it can sometimes indicate fluid retention",
-    tip: "In a hot climate, aim for the higher end of your range. Plain water is good, but electrolyte drinks or coconut water help your body hold onto hydration better — especially after sweating.",
+    lowMeans: "Low skeletal muscle raises your risk of weakness, poor balance, and metabolic issues — prioritise resistance training and ensure you're eating enough protein daily",
+    highMeans: "Excellent — a high skeletal muscle percentage is one of the best indicators of overall health, fitness, and healthy ageing",
+    tip: "Skeletal muscle percentage can appear to drop even when you're gaining muscle if you're also gaining fat. Track both muscle mass in kg and this percentage together for the clearest picture of your progress.",
   },
   {
-    key: "bmr", label: "Resting Burn", abbr: "kcal",
+    key: "bmr", label: "Resting Metabolism", abbr: "kcal",
     category: "Metabolic", color: "#BF5AF2",
     tagline: "Calories your body burns just to stay alive.",
     what: "BMR (Basal Metabolic Rate) is the number of calories your body burns every day just to keep you alive — breathing, pumping blood, keeping you warm, and repairing cells — without any movement at all.",
@@ -113,24 +85,11 @@ const GUIDES: MetricGuide[] = [
     how: "We calculate this from your weight, height, age, and sex using the Mifflin-St Jeor formula — the most clinically validated method. Active people have a higher range because muscle burns more at rest.",
     idealMale: "1,600–2,000 kcal (sedentary) · higher with more activity",
     idealFemale: "1,400–1,800 kcal (sedentary) · higher with more activity",
+    source: "Mifflin-St Jeor equation (1990) — validated by the Academy of Nutrition and Dietetics as the most accurate BMR formula",
     unit: "kcal",
     lowMeans: "You may have low muscle mass or have been eating very little for a long time — gradually increasing food and exercise will help rebuild this",
     highMeans: "A higher BMR means more muscle — your body is an efficient calorie burner. This is a great sign",
     tip: "Your BMR covers about 60–70% of all the calories you burn in a day. Multiply it by 1.2 if you're mostly sitting, or up to 1.9 if you train hard daily — that gives you your actual daily calorie need.",
-  },
-  {
-    key: "protein", label: "Protein %", abbr: "%",
-    category: "Cellular", color: "#32ADE6",
-    tagline: "How much of your body is made of protein.",
-    what: "Protein makes up your muscles, organs, skin, hair, enzymes, and hormones. This number shows what percentage of your total body is protein.",
-    why: "Eating enough protein helps you keep your muscle when losing fat, recover faster after exercise, fight off illness better, and keep your blood sugar steady. When this number is low, it's usually the first sign that you're not eating enough protein in your daily diet.",
-    how: "Your smart scale works this out from your muscle mass and overall body composition during the BIA measurement.",
-    idealMale: "17–20% (under 45) · 18–21% (45–60) · 19–22% (60+)",
-    idealFemale: "16–19% (under 45) · 17–20% (45–60) · 18–21% (60+)",
-    unit: "%",
-    lowMeans: "You're probably not eating enough protein — try adding more dal, eggs, chicken, paneer, or Greek yogurt to your daily meals",
-    highMeans: "Excellent — this means you have good muscle and low fat, which is exactly the combination you want",
-    tip: "Many Indian diets are lower in protein than people realise. Try tracking your protein grams for just one week — most people are surprised how far below target they are. Dal, eggs, paneer, chicken, and curd are the easiest sources.",
   },
   {
     key: "metage", label: "Metabolic Age", abbr: "yrs",
@@ -141,84 +100,54 @@ const GUIDES: MetricGuide[] = [
     how: "We compare your BMR (how many calories you burn at rest) to average values for people your age and sex, then convert that difference into an age number.",
     idealMale: "Same as or up to 10 years below your actual age",
     idealFemale: "Same as or up to 10 years below your actual age",
+    source: "Derived from BMR comparison to age-group averages — a consumer wellness metric, not a clinical standard",
     unit: "yrs",
     lowMeans: "Your body is performing younger than your years — this is a very good sign for your long-term health",
     highMeans: "Your metabolism is running older than your age — building muscle and losing fat will bring this number down, and it's very achievable",
     tip: "Strength training brings your metabolic age down faster than cardio does. Just two consistent gym sessions a week can produce visible improvements in 8–12 weeks.",
   },
-  {
-    key: "bone", label: "Bone Mass", abbr: "kg",
-    category: "Foundation", color: "#98989D",
-    tagline: "How strong and dense your bones are.",
-    what: "This is an estimate of how much your bones weigh — specifically the minerals that make them dense and strong. Heavier, denser bones are better and less likely to break.",
-    why: "Bone density peaks around age 30 and slowly declines after that. Weak bones break easily, especially as you get older. Osteoporosis (brittle bone disease) is one of the biggest causes of disability and loss of independence in later life.",
-    how: "Your smart scale estimates this from your BIA reading and body weight. For a precise clinical measurement, a DEXA scan at a hospital is the gold standard.",
-    idealMale: "3.0–3.8 kg (under 40) · 2.8–3.6 kg (40–59) · 2.5–3.2 kg (60+)",
-    idealFemale: "2.0–2.8 kg (under 40) · 1.8–2.5 kg (40–59) · 1.5–2.2 kg (60+)",
-    unit: "kg",
-    lowMeans: "Your bones may need more support — eat more calcium (dairy, green vegetables), get more sunlight for vitamin D, and do weight-bearing exercise like walking or weight training",
-    highMeans: "Dense, strong bones — keep it up with regular exercise and good nutrition",
-    tip: "Vitamin D is essential for your body to absorb calcium. Without it, even eating lots of calcium won't help your bones much. Getting 20 minutes of morning sunlight daily is one of the simplest things you can do. In India, vitamin D deficiency is extremely common.",
-  },
 ];
 
-const CAT_COLOR: Record<string, string> = {
+const CAT_COLOR = {
   Foundation: "#98989D",
   Composition: "#FF453A",
-  Metabolic:   "#BF5AF2",
-  Cellular:    "#0A84FF",
+  Metabolic: "#BF5AF2",
+  Cellular: "#0A84FF",
 };
 
-const CATEGORIES = ["Foundation", "Composition", "Metabolic", "Cellular"] as const;
+const CATEGORIES = ["Foundation", "Composition", "Metabolic", "Cellular"];
 
-// ── Personalised range resolver ──────────────────────────────
-function resolveIdealRange(
-  key: string,
-  gender: "male" | "female",
-  ranges: Record<string, [number, number]>
-): string | null {
-  const r = ranges[key];
-  if (!r) return null;
-  const isMale = gender === "male";
-
-  const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1);
-
-  switch (key) {
-    case "weight":   return `${fmt(r[0])} – ${fmt(r[1])} kg`;
-    case "bmi":      return `${fmt(r[0])} – ${fmt(r[1])}`;
-    case "fat":      return `${fmt(r[0])} – ${fmt(r[1])}%`;
-    case "visceral": return `Level ${fmt(r[0])} – ${fmt(r[1])}`;
-    case "muscle":   return `${fmt(r[0])} – ${fmt(r[1])} kg`;
-    case "water":    return `${fmt(r[0])} – ${fmt(r[1])}%`;
-    case "bmr":      return `${Math.round(r[0])} – ${Math.round(r[1])} kcal`;
-    case "protein":  return `${fmt(r[0])} – ${fmt(r[1])}%`;
-    case "metage":   return `${fmt(r[0])} – ${fmt(r[1])} yrs`;
-    case "bone":     return `${fmt(r[0])} – ${fmt(r[1])} kg`;
-    default:         return null;
-  }
+function Block({ label, children }) {
+  return (
+    <div style={{ padding: "0 22px 20px" }}>
+      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.13em", color: "rgba(255,255,255,0.16)", textTransform: "uppercase", marginBottom: 9 }}>{label}</div>
+      {children}
+    </div>
+  );
 }
 
-interface Props {
-  onClose?: () => void;
-  ranges?: Record<string, [number, number]>;
-  gender?: "male" | "female";
+function Body({ children }) {
+  return (
+    <p style={{ margin: 0, fontSize: 13.5, fontWeight: 300, color: "rgba(255,255,255,0.48)", lineHeight: 1.78, letterSpacing: "-0.01em" }}>{children}</p>
+  );
 }
 
-export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
-  const [selected, setSelected]             = useState<MetricGuide | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+export default function BodyMetricsGuide() {
+  const [selected, setSelected] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(null);
 
   const filtered = activeCategory ? GUIDES.filter(g => g.category === activeCategory) : GUIDES;
-  const isPersonalised = !!(ranges && gender);
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap');
-        .bmg *, .bmg *::before, .bmg *::after { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        body { margin: 0; background: #0D0D0F; }
         .bmg { font-family: 'DM Sans', sans-serif; }
         .bmg-row { transition: background 0.10s ease; -webkit-tap-highlight-color: transparent; cursor: pointer; }
-        .bmg-row:active { background: rgba(255,255,255,0.03) !important; }
+        .bmg-row:hover { background: rgba(255,255,255,0.03) !important; }
+        .bmg-row:active { background: rgba(255,255,255,0.05) !important; }
         .bmg-pill { -webkit-tap-highlight-color: transparent; transition: background 0.12s, color 0.12s, border-color 0.12s; cursor: pointer; }
         .bmg-sheet { animation: sheet-rise 0.44s cubic-bezier(0.22,1,0.36,1) both; }
         @keyframes sheet-rise { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }
@@ -227,66 +156,41 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
       `}</style>
 
       <div className="bmg" style={{
-        position: "fixed", inset: 0, zIndex: 400,
-        background: "rgba(0,0,0,0.82)",
-        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+        position: "fixed", inset: 0, zIndex: 1,
+        background: "#0D0D0F",
+        display: "flex", justifyContent: "center",
       }}>
         <div style={{
-          position: "absolute", inset: 0,
-          maxWidth: 430, margin: "0 auto",
+          width: "100%", maxWidth: 430,
           background: "#0D0D0F",
           display: "flex", flexDirection: "column",
+          height: "100vh",
           overflowY: "hidden",
         }}>
 
-          {/* ── HEADER ── */}
+          {/* HEADER */}
           <div style={{ flexShrink: 0, padding: "52px 22px 0", background: "#0D0D0F" }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
               <div>
-                <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.14em", color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 7 }}>Health Guide</div>
+                <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.14em", color: "rgba(255,255,255,0.20)", textTransform: "uppercase", marginBottom: 7 }}>Health Guide</div>
                 <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.035em", lineHeight: 1.1 }}>
                   <span style={{ color: "rgba(255,255,255,0.92)" }}>Understanding</span>
-                  <br/>
+                  <br />
                   <span style={{ color: "#BF5AF2" }}>Your Metrics</span>
                 </div>
-                {isPersonalised && (
-                  <div style={{
-                    marginTop: 8, display: "inline-flex", alignItems: "center", gap: 5,
-                    background: "rgba(191,90,242,0.08)", border: "1px solid rgba(191,90,242,0.18)",
-                    borderRadius: 20, padding: "3px 10px",
-                  }}>
-                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#BF5AF2" }}/>
-                    <span style={{ fontSize: 10, color: "rgba(191,90,242,0.80)", fontWeight: 500, letterSpacing: "0.03em" }}>
-                      Ranges personalised to you
-                    </span>
-                  </div>
-                )}
               </div>
-              {onClose && (
-                <button onClick={onClose} style={{
-                  width: 44, height: 44, borderRadius: "50%", marginTop: 0,
-                  background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.08)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0, cursor: "pointer",
-                  WebkitTapHighlightColor: "transparent",
-                }}>
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path d="M1 1l8 8M9 1L1 9" stroke="rgba(255,255,255,0.45)" strokeWidth="1.6" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              )}
             </div>
 
             {/* Filter pills */}
             <div className="bmg-scroll" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 16, marginRight: -22, paddingRight: 22 }}>
-              {([null, ...CATEGORIES] as (string | null)[]).map(cat => {
+              {[null, ...CATEGORIES].map(cat => {
                 const active = activeCategory === cat;
                 return (
                   <button key={cat ?? "all"} className="bmg-pill" onClick={() => setActiveCategory(cat)} style={{
-                    height: 36, padding: "0 14px", borderRadius: 100, flexShrink: 0,
+                    height: 30, padding: "0 13px", borderRadius: 100, flexShrink: 0,
                     border: active ? "1px solid rgba(255,255,255,0.22)" : "1px solid rgba(255,255,255,0.07)",
                     background: active ? "rgba(255,255,255,0.09)" : "transparent",
-                    color: active ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.52)",
+                    color: active ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.28)",
                     fontSize: 11.5, fontWeight: active ? 600 : 400,
                     fontFamily: "'DM Sans', sans-serif",
                     display: "flex", alignItems: "center", gap: 6,
@@ -297,76 +201,64 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                         width: 5, height: 5, borderRadius: "50%", flexShrink: 0,
                         background: active ? CAT_COLOR[cat] : "rgba(255,255,255,0.18)",
                         transition: "background 0.12s",
-                      }}/>
+                      }} />
                     )}
                     {cat ?? "All metrics"}
                   </button>
                 );
               })}
             </div>
-            <div style={{ height: 1, background: "rgba(255,255,255,0.05)", marginLeft: -22, marginRight: -22 }}/>
+            <div style={{ height: 1, background: "rgba(255,255,255,0.05)", marginLeft: -22, marginRight: -22 }} />
           </div>
 
-          {/* ── LIST ── */}
+          {/* LIST */}
           <div className="bmg-scroll" style={{ overflowY: "auto", flex: 1 }}>
             <div style={{ padding: "10px 22px 4px" }}>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em" }}>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.16)", letterSpacing: "0.04em" }}>
                 {filtered.length} metrics{activeCategory ? ` · ${activeCategory}` : ""}
               </span>
             </div>
 
-            {filtered.map((g, i) => {
-              const personalRange = isPersonalised ? resolveIdealRange(g.key, gender!, ranges!) : null;
-              return (
-                <button key={g.key} className="bmg-row" onClick={() => setSelected(g)} style={{
-                  width: "100%", display: "flex", alignItems: "center",
-                  padding: "15px 22px",
-                  background: "transparent", border: "none",
-                  borderBottom: i < filtered.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                  textAlign: "left", gap: 16,
-                  fontFamily: "'DM Sans', sans-serif",
-                }}>
-                  {/* Unit anchor */}
-                  <div style={{ width: 54, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-                    <div style={{
-                      fontFamily: "'DM Serif Display', serif",
-                      fontSize: g.abbr.length > 3 ? 14 : g.abbr.length === 3 ? 18 : 24,
-                      fontWeight: 400, color: g.color, lineHeight: 1, letterSpacing: "-0.02em",
-                    }}>{g.abbr}</div>
-                    <div style={{ width: 16, height: 1.5, borderRadius: 100, background: g.color, opacity: 0.30 }}/>
-                  </div>
+            {filtered.map((g, i) => (
+              <button key={g.key} className="bmg-row" onClick={() => setSelected(g)} style={{
+                width: "100%", display: "flex", alignItems: "center",
+                padding: "15px 22px",
+                background: "transparent", border: "none",
+                borderBottom: i < filtered.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                textAlign: "left", gap: 16,
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+                <div style={{ width: 54, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+                  <div style={{
+                    fontFamily: "'DM Serif Display', serif",
+                    fontSize: g.abbr.length > 3 ? 14 : g.abbr.length === 3 ? 18 : 24,
+                    fontWeight: 400, color: g.color, lineHeight: 1, letterSpacing: "-0.02em",
+                  }}>{g.abbr}</div>
+                  <div style={{ width: 16, height: 1.5, borderRadius: 100, background: g.color, opacity: 0.30 }} />
+                </div>
 
-                  {/* Text */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.025em", color: "rgba(255,255,255,0.88)", marginBottom: 3, lineHeight: 1.15 }}>{g.label}</div>
-                    {personalRange ? (
-                      <div style={{ fontSize: 11.5, fontWeight: 500, color: g.color, opacity: 0.75, letterSpacing: "-0.01em" }}>
-                        Ideal: {personalRange}
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.55)", letterSpacing: "-0.01em", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {g.tagline}
-                      </div>
-                    )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.025em", color: "rgba(255,255,255,0.88)", marginBottom: 3, lineHeight: 1.15 }}>{g.label}</div>
+                  <div style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.26)", letterSpacing: "-0.01em", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {g.tagline}
                   </div>
+                </div>
 
-                  {/* Meta */}
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M5.5 3.5L9 7l-3.5 3.5" stroke="rgba(255,255,255,0.35)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <div style={{ width: 4, height: 4, borderRadius: "50%", background: CAT_COLOR[g.category], opacity: 0.55 }}/>
-                      <span style={{ fontSize: 9, color: "rgba(255,255,255,0.50)", letterSpacing: "0.05em" }}>{g.category}</span>
-                    </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M5.5 3.5L9 7l-3.5 3.5" stroke="rgba(255,255,255,0.16)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: CAT_COLOR[g.category], opacity: 0.55 }} />
+                    <span style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", letterSpacing: "0.05em" }}>{g.category}</span>
                   </div>
-                </button>
-              );
-            })}
+                </div>
+              </button>
+            ))}
 
             {/* Disclaimer */}
             <div style={{ padding: "24px 22px 52px", borderTop: "1px solid rgba(255,255,255,0.04)", marginTop: 8 }}>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.55)", lineHeight: 1.75, letterSpacing: "-0.01em" }}>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 300, color: "rgba(255,255,255,0.16)", lineHeight: 1.75, letterSpacing: "-0.01em" }}>
                 All values are estimates from your smart scale's BIA measurement.
                 For medical-grade accuracy, ask your doctor about a DEXA scan.
                 This is a guide to help you understand your numbers — not medical advice.
@@ -375,15 +267,15 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
           </div>
         </div>
 
-        {/* ── DETAIL BOTTOM SHEET ── */}
+        {/* DETAIL BOTTOM SHEET */}
         {selected && (
           <>
-            <div onClick={() => setSelected(null)} style={{ position: "fixed", inset: 0, zIndex: 410, background: "rgba(0,0,0,0.45)" }}/>
+            <div onClick={() => setSelected(null)} style={{ position: "fixed", inset: 0, zIndex: 10, background: "rgba(0,0,0,0.45)" }} />
             <div className="bmg-sheet" style={{
               position: "fixed", bottom: 0, left: "50%",
               transform: "translateX(-50%)",
               width: "100%", maxWidth: 430,
-              zIndex: 420,
+              zIndex: 20,
               background: "#111113",
               borderRadius: "24px 24px 0 0",
               borderTop: "1px solid rgba(255,255,255,0.08)",
@@ -393,7 +285,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
 
               {/* Handle */}
               <div onClick={() => setSelected(null)} style={{ display: "flex", justifyContent: "center", padding: "12px 0 0", cursor: "pointer", flexShrink: 0 }}>
-                <div style={{ width: 32, height: 3, borderRadius: 100, background: "rgba(255,255,255,0.10)" }}/>
+                <div style={{ width: 32, height: 3, borderRadius: 100, background: "rgba(255,255,255,0.10)" }} />
               </div>
 
               {/* Sheet header */}
@@ -402,13 +294,13 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                   display: "flex", alignItems: "center", gap: 5,
                   background: "none", border: "none", cursor: "pointer",
                   padding: "0 0 16px 0",
-                  color: "rgba(255,255,255,0.55)",
+                  color: "rgba(255,255,255,0.22)",
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12, fontWeight: 400, letterSpacing: "-0.01em",
                   WebkitTapHighlightColor: "transparent",
                 }}>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   All metrics
                 </button>
@@ -427,8 +319,8 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                   </div>
                 </div>
 
-                <div style={{ fontSize: 13, fontWeight: 400, fontStyle: "italic", color: "rgba(255,255,255,0.60)", letterSpacing: "-0.01em", lineHeight: 1.5, marginBottom: 16 }}>{selected.tagline}</div>
-                <div style={{ height: 1, borderRadius: 100, background: `linear-gradient(90deg, ${selected.color}88 0%, transparent 60%)` }}/>
+                <div style={{ fontSize: 13, fontWeight: 300, fontStyle: "italic", color: "rgba(255,255,255,0.34)", letterSpacing: "-0.01em", lineHeight: 1.5, marginBottom: 16 }}>{selected.tagline}</div>
+                <div style={{ height: 1, borderRadius: 100, background: `linear-gradient(90deg, ${selected.color}88 0%, transparent 60%)` }} />
               </div>
 
               {/* Scrollable content */}
@@ -439,49 +331,113 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                 <Block label="How it's measured"><Body>{selected.how}</Body></Block>
 
                 <Block label="Ideal ranges">
-                  {/* Personalised range banner — shown when profile exists */}
-                  {isPersonalised && resolveIdealRange(selected.key, gender!, ranges!) && (
-                    <div style={{
-                      marginBottom: 10,
-                      background: `${selected.color}0D`,
-                      border: `1px solid ${selected.color}22`,
-                      borderRadius: 12, padding: "10px 14px",
-                      display: "flex", alignItems: "center", gap: 10,
-                    }}>
-                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: selected.color, flexShrink: 0 }}/>
-                      <div>
-                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", color: selected.color, textTransform: "uppercase", opacity: 0.75, marginBottom: 2 }}>Your personalised range</div>
-                        <div style={{ fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.88)", letterSpacing: "-0.02em" }}>
-                          {resolveIdealRange(selected.key, gender!, ranges!)}
+                  {(() => {
+                    const maleBrackets = selected.idealMale.split(" · ");
+                    const femaleBrackets = selected.idealFemale.split(" · ");
+                    const isTable = maleBrackets.length > 1;
+
+                    if (!isTable) {
+                      // Simple two-row display for single-value ranges
+                      return (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {[{ label: "Male", value: selected.idealMale }, { label: "Female", value: selected.idealFemale }].map(row => (
+                            <div key={row.label} style={{
+                              display: "flex", alignItems: "center", gap: 12,
+                              padding: "10px 14px",
+                              background: "rgba(255,255,255,0.03)",
+                              border: "1px solid rgba(255,255,255,0.06)",
+                              borderRadius: 10,
+                            }}>
+                              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.22)", textTransform: "uppercase", flexShrink: 0, width: 42 }}>{row.label}</div>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.75)", letterSpacing: "-0.02em" }}>{row.value}</div>
+                            </div>
+                          ))}
                         </div>
+                      );
+                    }
+
+                    // Parse brackets from each entry
+                    const parse = (str) => {
+                      const match = str.match(/^(.*?)\s*(\(.*?\))?$/);
+                      return { value: match?.[1]?.trim() ?? str, label: match?.[2]?.replace(/[()]/g, "").trim() ?? "" };
+                    };
+
+                    const cols = maleBrackets.map(parse);
+
+                    return (
+                      <div style={{
+                        background: "rgba(255,255,255,0.025)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        borderRadius: 12,
+                        overflow: "hidden",
+                      }}>
+                        {/* Header row */}
+                        <div style={{
+                          display: "grid",
+                          gridTemplateColumns: `64px repeat(${cols.length}, 1fr)`,
+                          borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        }}>
+                          <div style={{ padding: "8px 12px" }} />
+                          {cols.map((col, i) => (
+                            <div key={i} style={{
+                              padding: "8px 10px",
+                              fontSize: 9, fontWeight: 700, letterSpacing: "0.07em",
+                              color: "rgba(255,255,255,0.22)", textTransform: "uppercase",
+                              borderLeft: "1px solid rgba(255,255,255,0.04)",
+                              textAlign: "center",
+                            }}>{col.label}</div>
+                          ))}
+                        </div>
+
+                        {/* Male row */}
+                        {[
+                          { sex: "Male", brackets: maleBrackets },
+                          { sex: "Female", brackets: femaleBrackets },
+                        ].map((row, ri) => (
+                          <div key={row.sex} style={{
+                            display: "grid",
+                            gridTemplateColumns: `64px repeat(${cols.length}, 1fr)`,
+                            borderTop: ri > 0 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                          }}>
+                            <div style={{
+                              padding: "11px 12px",
+                              fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+                              color: "rgba(255,255,255,0.22)", textTransform: "uppercase",
+                              display: "flex", alignItems: "center",
+                            }}>{row.sex}</div>
+                            {row.brackets.map((b, i) => {
+                              const { value } = parse(b);
+                              return (
+                                <div key={i} style={{
+                                  padding: "11px 10px",
+                                  borderLeft: "1px solid rgba(255,255,255,0.04)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                }}>
+                                  <span style={{
+                                    fontSize: 13, fontWeight: 600,
+                                    color: "rgba(255,255,255,0.72)",
+                                    letterSpacing: "-0.02em",
+                                    textAlign: "center",
+                                  }}>{value}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
                       </div>
+                    );
+                  })()}
+                  {selected.source && (
+                    <div style={{ marginTop: 8, fontSize: 10, color: "rgba(255,255,255,0.22)", letterSpacing: "-0.01em", lineHeight: 1.5, fontStyle: "italic" }}>
+                      Source: {selected.source}
                     </div>
                   )}
-
-                  {/* Full population table — always shown */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    {[
-                      { label: "Male",   value: selected.idealMale },
-                      { label: "Female", value: selected.idealFemale },
-                    ].map(row => (
-                      <div key={row.label} style={{
-                        display: "flex", alignItems: "baseline",
-                        padding: "10px 14px", gap: 12,
-                        background: "rgba(255,255,255,0.03)",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        borderRadius: 11,
-                      }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.52)", textTransform: "uppercase", flexShrink: 0, minWidth: 42 }}>{row.label}</div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.68)", letterSpacing: "-0.015em", lineHeight: 1.4 }}>{row.value}</div>
-                      </div>
-                    ))}
-                  </div>
                 </Block>
 
                 <Block label="What your number signals">
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                     {[
-                      { label: "Too Low",  text: selected.lowMeans,  color: "#5AC8FA" },
+                      { label: "Too Low", text: selected.lowMeans, color: "#5AC8FA" },
                       { label: "Too High", text: selected.highMeans, color: "#FF453A" },
                     ].map(row => (
                       <div key={row.label} style={{
@@ -491,7 +447,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                         border: `1px solid ${row.color}14`,
                       }}>
                         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", color: row.color, textTransform: "uppercase", flexShrink: 0, minWidth: 44, paddingTop: 2, opacity: 0.85 }}>{row.label}</div>
-                        <div style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.68)", letterSpacing: "-0.01em", lineHeight: 1.65 }}>{row.text}</div>
+                        <div style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.46)", letterSpacing: "-0.01em", lineHeight: 1.65 }}>{row.text}</div>
                       </div>
                     ))}
                   </div>
@@ -500,7 +456,7 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
                 <div style={{ padding: "0 22px" }}>
                   <div style={{ background: `${selected.color}06`, border: `1px solid ${selected.color}12`, borderRadius: 14, padding: "14px 16px" }}>
                     <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: selected.color, textTransform: "uppercase", marginBottom: 8, opacity: 0.75 }}>Tip to remember</div>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.68)", lineHeight: 1.78, letterSpacing: "-0.01em" }}>{selected.tip}</p>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 300, color: "rgba(255,255,255,0.46)", lineHeight: 1.78, letterSpacing: "-0.01em" }}>{selected.tip}</p>
                   </div>
                 </div>
 
@@ -510,20 +466,5 @@ export default function BodyMetricsGuide({ onClose, ranges, gender }: Props) {
         )}
       </div>
     </>
-  );
-}
-
-function Block({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ padding: "0 22px 20px" }}>
-      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.13em", color: "rgba(255,255,255,0.48)", textTransform: "uppercase", marginBottom: 9 }}>{label}</div>
-      {children}
-    </div>
-  );
-}
-
-function Body({ children }: { children: React.ReactNode }) {
-  return (
-    <p style={{ margin: 0, fontSize: 13.5, fontWeight: 400, color: "rgba(255,255,255,0.70)", lineHeight: 1.78, letterSpacing: "-0.01em" }}>{children}</p>
   );
 }
