@@ -17,8 +17,8 @@
 //   brandBorder: "rgba(10,132,255,0.28)",
 // };
 
-// const MIN_HABITS = 3;
-// const MAX_HABITS = 5;
+// const MIN_HABITS = 2;
+// const MAX_HABITS = 4;
 
 // // ─── ALL AVAILABLE HABITS ─────────────────────────────────────────────────────
 // // Curated for maximum 21-day health impact. Research-backed, binary enough
@@ -95,6 +95,34 @@
 //     impact:"Detox", category:"Body", color:"#ff453a", type:"toggle",
 //     icon: svgI(<><path d="M8 2h8l1 7H7L8 2z"/><path d="M7 9c0 5 2 9 5 9s5-4 5-9"/><line x1="4" y1="4" x2="20" y2="20"/></>),
 //   },
+//   // #8 Cold shower — alertness, recovery, dopamine spike
+//   {
+//     id:"coldshower", label:"Cold shower", desc:"End shower with 30–60s cold water",
+//     why:"Cold exposure triggers a 250% dopamine spike that lasts hours. Reduces inflammation, improves circulation and builds mental resilience — all in under a minute.",
+//     impact:"Recovery", category:"Body", color:"#32ade6", type:"toggle",
+//     icon: svgI(<><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></>),
+//   },
+//   // #9 Morning sunlight — circadian anchor, mood, energy
+//   {
+//     id:"sunlight", label:"Morning sunlight 10 min", desc:"Outside within 1hr of waking, no sunglasses",
+//     why:"Morning light sets your circadian clock, boosts cortisol at the right time (giving you energy) and triggers serotonin that converts to melatonin at night — better energy all day and better sleep at night.",
+//     impact:"Energy", category:"Body", color:"#ffd60a", type:"toggle",
+//     icon: svgI(<><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></>),
+//   },
+//   // #10 Stretch — mobility, posture, desk worker essential
+//   {
+//     id:"stretch", label:"Stretch / mobility 10 min", desc:"Morning or post-work — hips, spine, shoulders",
+//     why:"Sitting for 8hrs shortens hip flexors and rounds the spine. 10 min of daily mobility undoes this and reduces injury risk by 40%. Most people feel the difference in 5 days.",
+//     impact:"Mobility", category:"Body", color:"#30d158", type:"toggle",
+//     icon: svgI(<><path d="M12 2a5 5 0 0 1 5 5v3a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/><path d="M7 15a7 7 0 0 0 10 0"/><path d="M12 18v4"/></>),
+//   },
+//   // #11 No smoking
+//   {
+//     id:"nosmoking", label:"No smoking", desc:"Zero cigarettes — not even one",
+//     why:"Within 20 minutes of quitting, heart rate drops. Within 12 hours, carbon monoxide clears. Within 21 days, lung cilia regrow and circulation measurably improves.",
+//     impact:"Longevity", category:"Body", color:"#ff453a", type:"toggle",
+//     icon: svgI(<><line x1="2" y1="12" x2="22" y2="12"/><path d="M17 8c0-2.5 2-2.5 2-5"/><path d="M19 12v2"/><line x1="4" y1="4" x2="20" y2="20"/></>),
+//   },
 //   // ── Mind — ordered by research impact ─────────────────────────────────────
 //   // #1 Meditation — strongest evidence base, measurable brain changes
 //   {
@@ -131,6 +159,13 @@
 //     impact:"Growth", category:"Mind", color:"#bf5af2", type:"toggle",
 //     icon: svgI(<><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></>),
 //   },
+//   // #6 No social media before 10am — protect morning focus window
+//   {
+//     id:"nosocialmedia", label:"No social media before 10am", desc:"First 2hrs are for you, not feeds",
+//     why:"Checking social media first thing hijacks your attention and puts you in reactive mode all day. Protecting your morning window is the single highest-leverage focus habit for knowledge workers.",
+//     impact:"Focus", category:"Mind", color:"#0a84ff", type:"toggle",
+//     icon: svgI(<><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/><line x1="4" y1="4" x2="20" y2="20"/></>),
+//   },
 //   // ── Lifestyle — ordered by research impact ────────────────────────────────
 //   // #1 Eating window — metabolic, sleep and digestion combined
 //   {
@@ -152,6 +187,80 @@
 //     why:"Sugar spikes insulin then crashes energy. Cutting it for 21 days resets taste sensitivity and reduces cravings permanently.",
 //     impact:"Nutrition", category:"Lifestyle", color:"#ff453a", type:"toggle",
 //     icon: svgI(<><path d="M12 2c1 2 3 3.5 3 5.5a3 3 0 0 1-6 0C9 5.5 11 4 12 2z"/><line x1="4" y1="20" x2="20" y2="20"/><line x1="4" y1="4" x2="20" y2="20"/></>),
+//   },
+//   // #4 Call someone — relationships are the #1 longevity predictor
+//   {
+//     id:"callsomeone", label:"Call someone you care about", desc:"5 min with family or a close friend",
+//     why:"The Harvard Study of Adult Development (80 years of data) found strong relationships are the single biggest predictor of long, happy lives — more than money, fame or exercise.",
+//     impact:"Connection", category:"Lifestyle", color:"#30d158", type:"toggle",
+//     icon: svgI(<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.07 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></>),
+//   },
+//   // #5 Track spending — financial awareness reduces stress
+//   {
+//     id:"trackspending", label:"Track daily spending", desc:"Log every purchase — app or note",
+//     why:"Financial stress is the #1 cause of anxiety in working adults. Simply tracking spending (not budgeting) reduces impulsive purchases by 30% in the first week — awareness alone changes behaviour.",
+//     impact:"Finance", category:"Lifestyle", color:"#32ade6", type:"toggle",
+//     icon: svgI(<><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>),
+//   },
+//   {
+//     id:"walkaftermeals", label:"Walk after meals 10 min", desc:"Short walk after lunch or dinner",
+//     why:"A 10-min walk after eating lowers blood sugar spikes by 30% (Stanford). Reduces post-lunch energy crash and improves digestion.",
+//     impact:"Metabolism", category:"Body", color:"#30d158", type:"toggle",
+//     icon: svgI(<><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/><path d="M7.5 17.5L9 13l3 2 2-3.5"/><path d="M6 20l2-4 4 1 3-5 2 1"/></>),
+//   },
+//   {
+//     id:"breathwork", label:"Breathwork 5 min", desc:"Box breathing, 4-7-8 or Wim Hof",
+//     why:"5 min of controlled breathing lowers cortisol and blood pressure. Stanford 2023: cyclic sighing outperforms meditation for same-day stress relief.",
+//     impact:"Calm", category:"Mind", color:"#32ade6", type:"toggle",
+//     icon: svgI(<><circle cx="12" cy="12" r="10"/><path d="M8 12h4M12 8v4"/></>),
+//   },
+//   {
+//     id:"deepwork", label:"Deep work block 90 min", desc:"Single task, zero interruptions, phone away",
+//     why:"90 min matches the brain's ultradian focus cycle. One deep work block produces more meaningful output than 4hrs of fragmented work.",
+//     impact:"Focus", category:"Lifestyle", color:"#5e5ce6", type:"toggle",
+//     icon: svgI(<><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></>),
+//   },
+//   {
+//     id:"preparetomorrow", label:"Prepare tomorrow tonight", desc:"Top 3 tasks + clothes + bag, 5 min",
+//     why:"Prepping the night before removes 8-12 morning decisions and increases goal follow-through by 40%. Decision fatigue is real.",
+//     impact:"Clarity", category:"Lifestyle", color:"#ff9f0a", type:"toggle",
+//     icon: svgI(<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>),
+//   },
+//   {
+//     id:"nearfareye", label:"Near-far eye training 5 min", desc:"Alternate focus: close object, then distant point",
+//     why:"Alternating between near (~15cm) and far (6m+) targets exercises ciliary muscles controlling lens accommodation. Counteracts screen-induced eye fatigue and may slow age-related vision decline. Huberman recommends daily to preserve visual flexibility.",
+//     impact:"Vision", category:"Body", color:"#32ade6", type:"toggle",
+//     icon: svgI(<><circle cx="12" cy="12" r="3"/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><line x1="3" y1="3" x2="21" y2="21"/></>),
+//   },
+//   {
+//     id:"presleepbath", label:"Warm bath or foot soak before bed", desc:"10 min, 60–90 min before sleep",
+//     why:"Warm water causes peripheral vasodilation. Upon exiting, your body rapidly radiates heat, dropping core temperature 2–3°F — the precise thermoregulatory signal for sleep onset. Matthew Walker: significantly reduces sleep onset latency and enhances deep NREM sleep.",
+//     impact:"Sleep Quality", category:"Body", color:"#5e5ce6", type:"toggle",
+//     icon: svgI(<><path d="M4 12h16M4 12a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2"/><path d="M6 12V6a4 4 0 0 1 8 0v1"/><line x1="10" y1="16" x2="10" y2="18"/><line x1="14" y1="16" x2="14" y2="18"/></>),
+//   },
+//   {
+//     id:"timeblock", label:"Time-block your day", desc:"Assign every hour to a task — 5 min planning",
+//     why:"Assigning every hour to a specific task offloads working memory, activates implementation intentions, and eliminates attention residue between tasks. Cal Newport: time blockers accomplish roughly twice as much work per week as reactive workers.",
+//     impact:"Productivity", category:"Lifestyle", color:"#0a84ff", type:"toggle",
+//     icon: svgI(<><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="8" y1="18" x2="14" y2="18"/></>),
+//   },
+//   {
+//     id:"discomfortchallenge", label:"Daily discomfort challenge", desc:"One uncomfortable-but-beneficial action today",
+//     why:"Stress inoculation (Meichenbaum) upregulates the brain's stress-response systems, widening your window of tolerance. Goggins: you are only at 40% of your capacity when you first want to quit. Daily deliberate discomfort builds the mental toughness muscle systematically.",
+//     impact:"Resilience", category:"Mind", color:"#ff453a", type:"toggle",
+//     icon: svgI(<><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></>),
+//   },
+//   {
+//     id:"proactivelanguage", label:"Proactive language practice", desc:"Replace 'I can't / I have to' with 'I choose to'",
+//     why:"Reactive language ('I can't', 'I have to') activates the amygdala and external locus of control. Proactive language ('I choose', 'I will') shifts neural activation to the PFC. Covey: language reveals and shapes mindset — the words you use literally alter your brain's activation patterns.",
+//     impact:"Mindset", category:"Mind", color:"#bf5af2", type:"toggle",
+//     icon: svgI(<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></>),
+//   },
+//   {
+//     id:"daily5goals", label:"Write 5 micro-goals for today", desc:"5 small, achievable wins — takes 3 min",
+//     why:"Small wins activate the brain's progress principle (Amabile & Kramer, Harvard). Each completed micro-goal triggers ventral tegmental dopamine, sustaining motivation across the day. Sharma: distinct from a to-do list — these are small victories that compound into momentum.",
+//     impact:"Momentum", category:"Lifestyle", color:"#30d158", type:"toggle",
+//     icon: svgI(<><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>),
 //   },
 // ];
 
@@ -510,7 +619,7 @@
 //             letterSpacing:"-0.01em", margin:0 }}>
 //             {isReview
 //               ? "Keep what worked. Swap what didn't. You know yourself better now."
-//               : "Pick 3–5 habits you'll commit to for 21 days. Science shows this is when habits become automatic."}
+//               : "Pick 2–4 habits you'll commit to for 21 days. Science shows this is when habits become automatic."}
 //           </p>
 //         </div>
 
