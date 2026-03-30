@@ -4,8 +4,9 @@ import { registerServiceWorker } from "./register-sw";
 
 export default function ServiceWorkerRegister() {
   useEffect(() => {
-    console.log("Registering service worker...");
-    registerServiceWorker();
+    registerServiceWorker().catch((err) =>
+      console.error("[ServiceWorkerRegister] Unexpected error:", err)
+    );
   }, []);
   return null;
 }

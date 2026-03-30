@@ -7,7 +7,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, TrendingUp, Flame } from 'lucide-react';
 import { api } from '@/lib/api';
-import { span } from 'framer-motion/m';
 
 interface LeaderboardUser {
     rank: number;
@@ -49,6 +48,16 @@ interface LeaderboardResponse {
 
 type LeaderboardType = 'steps' | 'consistency';
 
+interface ChallengeChip {
+    challenge_id: string;
+    id?: string;              // some APIs return 'id' instead of 'challenge_id'
+    challenge_title: string;
+    title?: string;           // fallback if API uses 'title'
+    start_date: string;
+    end_date: string;
+    is_current?: boolean;
+}
+
 export default function LeaderboardPage() {
     const params = useParams();
     const router = useRouter();
@@ -60,8 +69,16 @@ export default function LeaderboardPage() {
     const [tabSwitching, setTabSwitching] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
 
+    // Challenge chips
+    const [allChallenges, setAllChallenges] = useState<ChallengeChip[]>([]);
+    const [chipsLoading, setChipsLoading] = useState(true);
+    const [selectedChipId, setSelectedChipId] = useState<string>(challengeId);
+    const [chipData, setChipData] = useState<LeaderboardResponse | null>(null);
+    const [chipDataLoading, setChipDataLoading] = useState(false);
+
     useEffect(() => {
         fetchLeaderboard();
+        fetchAllChallenges();
 
         const handleScroll = () => {
             setShowScrollTop(window.scrollY > 300);
@@ -75,16 +92,63 @@ export default function LeaderboardPage() {
         try {
             const response = await api<LeaderboardResponse>(
                 `/api/challenges/${challengeId}/leaderboard`,
-                {
-                    method: "GET",
-                    auth: true,
-                }
+                { method: "GET", auth: true }
             );
             setData(response);
         } catch (error) {
             setData(null);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchAllChallenges = async () => {
+        setChipsLoading(true);
+        try {
+            // Fetch all available challenges
+            const response = await api<ChallengeChip[] | { challenges: ChallengeChip[] }>(
+                `/api/challenges/available`,
+                { method: "GET", auth: true }
+            );
+            const raw = Array.isArray(response) ? response : ((response as { challenges: ChallengeChip[] })?.challenges ?? []);
+            // Normalize: handle APIs that return 'id' or 'title' instead of 'challenge_id'/'challenge_title'
+            const normalized: ChallengeChip[] = raw.map((c: ChallengeChip) => ({
+                ...c,
+                challenge_id: c.challenge_id || c.id || '',
+                challenge_title: c.challenge_title || c.title || 'Challenge',
+            })).filter(c => !!c.challenge_id);
+            // Sort by start_date descending so newest/current is leftmost
+            const sorted = [...normalized].sort((a, b) =>
+                new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+            );
+            setAllChallenges(sorted);
+        } catch {
+            setAllChallenges([]);
+        } finally {
+            setChipsLoading(false);
+        }
+    };
+
+    const handleSelectChip = async (id: string) => {
+        if (id === selectedChipId) return;
+        setSelectedChipId(id);
+        if (id === challengeId) {
+            // Current challenge — already loaded in `data`
+            setChipData(null);
+            return;
+        }
+        setChipDataLoading(true);
+        setChipData(null);
+        try {
+            const response = await api<LeaderboardResponse>(
+                `/api/challenges/${id}/leaderboard`,
+                { method: "GET", auth: true }
+            );
+            setChipData(response);
+        } catch {
+            setChipData(null);
+        } finally {
+            setChipDataLoading(false);
         }
     };
 
@@ -131,24 +195,20 @@ export default function LeaderboardPage() {
         ];
     };
 
+    // Returns the active dataset — selected chip or current challenge
+    const activeData = selectedChipId === challengeId ? data : chipData;
+
     // Sort leaderboard based on active tab
     const getSortedLeaderboard = () => {
-        if (!data) return [];
+        if (!activeData) return [];
 
         if (activeTab === 'consistency') {
-            // Use consistency_rank from backend, remap rank field for display
-            return [...data.leaderboard]
-                .filter(u => u.consistency_rank !== undefined)
-                .sort((a, b) => (a.consistency_rank! - b.consistency_rank!))
-                .map(u => ({ ...u, rank: u.consistency_rank! }));
+            return [...activeData.leaderboard]
+                .sort((a, b) => b.completion_pct - a.completion_pct || b.days_met_goal - a.days_met_goal)
+                .map((u, i) => ({ ...u, rank: i + 1, consistency_rank: i + 1 }));
         } else {
-            // Sort by steps (descending)
-            const sorted = [...data.leaderboard].sort((a, b) => b.total_steps - a.total_steps);
-            // Re-assign ranks based on current sort
-            return sorted.map((user, index) => ({
-                ...user,
-                rank: index + 1
-            }));
+            const sorted = [...activeData.leaderboard].sort((a, b) => b.total_steps - a.total_steps);
+            return sorted.map((user, index) => ({ ...user, rank: index + 1 }));
         }
     };
 
@@ -195,11 +255,14 @@ export default function LeaderboardPage() {
         );
     }
 
+    const isChipLoading = chipDataLoading;
     const sortedLeaderboard = getSortedLeaderboard();
     const topThree = sortedLeaderboard.slice(0, 3);
     const restOfLeaders = sortedLeaderboard.slice(3);
     const myRankInCurrentTab = getMyRankInTab();
     const tier = getRankTier(myRankInCurrentTab);
+    const displayData = activeData;
+    const selectedChip = allChallenges.find(c => c.challenge_id === selectedChipId);
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white pb-6">
@@ -218,14 +281,64 @@ export default function LeaderboardPage() {
                 </div>
             </div>
 
+            {/* Challenge Chips — all challenges as a scrollable row */}
+            <div className="px-5 mt-4">
+                {chipsLoading ? (
+                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                        {[1,2,3,4].map(i => (
+                            <div key={i} className="h-8 w-24 bg-zinc-800 rounded-full animate-pulse flex-shrink-0" />
+                        ))}
+                    </div>
+                ) : allChallenges.length > 0 ? (
+                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                        {allChallenges.map(c => {
+                            const isCurrent = c.challenge_id === challengeId;
+                            const isSelected = c.challenge_id === selectedChipId;
+                            return (
+                                <button
+                                    key={c.challenge_id}
+                                    onClick={() => handleSelectChip(c.challenge_id)}
+                                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                                        isSelected
+                                            ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-500/20'
+                                            : 'bg-zinc-900 border-zinc-700 text-gray-400 hover:text-white hover:border-zinc-500'
+                                    }`}
+                                >
+                                    {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />}
+                                    {c.start_date
+                                        ? new Date(c.start_date).toLocaleString('default', { month: 'short' })
+                                        : c.challenge_title}
+                                    {isCurrent && <span className="text-[9px] opacity-70">(now)</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
+                ) : null}
+            </div>
+
             {/* Rankings Title */}
-            <div className="px-5 mt-5">
+            <div className="px-5 mt-4">
                 <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
-                    {'Top Performers'}
+                    {selectedChipId === challengeId ? 'Top Performers' : (selectedChip?.challenge_title ?? 'Results')}
                 </h2>
             </div>
 
-            {/* Tab Switcher */}
+            {/* Chip leaderboard loading skeleton */}
+            {isChipLoading && (
+                <div className="px-5 mt-4 space-y-2">
+                    {[1,2,3,4,5].map(i => (
+                        <div key={i} className="h-16 bg-zinc-800 rounded-xl animate-pulse" />
+                    ))}
+                </div>
+            )}
+
+            {/* Failed to load selected chip */}
+            {!isChipLoading && selectedChipId !== challengeId && !chipData && (
+                <div className="px-5 mt-6 text-center text-gray-500 text-sm">Failed to load leaderboard for this challenge.</div>
+            )}
+
+            {/* Tab Switcher — shown when data is ready */}
+            {!isChipLoading && displayData && (
             <div className="px-5 mb-6 pt-2">
                 <div className="bg-zinc-900 rounded-xl p-1 flex gap-1">
                     <button
@@ -251,13 +364,16 @@ export default function LeaderboardPage() {
                 </div>
             </div>
 
-            {/* Top 3 */}
+            )}
+
+            {/* Top 3 — only render if data is ready */}
+            {!isChipLoading && displayData && (
             <div className="px-5 mb-3" style={{ marginBottom: '32px' }}>
                 <div className="space-y-2">
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence>
                         {topThree.map((user, index) => (
                             <motion.div
-                                key={`${activeTab}-${user.user_id}`}
+                                key={`${selectedChipId}-${activeTab}-${user.user_id}`}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
@@ -305,7 +421,7 @@ export default function LeaderboardPage() {
                                                         {user.completion_pct}%
                                                     </span>
                                                     <span className="text-gray-700">•</span>
-                                                    <span>{user.days_met_goal} / {data.total_challenge_days} days</span>
+                                                    <span>{user.days_met_goal} / {displayData.total_challenge_days} days</span>
                                                 </>
                                             )}
                                         </div>
@@ -364,11 +480,13 @@ export default function LeaderboardPage() {
                     </AnimatePresence>
                 </div>
             </div>
+            )}
 
             {/* Rest of Rankings */}
+            {!isChipLoading && displayData && (
             <div className="px-5">
                 <div className="space-y-1.5">
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence>
                         {restOfLeaders.map((user, index) => (
                             <motion.div
                                 key={`${activeTab}-${user.user_id}-${index}`}
@@ -409,21 +527,19 @@ export default function LeaderboardPage() {
                                         <div className="flex items-baseline gap-2">
                                             {activeTab === 'steps' ? (
                                                 <>
-                                                    <span className={`text-base font-bold ${user.is_me ? 'text-purple-100' : 'text-white'
-                                                        }`}>
+                                                    <span className={`text-base font-bold ${user.is_me ? 'text-purple-100' : 'text-white'}`}>
                                                         {formatNumber(user.total_steps)}
                                                     </span>
                                                     <span className="text-xs text-gray-500 ml-1">steps</span>
                                                 </>
                                             ) : (
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className={`text-base font-bold ${user.is_me ? 'text-purple-100' : 'text-white'
-                                                        }`}>
+                                                    <span className={`text-base font-bold ${user.is_me ? 'text-purple-100' : 'text-white'}`}>
                                                         {user.completion_pct}%
                                                     </span>
                                                     <span className="text-gray-600">•</span>
                                                     <span className="text-xs text-gray-500">
-                                                        {user.days_met_goal} days
+                                                        {user.days_met_goal} / {displayData.total_challenge_days} days
                                                     </span>
                                                 </div>
                                             )}
@@ -492,6 +608,7 @@ export default function LeaderboardPage() {
                     </AnimatePresence>
                 </div>
             </div>
+            )}
 
             {/* Scroll to Top */}
             <AnimatePresence>

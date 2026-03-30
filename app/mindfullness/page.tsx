@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 // ─── Icons — inline SVGs (lucide style, strokeWidth 1.5) ─────────────────────
 // In your Next.js app swap these for the lucide-react package imports
@@ -619,8 +620,6 @@ function useMindfulCues(active: boolean, techId: string) {
 }
 
 function BreathOrb({ phase, accent, isActive, phaseKey, phaseProg, onTap, cue, cueVisible, labelReady }: BreathOrbProps) {
-  const lastDirRef              = useRef<PhaseDir>("expand");
-  const [scale, setScale]       = useState<number>(0.55);
   const [holdScale, setHoldScale] = useState<number>(0.55);
 
   // Smooth crossfade countdown
@@ -642,17 +641,7 @@ function BreathOrb({ phase, accent, isActive, phaseKey, phaseProg, onTap, cue, c
     return () => clearTimeout(t);
   }, [Math.ceil((phase?.duration ?? 1) * (1 - phaseProg)), isActive]);
 
-  useEffect(() => {
-    if (!isActive || !phase) { setScale(0.55); return; }
-    if (phase.dir === "hold") return;
-    lastDirRef.current = phase.dir;
-    if (phase.dir === "expand") {
-      setScale(0.55 + (1.0 - 0.55) * phaseProg);
-    } else {
-      setScale(1.0 - (1.0 - 0.55) * phaseProg);
-    }
-  }, [phaseProg, isActive, phase]);
-
+  // Capture hold scale at phase boundary so hold phase stays at correct size
   useEffect(() => {
     if (phase && phase.dir !== "hold") {
       setHoldScale(phase.dir === "expand" ? 1.0 : 0.55);
@@ -660,7 +649,14 @@ function BreathOrb({ phase, accent, isActive, phaseKey, phaseProg, onTap, cue, c
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phaseKey]);
 
-  const sz       = phase?.dir === "hold" ? holdScale : scale;
+  // Compute sz directly — no intermediate state, so CSS updates in the same render as phaseProg
+  const sz = (() => {
+    if (!isActive || !phase) return 0.55;
+    if (phase.dir === "hold") return holdScale;
+    if (phase.dir === "expand") return 0.55 + 0.45 * phaseProg;
+    return 1.0 - 0.45 * phaseProg;
+  })();
+
   const coreSize = 150;
   const dots     = Array.from({ length: 6 }, (_, i) => i);
 
@@ -738,7 +734,7 @@ function BreathOrb({ phase, accent, isActive, phaseKey, phaseProg, onTap, cue, c
           borderRadius: "50%",
           background: `radial-gradient(circle at 35% 35%, ${accent}ee, ${accent}55 60%, ${accent}22)`,
           boxShadow: `0 0 ${30 * sz}px ${accent}44, 0 0 ${60 * sz}px ${accent}22, inset 0 1px 0 rgba(255,255,255,0.15)`,
-          transition: isActive ? "width 0.08s linear, height 0.08s linear, box-shadow 0.08s linear" : "all 0.3s ease",
+          transition: isActive ? "none" : "all 0.3s ease",
           willChange: "transform",
           flexShrink: 0,
         }}>
@@ -785,7 +781,6 @@ function BreathOrb({ phase, accent, isActive, phaseKey, phaseProg, onTap, cue, c
               fontWeight: 200,
               letterSpacing: "-0.04em",
               color: "rgba(255,255,255,0.45)",
-            // transition: "color 0.6s ease",
               lineHeight: 1,
               fontVariantNumeric: "tabular-nums",
               opacity: numVisible ? 1 : 0,
@@ -1074,16 +1069,16 @@ export default function MeditationPage() {
             style={{
               display: "flex", alignItems: "center", gap: 5,
               background: "transparent", border: "none",
-              color: "#7B5CF5", fontSize: 15, fontWeight: 600,
+             
               letterSpacing: "-0.01em", padding: "6px 10px 6px 2px",
               minWidth: 64, flexShrink: 0,
             }}
             aria-label="Go back"
           >
             <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
-              <path d="M8 1L1 8L8 15" stroke="#7B5CF5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M8 1L1 8L8 15" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            Back
+           
           </button>
 
           {/* Centred title — absolute so it's always truly centred */}

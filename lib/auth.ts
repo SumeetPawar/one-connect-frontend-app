@@ -4,6 +4,77 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://cbiqa.dev.hone
 // (Next.js router.replace() handles basePath automatically, but window.location.href does not)
 const LOGIN_URL = '/socialapp/login';
 
+/** Timestamp helper for consistent log format */
+function ts() { return new Date().toISOString(); }
+
+// ==========================================
+// SESSION READY — single source of truth
+// ==========================================
+// TokenRefreshHandler resolves this once the initial session check is complete.
+// useAuthRedirect awaits it before deciding to redirect — prevents race condition
+// where the page redirects to login before the token refresh has had a chance to run.
+
+let _sessionReadyResolve: (() => void) | null = null;
+let _sessionReadyPromise: Promise<void> = new Promise<void>((resolve) => {
+  _sessionReadyResolve = resolve;
+});
+// Safety: auto-resolve after 8 seconds so useAuthRedirect is never stuck forever
+setTimeout(() => {
+  if (_sessionReadyResolve) {
+    console.warn(`[Auth][${ts()}] ⚠️ Session ready timed out after 8s — resolving anyway`);
+    _sessionReadyResolve();
+    _sessionReadyResolve = null;
+  }
+}, 8000);
+
+/** Called by TokenRefreshHandler once the initial session check is done (success or fail). */
+export function signalSessionReady(): void {
+  if (_sessionReadyResolve) {
+    console.log(`[Auth][${ts()}] ✅ Session ready signal sent`);
+    _sessionReadyResolve();
+    _sessionReadyResolve = null;
+  }
+}
+
+/** Awaited by useAuthRedirect before making any redirect decisions. */
+export function waitForSessionReady(): Promise<void> {
+  return _sessionReadyPromise;
+}
+
+/**
+ * Returns a human-readable string describing the access token's current validity.
+ * Useful for diagnosing premature logout issues.
+ */
+export function getTokenExpiryInfo(): string {
+  if (typeof window === 'undefined') return 'SSR — no token';
+  const token = localStorage.getItem('access_token');
+  if (!token) return 'NO ACCESS TOKEN IN STORAGE';
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (!payload?.exp) return 'Token has no exp field';
+    const expiresAt = new Date(payload.exp * 1000);
+    const nowMs = Date.now();
+    const remainingMs = payload.exp * 1000 - nowMs;
+    const issuedAt = payload.iat ? new Date(payload.iat * 1000).toISOString() : 'unknown';
+    if (remainingMs <= 0) {
+      return `EXPIRED ${Math.round(-remainingMs / 60000)}min ago (was valid until ${expiresAt.toISOString()}, issued ${issuedAt})`;
+    }
+    const h = Math.floor(remainingMs / 3600000);
+    const d = Math.floor(h / 24);
+    return `valid for ${d}d ${h % 24}h more — expires ${expiresAt.toISOString()} (issued ${issuedAt})`;
+  } catch {
+    return 'Token present but could not decode';
+  }
+}
+
+// ==========================================
+// REFRESH DEDUPLICATION
+// ==========================================
+// If refreshAccessToken() is called multiple times simultaneously (race between
+// TokenRefreshHandler and useAuthRedirect), only one HTTP call is made.
+
+let _refreshInFlight: Promise<boolean> | null = null;
+
 interface AuthResponse {
   access_token: string;
   refresh_token: string;
@@ -154,8 +225,10 @@ export async function signup(
 export function logout(): void {
   stopBackgroundRefresh();
   clearTokens();
-
+  // Clear all cached API data so a new user doesn't see stale data
   if (typeof window !== "undefined") {
+    localStorage.removeItem("user_profile");
+    localStorage.removeItem("user_me");
     window.location.href = LOGIN_URL;
   }
 }
@@ -172,48 +245,57 @@ export async function isAuthed(): Promise<boolean> {
 }
 
 export async function refreshAccessToken(): Promise<boolean> {
+  // Deduplicate: if a refresh is already in flight, return the same promise
+  if (_refreshInFlight) {
+    console.log(`[Auth][${ts()}] refreshAccessToken — deduplicating, waiting for in-flight refresh`);
+    return _refreshInFlight;
+  }
+
   const refreshToken = getRefreshToken();
+  console.log(`[Auth][${ts()}] refreshAccessToken called — refreshToken: ${refreshToken ? "present" : "MISSING"}`);
 
   if (!refreshToken) {
     clearTokens();
     return false;
   }
 
-  try {
-    const response = await fetch(`${API_BASE}/api/auth/refresh`, {  // ✅ /api/auth
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
+  _refreshInFlight = (async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
 
-    // Only clear tokens if refresh token itself is rejected (401)
-    // Do NOT clear on network errors or 5xx — keep the refresh token alive
-    if (response.status === 401) {
-      console.log("❌ Refresh token expired or invalid, clearing session");
-      clearTokens();
+      if (response.status === 401) {
+        console.log(`[Auth][${ts()}] ❌ Refresh token rejected (401) — clearing session`);
+        clearTokens();
+        return false;
+      }
+
+      if (!response.ok) {
+        console.warn(`[Auth][${ts()}] ⚠️ Token refresh failed with status: ${response.status} — keeping existing tokens`);
+        return false;
+      }
+
+      const data: AuthResponse = await response.json();
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("auth_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      const payload = decodeJwt(data.access_token);
+      const exp = payload?.exp;
+      const expiresIn = exp ? Math.round((exp - Date.now() / 1000) / 3600) : '?';
+      console.log(`[Auth][${ts()}] ✅ Token refreshed — new access token expires in ~${expiresIn}h`);
+      return true;
+    } catch (error) {
+      console.warn(`[Auth][${ts()}] ⚠️ Token refresh network error — keeping existing tokens:`, error);
       return false;
+    } finally {
+      _refreshInFlight = null;
     }
+  })();
 
-    if (!response.ok) {
-      // Server error or network issue — don't wipe tokens, just return false
-      console.warn("⚠️ Token refresh failed with status:", response.status, "— keeping existing tokens");
-      return false;
-    }
-
-    const data: AuthResponse = await response.json();
-
-    localStorage.setItem("access_token", data.access_token);
-    localStorage.setItem("auth_token", data.access_token);
-    localStorage.setItem("refresh_token", data.refresh_token);
-
-    return true;
-  } catch (error) {
-    // Network error — do NOT clear tokens, user may just be offline temporarily
-    console.warn("⚠️ Token refresh network error — keeping existing tokens:", error);
-    return false;
-  }
+  return _refreshInFlight;
 }
 
 // ==========================================
@@ -236,50 +318,56 @@ export function getCurrentUser() {
 // ==========================================
 // BACKGROUND TOKEN REFRESH (PERSISTENT)
 // ==========================================
-// Access token: 30 minutes | Refresh token: 90 days
-// Check every 5 minutes; only call the API if token expires within 5 minutes.
+// Backend: Access token = 30 days, Refresh token = 1 year
+// Check every 60 minutes; only call the API if token expires within 2 hours.
 
 let refreshIntervalId: NodeJS.Timeout | null = null;
 
 export function startBackgroundRefresh(): void {
   if (refreshIntervalId) return;
 
-  const CHECK_INTERVAL_MS = 4 * 60 * 1000;  // check every 4 minutes
-  const EXPIRY_BUFFER_SECONDS = 10 * 60;    // refresh if < 10 min left on token (must be > check interval)
+  const CHECK_INTERVAL_MS = 60 * 60 * 1000;   // check every 60 minutes
+  const EXPIRY_BUFFER_SECONDS = 2 * 60 * 60;  // refresh if < 2 hours left on token
 
   refreshIntervalId = setInterval(async () => {
     const refreshToken = getRefreshToken();
     if (!refreshToken) {
-      console.log("⚠️ No refresh token found, stopping refresh");
+      console.log(`[Auth][${ts()}] ⚠️ No refresh token found, stopping background refresh`);
       stopBackgroundRefresh();
       return;
     }
 
-    // Only hit the API if the access token is actually near expiry
+    const accessToken = getAccessToken();
+    const payload = accessToken ? decodeJwt(accessToken) : null;
+    const exp = payload?.exp;
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const remaining = exp ? exp - nowSeconds : -1;
+    console.log(`[Auth][${ts()}] Background check — access token expires in: ${remaining > 0 ? Math.round(remaining / 3600) + 'h' : 'EXPIRED'}`);
+
     if (!isAccessTokenExpiredOrExpiring(EXPIRY_BUFFER_SECONDS)) {
-      return; // token still has plenty of life, skip
+      return; // plenty of life left, skip
     }
 
-    console.log("🔄 Access token expiring soon — refreshing...");
+    console.log(`[Auth][${ts()}] 🔄 Access token expiring soon — refreshing...`);
     const success = await refreshAccessToken();
 
     if (success) {
-      console.log("✅ Token refreshed successfully");
+      console.log(`[Auth][${ts()}] ✅ Background token refresh succeeded`);
     } else {
       const stillHasRefreshToken = getRefreshToken();
       if (!stillHasRefreshToken) {
-        console.log("❌ Refresh token invalidated — logging out");
+        console.log(`[Auth][${ts()}] ❌ Refresh token invalidated — logging out`);
         stopBackgroundRefresh();
         if (typeof window !== "undefined") {
           window.location.href = LOGIN_URL;
         }
       } else {
-        console.log("⚠️ Token refresh failed (network/server issue) — will retry next cycle");
+        console.log(`[Auth][${ts()}] ⚠️ Token refresh failed (network/server issue) — will retry next cycle`);
       }
     }
   }, CHECK_INTERVAL_MS);
 
-  console.log("🔄 Background token refresh started (checking every 5 minutes)");
+  console.log(`[Auth][${ts()}] 🔄 Background token refresh started (checking every 60 minutes)`);
 }
 export function stopBackgroundRefresh(): void {
   if (refreshIntervalId) {
@@ -300,34 +388,35 @@ export function setupVisibilityRefresh(): (() => void) | undefined {
 
   const handleVisibilityChange = async () => {
     if (document.visibilityState === "visible") {
-      console.log("👀 Tab became visible, checking token...");
-
+      const accessToken = getAccessToken();
       const refreshToken = getRefreshToken();
+      const payload = accessToken ? decodeJwt(accessToken) : null;
+      const exp = payload?.exp;
+      const remaining = exp ? Math.round((exp - Date.now() / 1000) / 3600) : -1;
+      console.log(`[Auth][${ts()}] 👀 App became visible — access token expires in: ${remaining > 0 ? remaining + 'h' : 'EXPIRED'}, refreshToken: ${refreshToken ? 'present' : 'MISSING'}`);
+
       if (!refreshToken) {
-        console.log("❌ No refresh token on focus — redirecting to login");
+        console.log(`[Auth][${ts()}] ❌ No refresh token on focus — redirecting to login`);
         clearTokens();
         window.location.href = LOGIN_URL;
         return;
       }
 
-      // Only refresh if the access token is expired or expiring within 5 minutes
-      // This handles the "opens app after days" case where access token is long-expired
       if (!isAccessTokenExpiredOrExpiring(5 * 60)) {
-        console.log("✅ Access token still valid — no refresh needed");
+        console.log(`[Auth][${ts()}] ✅ Access token still valid — no refresh needed`);
         return;
       }
 
-      console.log("🔄 Access token expired/expiring — refreshing on focus...");
+      console.log(`[Auth][${ts()}] 🔄 Access token expired/expiring — refreshing on focus...`);
       const success = await refreshAccessToken();
       if (success) {
-        console.log("✅ Token refreshed on tab focus");
+        console.log(`[Auth][${ts()}] ✅ Token refreshed on app focus`);
       } else {
         const stillHasRefreshToken = getRefreshToken();
         if (!stillHasRefreshToken) {
-          console.log("❌ Session expired on focus — redirecting to login");
+          console.log(`[Auth][${ts()}] ❌ Session expired on focus — redirecting to login`);
           window.location.href = LOGIN_URL;
         }
-        // else: network error — keep tokens, user can retry
       }
     }
   };

@@ -1,21 +1,10 @@
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "./ServiceWorkerRegister";
 import TokenRefreshHandler from "./TokenRefreshHandler";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
+import IOSInstallPrompt from "./components/IOSInstallPrompt";
+import AndroidInstallPrompt from "./components/AndroidInstallPrompt";
 
 // export const metadata: Metadata = {
 //   title: "GES Connect",
@@ -40,12 +29,31 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/socialapp/manifest.json" />
         <meta name="theme-color" content="#7c3aed" />
+
+        {/* ── iOS PWA / Push Notification requirements ── */}
+        {/* Tells iOS Safari this page can be launched as a standalone app */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        {/* Status-bar style when launched from Home Screen */}
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        {/* Name shown under the icon on the Home Screen */}
+        <meta name="apple-mobile-web-app-title" content="GES Connect" />
+        {/* Home-screen icon (use your largest icon; iOS will scale it) */}
+        <link rel="apple-touch-icon" href="/socialapp/web-app-manifest-192x192.png" />
+        {/* Optional: 512 px version for iPad / newer iPhones */}
+        <link rel="apple-touch-icon" sizes="512x512" href="/socialapp/web-app-manifest-512x512.png" />
+
+        <style>{`
+          :root {
+            --font-geist-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-geist-mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", monospace;
+          }
+        `}</style>
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <ServiceWorkerRegister />
         <TokenRefreshHandler />
+        <IOSInstallPrompt />
+        <AndroidInstallPrompt />
         <div
           style={{
             maxWidth: 430,

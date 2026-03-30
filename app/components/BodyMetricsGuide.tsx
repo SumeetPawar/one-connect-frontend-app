@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 
 const GUIDES = [
   {
@@ -113,11 +114,14 @@ const CAT_COLOR = {
   Composition: "#FF453A",
   Metabolic: "#BF5AF2",
   Cellular: "#0A84FF",
-};
+} as const;
+
+type CatKey = keyof typeof CAT_COLOR;
+type Guide = typeof GUIDES[number];
 
 const CATEGORIES = ["Foundation", "Composition", "Metabolic", "Cellular"];
 
-function Block({ label, children }) {
+function Block({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div style={{ padding: "0 22px 20px" }}>
       <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.13em", color: "rgba(255,255,255,0.16)", textTransform: "uppercase", marginBottom: 9 }}>{label}</div>
@@ -126,15 +130,15 @@ function Block({ label, children }) {
   );
 }
 
-function Body({ children }) {
+function Body({ children }: { children: ReactNode }) {
   return (
     <p style={{ margin: 0, fontSize: 13.5, fontWeight: 300, color: "rgba(255,255,255,0.48)", lineHeight: 1.78, letterSpacing: "-0.01em" }}>{children}</p>
   );
 }
 
-export default function BodyMetricsGuide() {
-  const [selected, setSelected] = useState(null);
-  const [activeCategory, setActiveCategory] = useState(null);
+export default function BodyMetricsGuide({ onClose }: { onClose?: () => void }) {
+  const [selected, setSelected] = useState<Guide | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const filtered = activeCategory ? GUIDES.filter(g => g.category === activeCategory) : GUIDES;
 
@@ -169,11 +173,38 @@ export default function BodyMetricsGuide() {
         }}>
 
           {/* HEADER */}
-          <div style={{ flexShrink: 0, padding: "52px 22px 0", background: "#0D0D0F" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
+          <div style={{ flexShrink: 0, padding: "16px 22px", background: "#0D0D0F", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 0 }}>
+              {/* Back Button */}
+              <button onClick={onClose} style={{
+                background: "none", border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", gap: "8px",
+                padding: "8px 0",
+                color: "rgba(255,255,255,0.7)",
+                fontSize: "14px", fontWeight: "500",
+                letterSpacing: "-0.01em",
+                WebkitTapHighlightColor: "transparent",
+                transition: "color 0.2s ease",
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.9)"}
+              onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 12l-6-6 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+              <div style={{ fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.88)" }}>Metrics Guide</div>
+              <div style={{ width: "44px" }} />
+            </div>
+          </div>
+
+          {/* TITLE SECTION */}
+          <div style={{ flexShrink: 0, padding: "20px 22px 0", background: "#0D0D0F" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
               <div>
-                <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.14em", color: "rgba(255,255,255,0.20)", textTransform: "uppercase", marginBottom: 7 }}>Health Guide</div>
-                <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.035em", lineHeight: 1.1 }}>
+                <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.14em", color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 7 }}>Health Guide</div>
+                <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.035em", lineHeight: 1.1 }}>
                   <span style={{ color: "rgba(255,255,255,0.92)" }}>Understanding</span>
                   <br />
                   <span style={{ color: "#BF5AF2" }}>Your Metrics</span>
@@ -199,7 +230,7 @@ export default function BodyMetricsGuide() {
                     {cat && (
                       <div style={{
                         width: 5, height: 5, borderRadius: "50%", flexShrink: 0,
-                        background: active ? CAT_COLOR[cat] : "rgba(255,255,255,0.18)",
+                        background: active ? CAT_COLOR[cat as CatKey] : "rgba(255,255,255,0.18)",
                         transition: "background 0.12s",
                       }} />
                     )}
@@ -249,7 +280,7 @@ export default function BodyMetricsGuide() {
                     <path d="M5.5 3.5L9 7l-3.5 3.5" stroke="rgba(255,255,255,0.16)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: CAT_COLOR[g.category], opacity: 0.55 }} />
+                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: CAT_COLOR[g.category as CatKey], opacity: 0.55 }} />
                     <span style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", letterSpacing: "0.05em" }}>{g.category}</span>
                   </div>
                 </div>
@@ -314,7 +345,7 @@ export default function BodyMetricsGuide() {
                     letterSpacing: "-0.03em", flexShrink: 0,
                   }}>{selected.abbr}</div>
                   <div style={{ paddingBottom: 5 }}>
-                    <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.10em", color: `${CAT_COLOR[selected.category]}80`, textTransform: "uppercase", marginBottom: 4 }}>{selected.category}</div>
+                    <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.10em", color: `${CAT_COLOR[selected.category as CatKey]}80`, textTransform: "uppercase", marginBottom: 4 }}>{selected.category}</div>
                     <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.1, color: "rgba(255,255,255,0.90)" }}>{selected.label}</div>
                   </div>
                 </div>
@@ -357,7 +388,7 @@ export default function BodyMetricsGuide() {
                     }
 
                     // Parse brackets from each entry
-                    const parse = (str) => {
+                    const parse = (str: string) => {
                       const match = str.match(/^(.*?)\s*(\(.*?\))?$/);
                       return { value: match?.[1]?.trim() ?? str, label: match?.[2]?.replace(/[()]/g, "").trim() ?? "" };
                     };
@@ -378,7 +409,7 @@ export default function BodyMetricsGuide() {
                           borderBottom: "1px solid rgba(255,255,255,0.05)",
                         }}>
                           <div style={{ padding: "8px 12px" }} />
-                          {cols.map((col, i) => (
+                          {cols.map((col: { label: string; value: string }, i) => (
                             <div key={i} style={{
                               padding: "8px 10px",
                               fontSize: 9, fontWeight: 700, letterSpacing: "0.07em",

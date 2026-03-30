@@ -245,7 +245,7 @@ export default function SignupPage() {
                   setEmail(e.target.value);
                   setError("");
                 }}
-                placeholder="your@email.com"
+                placeholder="Enter your company email ID"
                 style={{
                   width: "100%",
                   borderRadius: "12px",
@@ -295,7 +295,7 @@ export default function SignupPage() {
                   setPassword(e.target.value);
                   setError("");
                 }}
-                placeholder="••••••••"
+                placeholder="Enter new password"
                 style={{
                   width: "100%",
                   borderRadius: "12px",

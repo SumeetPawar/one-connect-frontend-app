@@ -1,10 +1,70 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+/* â”€â”€ Minimal SVG icon set (no emojis) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function IconBell() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+  );
+}
+function IconTrophy() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="8 21 12 17 16 21"/><line x1="12" y1="17" x2="12" y2="11"/>
+      <path d="M7 4H4a2 2 0 0 0-2 2v2a4 4 0 0 0 4 4h.5"/><path d="M17 4h3a2 2 0 0 1 2 2v2a4 4 0 0 1-4 4h-.5"/>
+      <rect x="7" y="2" width="10" height="9" rx="2"/>
+    </svg>
+  );
+}
+function IconFlame() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+    </svg>
+  );
+}
+function IconChartLine() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+    </svg>
+  );
+}
+function IconShield() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  );
+}
+function IconZap() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+  );
+}
+function IconDownload() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  );
+}
+function IconCheck() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  );
+}
+
 export default function PWAInstallLanding() {
-    const router = useRouter();
+  const router = useRouter();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
@@ -76,7 +136,7 @@ export default function PWAInstallLanding() {
       setDeferredPrompt(null);
       setIsInstalled(true);
       setInstallMessage('App installed! You can now open it from your app tray or home screen as \u201cGES Connect\u201d.');
-      setNavBarMessage('✓ App Installed Successfully');
+      setNavBarMessage('âœ“ App Installed Successfully');
       setTimeout(() => {
         setInstalling(false);
         setNavBarMessage(null);
@@ -97,361 +157,347 @@ export default function PWAInstallLanding() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)',
+      background: '#080b18',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      position: 'relative',
+      overflow: 'hidden',
     }}>
-      
-      {/* Hero Section */}
-      <div style={{
-        background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 27, 75, 0.7) 100%)',
-        padding: '60px 24px 60px 24px',
-        textAlign: 'center',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center'
-      }}>
-        {/* App Name with Animated Words */}
-        <h1 style={{
-          fontSize: '36px',
-          fontWeight: '700',
-          color: '#ffffff',
-          marginBottom: '12px',
-          letterSpacing: '-0.03em',
-          lineHeight: '1.1'
+      {/* Aurora background layers */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{
+          position: 'absolute', top: '-20%', left: '30%',
+          width: 600, height: 600, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%)',
+          filter: 'blur(40px)',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: '10%', right: '-10%',
+          width: 500, height: 500, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(99,102,241,0.14) 0%, transparent 70%)',
+          filter: 'blur(40px)',
+        }} />
+        <div style={{
+          position: 'absolute', top: '40%', left: '-5%',
+          width: 350, height: 350, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(16,185,129,0.09) 0%, transparent 70%)',
+          filter: 'blur(30px)',
+        }} />
+      </div>
+
+      {/* Nav bar install status */}
+      {navBarMessage && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', zIndex: 9999,
+          background: navBarMessage.startsWith('âœ“')
+            ? 'linear-gradient(90deg, #059669, #10b981)'
+            : 'linear-gradient(90deg, #7c3aed, #a855f7)',
+          color: '#fff', fontWeight: 700, fontSize: 15,
+          textAlign: 'center', padding: '13px 0',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          animation: 'slideDown 0.3s ease',
+          letterSpacing: '-0.01em',
         }}>
-          GES{' '}
+          {navBarMessage}
+        </div>
+      )}
+
+      <div style={{
+        position: 'relative', zIndex: 1,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '60px 24px 80px',
+        maxWidth: 460, margin: '0 auto', width: '100%',
+      }}>
+
+        {/* Top badge */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.3)',
+          borderRadius: 20, padding: '5px 14px', marginBottom: 32,
+          color: '#a78bfa', fontSize: 12, fontWeight: 600, letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+        }}>
+          <IconZap />
+          Premium Fitness App
+        </div>
+
+        {/* Hero headline */}
+        <h1 style={{
+          fontSize: 38, fontWeight: 800, color: '#fff',
+          letterSpacing: '-0.04em', lineHeight: 1.1,
+          textAlign: 'center', marginBottom: 6,
+        }}>
+          GES&nbsp;
           <span style={{
             display: 'inline-block',
-            background: 'linear-gradient(135deg, #c084fc 0%, #e879f9 100%)',
+            background: 'linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #38bdf8 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
-            minWidth: '140px',
-            textAlign: 'left',
+            minWidth: 140,
             opacity: fade ? 1 : 0,
-            transition: 'opacity 0.3s ease-in-out',
-            transform: fade ? 'translateY(0)' : 'translateY(-5px)',
-            transitionProperty: 'opacity, transform'
+            transform: fade ? 'translateY(0)' : 'translateY(-6px)',
+            transition: 'opacity 0.3s ease, transform 0.3s ease',
           }}>
             {currentWord}
           </span>
         </h1>
 
-        {/* Tagline */}
         <p style={{
-          fontSize: '18px',
-          color: 'rgba(255, 255, 255, 0.6)',
-          marginBottom: '32px',
-          lineHeight: '1.5',
-          maxWidth: '340px',
-          margin: '0 auto 32px auto'
+          fontSize: 16, color: 'rgba(255,255,255,0.5)',
+          textAlign: 'center', lineHeight: 1.6,
+          maxWidth: 320, margin: '0 0 40px',
         }}>
-          Track goals, join challenges, stay motivated with your team
+          Track goals, join challenges, and stay motivated with your team â€” all in one place.
         </p>
 
-        {/* Install CTA Priority Section */}
+        {/* Feature cards */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr',
+          gap: 10, width: '100%', marginBottom: 36,
+        }}>
+          {[
+            { icon: <IconFlame />, label: 'Daily Streaks', sub: 'Stay consistent' },
+            { icon: <IconTrophy />, label: 'Leaderboards', sub: 'Compete & win' },
+            { icon: <IconBell />, label: 'Smart Alerts', sub: 'Never miss a moment' },
+            { icon: <IconChartLine />, label: 'Live Metrics', sub: 'Track everything' },
+          ].map(f => (
+            <div key={f.label} style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 16, padding: '16px 14px',
+              display: 'flex', flexDirection: 'column', gap: 8,
+            }}>
+              <div style={{ color: '#a78bfa' }}>{f.icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#e0e7ff' }}>{f.label}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{f.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Install CTA card */}
         {!isInstalled && (
           <div style={{
-            background: 'rgba(124, 58, 237, 0.1)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            borderRadius: '20px',
-            padding: '24px 20px',
-            boxShadow: '0 4px 24px rgba(124, 58, 237, 0.3)',
-            border: '1px solid rgba(167, 139, 250, 0.3)',
-            maxWidth: '400px',
-            margin: '0 auto'
+            width: '100%',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(124,58,237,0.25)',
+            borderRadius: 24,
+            overflow: 'hidden',
+            boxShadow: '0 0 0 1px rgba(124,58,237,0.08), 0 20px 60px rgba(0,0,0,0.4)',
           }}>
+            {/* Card header */}
             <div style={{
-              fontSize: '17px',
-              fontWeight: '600',
-              color: '#ffffff',
-              marginBottom: '8px'
+              padding: '22px 22px 18px',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              background: 'linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(99,102,241,0.08) 100%)',
             }}>
-              📲 Get the App
-            </div>
-            <div style={{
-              fontSize: '14px',
-              color: 'rgba(255, 255, 255, 0.6)',
-              marginBottom: '20px',
-              lineHeight: '1.5'
-            }}>
-              Install for offline access, notifications, and the best experience.<br />
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                Install GES Connect
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+                One tap access Â· Offline support Â· Push notifications
+              </div>
             </div>
 
-           
-            {/* Android/Chrome Install Button */}
-            {deferredPrompt && isAndroid && (
-              <button
-                onClick={handleInstallClick}
-                style={{
-                  width: '100%',
-                  padding: '16px',
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: '#ffffff',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 16px rgba(139, 92, 246, 0.5)',
-                  WebkitTapHighlightColor: 'transparent'
-                }}
-              >
-                Install Now
-              </button>
-            )}
+            <div style={{ padding: '20px 22px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-            {/* iOS Instructions - Only for iOS users */}
-            {isIOS && (
-              <div style={{
-                background: 'rgba(124, 58, 237, 0.15)',
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'left',
-                border: '1px solid rgba(167, 139, 250, 0.3)'
-              }}>
-                <div style={{
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: '#ffffff',
-                  marginBottom: '12px'
-                }}>
-                  Install on iPhone/iPad:
+              {/* Android auto-install */}
+              {deferredPrompt && isAndroid && (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {['Works offline, anytime', 'Real-time push notifications', 'Native app speed & feel'].map(b => (
+                      <div key={b} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
+                        <span style={{
+                          width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                          background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6ee7b7',
+                        }}><IconCheck /></span>
+                        {b}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={handleInstallClick}
+                    disabled={installing}
+                    style={{
+                      width: '100%', padding: '15px 0',
+                      background: installing
+                        ? 'rgba(124,58,237,0.4)'
+                        : 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
+                      border: 'none', borderRadius: 14,
+                      color: '#fff', fontSize: 15, fontWeight: 700,
+                      cursor: installing ? 'wait' : 'pointer',
+                      boxShadow: installing ? 'none' : '0 4px 24px rgba(124,58,237,0.5)',
+                      letterSpacing: '-0.01em', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', gap: 8,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <IconDownload />
+                    {installing ? 'Installingâ€¦' : 'Install Now â€” It\'s Free'}
+                  </button>
+                </>
+              )}
+
+              {/* iOS instructions */}
+              {isIOS && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    { n: 1, label: 'Tap the Share button', sub: 'Bottom bar in Safari Â· top menu in Chrome' },
+                    { n: 2, label: '"Add to Home Screen"', sub: 'Scroll the share sheet to find this option' },
+                    { n: 3, label: 'Tap Add â€” done', sub: 'Launch from your Home Screen for full access' },
+                  ].map(s => (
+                    <div key={s.n} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700, color: '#a78bfa',
+                      }}>{s.n}</div>
+                      <div style={{ paddingTop: 3 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e7ff' }}>{s.label}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{s.sub}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  fontSize: '13px',
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  lineHeight: '1.5'
-                }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>1.</span>
-                    <span>
-                      Tap the <strong style={{ color: '#ffffff' }}>Share</strong> button
-                      <span style={{ fontSize: '18px' }}>⎋</span>
-                      <span style={{ color: '#a3e635', fontWeight: 500 }}> (bottom toolbar in Safari, top right menu in Chrome)</span>
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>2.</span>
-                    <span>Scroll and tap <strong style={{ color: '#ffffff' }}>&quot;Add to Home Screen&quot;</strong></span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>3.</span>
-                    <span>Tap <strong style={{ color: '#ffffff' }}>&quot;Add&quot;</strong> in the top right corner</span>
-                  </div>
+              )}
+
+              {/* Android manual (no deferred prompt) */}
+              {isAndroid && !deferredPrompt && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    { n: 1, label: 'Tap the menu button', sub: 'Three dots at the top right of Chrome' },
+                    { n: 2, label: '"Add to Home screen"', sub: 'Or "Install app" if shown' },
+                    { n: 3, label: 'Tap Install', sub: 'Confirm to add GES Connect to your screen' },
+                  ].map(s => (
+                    <div key={s.n} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700, color: '#a78bfa',
+                      }}>{s.n}</div>
+                      <div style={{ paddingTop: 3 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e7ff' }}>{s.label}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{s.sub}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Desktop â€” show both */}
+              {!isIOS && !isAndroid && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {[
+                    {
+                      title: 'iPhone / iPad (Safari)',
+                      steps: [
+                        { n: 1, label: 'Tap the Share button', sub: 'Bottom bar in Safari' },
+                        { n: 2, label: 'Select "Add to Home Screen"', sub: 'Scroll down the share sheet' },
+                        { n: 3, label: 'Tap Add', sub: 'App appears on your Home Screen' },
+                      ],
+                    },
+                    {
+                      title: 'Android (Chrome)',
+                      steps: [
+                        { n: 1, label: 'Open the Chrome menu', sub: 'Three dots â€” top right' },
+                        { n: 2, label: '"Add to Home Screen"', sub: 'Or "Install app"' },
+                        { n: 3, label: 'Tap Install to confirm', sub: '' },
+                      ],
+                    },
+                  ].map(platform => (
+                    <div key={platform.title}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{platform.title}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {platform.steps.map(s => (
+                          <div key={s.n} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                            <div style={{
+                              width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+                              background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 12, fontWeight: 700, color: '#a78bfa',
+                            }}>{s.n}</div>
+                            <div style={{ paddingTop: 2 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e7ff' }}>{s.label}</div>
+                              {s.sub && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{s.sub}</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Privacy & security note */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 14px', borderRadius: 10,
+                background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.14)',
+              }}>
+                <div style={{ color: '#6ee7b7', flexShrink: 0 }}><IconShield /></div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>
+                  No account needed to install. Your data stays private and secure.
                 </div>
               </div>
-            )}
 
-            {/* Android Instructions - Only for Android users (without auto-install) */}
-            {isAndroid && !deferredPrompt && (
-              <div style={{
-                background: 'rgba(124, 58, 237, 0.15)',
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'left',
-                border: '1px solid rgba(167, 139, 250, 0.3)'
-              }}>
-                <div style={{
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: '#ffffff',
-                  marginBottom: '12px'
-                }}>
-                  Install on Android:
-                </div>
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  fontSize: '13px',
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  lineHeight: '1.5'
-                }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>1.</span>
-                    <span>Tap the <strong style={{ color: '#ffffff' }}>menu</strong> button <span style={{ fontSize: '18px' }}>⋮</span> (top right)</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>2.</span>
-                    <span>Select <strong style={{ color: '#ffffff' }}>"Add to Home screen"</strong> or <strong style={{ color: '#ffffff' }}>"Install app"</strong></span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>3.</span>
-                    <span>Tap <strong style={{ color: '#ffffff' }}>"Install"</strong> to confirm</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Desktop/Other - Show both iOS and Android instructions */}
-            {!isIOS && !isAndroid && (
-              <>
-                <div style={{
-                  background: 'rgba(124, 58, 237, 0.15)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  textAlign: 'left',
-                  border: '1px solid rgba(167, 139, 250, 0.3)',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#ffffff',
-                    marginBottom: '12px'
-                  }}>
-                    Install on iPhone/iPad:
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    fontSize: '13px',
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    lineHeight: '1.5'
-                  }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>1.</span>
-                      <span>
-                        Tap the <strong style={{ color: '#ffffff' }}>Share</strong> button
-                        <span style={{ fontSize: '18px' }}>⎋</span>
-                        <span style={{ color: '#a3e635', fontWeight: 500 }}> (bottom toolbar in Safari, top right menu in Chrome)</span>
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>2.</span>
-                      <span>Scroll and tap <strong style={{ color: '#ffffff' }}>&quot;Add to Home Screen&quot;</strong></span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>3.</span>
-                      <span>Tap <strong style={{ color: '#ffffff' }}>&quot;Add&quot;</strong> in the top right corner</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{
-                  background: 'rgba(124, 58, 237, 0.15)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  textAlign: 'left',
-                  border: '1px solid rgba(167, 139, 250, 0.3)'
-                }}>
-                  <div style={{
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#ffffff',
-                    marginBottom: '12px'
-                  }}>
-                    Install on Android:
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    fontSize: '13px',
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    lineHeight: '1.5'
-                  }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>1.</span>
-                      <span>Tap the <strong style={{ color: '#ffffff' }}>menu</strong> button <span style={{ fontSize: '18px' }}>⋮</span> (top right)</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>2.</span>
-                      <span>Select <strong style={{ color: '#ffffff' }}>"Add to Home screen"</strong> or <strong style={{ color: '#ffffff' }}>"Install app"</strong></span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ fontWeight: '600', minWidth: '20px', color: '#c084fc' }}>3.</span>
-                      <span>Tap <strong style={{ color: '#ffffff' }}>"Install"</strong> to confirm</span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+            </div>
           </div>
         )}
 
-        {/* Nav Bar for install status */}
-        {navBarMessage && (
+        {/* Already installed state */}
+        {isInstalled && (
           <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            background: navBarMessage.startsWith('✓') ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)' : 'linear-gradient(90deg, #a78bfa 0%, #c084fc 100%)',
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: '16px',
-            textAlign: 'center',
-            padding: '12px 0',
-            zIndex: 9999,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            letterSpacing: '0.01em',
-            animation: navBarMessage.startsWith('✓') ? 'fadeInBar 0.3s' : 'pulseBar 1.2s infinite alternate',
-            transition: 'background 0.3s'
+            width: '100%', padding: '28px 24px', borderRadius: 24, textAlign: 'center',
+            background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
           }}>
-            {navBarMessage}
-            <style>{`
-              @keyframes pulseBar {
-                0% { opacity: 1; }
-                100% { opacity: 0.7; }
-              }
-              @keyframes fadeInBar {
-                from { opacity: 0; transform: translateY(-10px); }
-                to { opacity: 1; transform: translateY(0); }
-              }
-            `}</style>
+            <div style={{
+              width: 52, height: 52, borderRadius: '50%', margin: '0 auto 14px',
+              background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6ee7b7',
+            }}><IconShield /></div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 6 }}>App Installed</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 24 }}>
+              You're all set. Open GES Connect from your Home Screen for the full experience.
+            </div>
+            <button
+              onClick={handleContinue}
+              style={{
+                padding: '13px 32px', borderRadius: 12, border: 'none',
+                background: 'linear-gradient(135deg, #7c3aed, #6366f1)',
+                color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                boxShadow: '0 4px 20px rgba(124,58,237,0.4)',
+              }}
+            >
+              Continue to App
+            </button>
           </div>
         )}
-        {/* After install started, show tray info at bottom */}
+
+        {/* Install progress bar */}
         {installing && (
           <div style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            background: 'rgba(124,58,237,0.15)',
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: '15px',
-            textAlign: 'center',
-            padding: '14px 0',
-            zIndex: 9999,
-            letterSpacing: '0.01em',
-            borderTop: '1px solid rgba(167,139,250,0.3)'
+            position: 'fixed', bottom: 0, left: 0, width: '100%', zIndex: 9999,
+            background: 'rgba(10,12,28,0.96)',
+            borderTop: '1px solid rgba(124,58,237,0.25)',
+            padding: '16px 20px', textAlign: 'center',
+            fontSize: 14, color: '#c4b5fd', fontWeight: 600,
+            backdropFilter: 'blur(16px)',
           }}>
-            After install, look for <span style={{ background: 'rgba(124,58,237,0.15)', borderRadius: '6px', padding: '2px 6px', color: '#fff', fontWeight: 700 }}>GES Connect</span> in your app tray or home screen.
-          </div>
-        )}
-
-        {/* After install started, show tray info at bottom */}
-        {installing && (
-          <div style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            background: 'rgba(124,58,237,0.15)',
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: '15px',
-            textAlign: 'center',
-            padding: '14px 0',
-            zIndex: 9999,
-            letterSpacing: '0.01em',
-            borderTop: '1px solid rgba(167,139,250,0.3)'
-          }}>
-            After install, look for <span style={{ background: 'rgba(124,58,237,0.15)', borderRadius: '6px', padding: '2px 6px', color: '#fff', fontWeight: 700 }}>GES Connect</span> in your app tray or home screen.
+            Look for <span style={{ color: '#fff', fontWeight: 700 }}>GES Connect</span> in your app tray or home screen.
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-100%); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

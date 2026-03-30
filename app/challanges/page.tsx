@@ -2,40 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Header from "../commponents/Header";
-import { api, isApiError } from "@/lib/api";
+import { api, isApiError, getCachedUserMe } from "@/lib/api";
 import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
-        // Use same user/admin detection logic as Header
-        const [user, setUser] = useState(null);
-        const [isAdmin, setIsAdmin] = useState(false);
-        useEffect(() => {
-            const fetchUserProfile = async () => {
-                try {
-                    const API_BASE =
-                        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
-                        "https://cbiqa.dev.honeywellcloud.com/socialapi";
-                    const token = localStorage.getItem("access_token");
-
-                    if (!token) return;
-
-                    const res = await fetch(`${API_BASE}/api/me`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    });
-
-                    if (res.ok) {
-                        const userData = await res.json();
-                        setUser(userData);
-                        setIsAdmin(userData.role === "admin");
-                    }
-                } catch (e) {
-                    setUser(null);
-                    setIsAdmin(false);
-                }
-            };
-            fetchUserProfile();
-        }, []);
+    // Use same user/admin detection logic as Header
+    const [user, setUser] = useState(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+    useEffect(() => {
+        getCachedUserMe()
+            .then(userData => {
+                setUser(userData as any);
+                setIsAdmin((userData as any).role === "admin");
+            })
+            .catch(() => { setUser(null); setIsAdmin(false); });
+    }, []);
     type ApiChallenge = {
         id: string;
         title: string;
@@ -320,13 +302,19 @@ export default function Dashboard() {
                             ? "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)"
                             : "linear-gradient(135deg, rgba(59, 130, 246, 0.85) 0%, rgba(37, 99, 235, 0.85) 100%)";
 
-                        const isExpired = new Date(ch.end_date).getTime() < Date.now();
+                        const endTime = new Date(ch.end_date).getTime();
+                        const now = Date.now();
+                        const isExpired = endTime < now;
+                        const daysPastEnd = isExpired ? (now - endTime) / (1000 * 60 * 60 * 24) : 0;
+                        const isEnded = daysPastEnd >= 4;
                         const isJoined = ch.user_joined;
                         return (
                             <div
                                 key={ch.id}
                                 onClick={() => {
-                                    if (isExpired || ch.status === "completed" || isJoined) {
+                                    if (isEnded) {
+                                        router.push(`/challanges/${ch.id}/leaderboard`);
+                                    } else if (isExpired || ch.status === "completed" || isJoined) {
                                         router.push(`/challanges/${ch.id}/steps`);
                                     } else {
                                         setSelectedChallenge(ch);
@@ -340,6 +328,10 @@ export default function Dashboard() {
                                     overflow: "hidden",
                                     cursor: "pointer",
                                     background: bgGradient,
+                                    // opacity: isEnded ? 0.45 : 1,
+                                    opacity: 1,
+                                    transition: "opacity 0.2s ease",
+                                    filter: isEnded ? "grayscale(0.35)" : "none",
                                 }}
                             >
                                 <div style={{
@@ -398,7 +390,20 @@ export default function Dashboard() {
                                 )}
 
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                                    {ch.user_joined ? (
+                                    {isEnded ? (
+                                        <div style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: 6,
+                                            background: "rgba(255,255,255,0.12)",
+                                            padding: "5px 13px",
+                                            borderRadius: "12px",
+                                            border: "1px solid rgba(255,255,255,0.20)"
+                                        }}>
+                                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", fontWeight: 700 }}>✓</span>
+                                            <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.75)" }}>Completed</span>
+                                        </div>
+                                    ) : ch.user_joined ? (
                                         <div style={{
                                             display: "inline-flex",
                                             alignItems: "center",
@@ -413,10 +418,10 @@ export default function Dashboard() {
                                         </div>
                                     ) : (
                                         (() => {
-                                            const now = new Date();
+                                            const nowD = new Date();
                                             const start = new Date(ch.start_date);
                                             const end = new Date(ch.end_date);
-                                            return now >= start && now <= end;
+                                            return nowD >= start && nowD <= end;
                                         })() && (
                                             <div style={{
                                                 display: "inline-flex",
@@ -430,6 +435,23 @@ export default function Dashboard() {
                                                 <span style={{ fontSize: 11, fontWeight: 600, color: "#fff" }}>Join Now</span>
                                             </div>
                                         )
+                                    )}
+                                    {isEnded && (
+                                        <div style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: 5,
+                                            background: "rgba(255,255,255,0.08)",
+                                            padding: "5px 11px",
+                                            borderRadius: "12px",
+                                            border: "1px solid rgba(255,255,255,0.14)"
+                                        }}>
+                                            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                                                <path d="M2 6l2.5 2.5L10 3.5" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <path d="M6 1v1M6 10v1M1 6H2M10 6h1" stroke="rgba(255,255,255,0.25)" strokeWidth="1" strokeLinecap="round"/>
+                                            </svg>
+                                            <span style={{ fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.55)", letterSpacing: "-0.01em" }}>View Results</span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -744,203 +766,89 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* Body Stats - Only active for admin */}
-                        {isAdmin ? (
-                            <div
-                                onMouseDown={e => {
-                                    e.currentTarget.style.transform = 'scale(0.96)';
-                                    e.currentTarget.style.opacity = '0.75';
-                                }}
-                                onMouseUp={e => {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                    e.currentTarget.style.opacity = '1';
-                                }}
-                                onTouchStart={e => {
-                                    e.currentTarget.style.transform = 'scale(0.96)';
-                                    e.currentTarget.style.opacity = '0.75';
-                                }}
-                                onTouchEnd={e => {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                    e.currentTarget.style.opacity = '1';
-                                }}
-                                onClick={() => router.push('/bgmi')}
-                                style={{
-                                    background: 'rgba(6, 182, 212, 0.06)',
-                                    backdropFilter: 'blur(20px)',
-                                    borderRadius: '16px',
-                                    padding: '18px 16px',
-                                    cursor: 'pointer',
-                                    border: '1px solid rgba(6, 182, 212, 0.25)',
-                                    boxShadow: '0 0 10px rgba(6, 182, 212, 0.08)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    minHeight: '68px',
-                                    opacity: '1',
-                                    position: 'relative',
-                                    userSelect: 'none',
-                                    WebkitUserSelect: 'none',
-                                    transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
-                                }}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.background = 'rgba(6, 182, 212, 0.12)';
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.background = 'rgba(6, 182, 212, 0.06)';
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                    e.currentTarget.style.opacity = '1';
-                                }}
-                            >
-                                {/* New badge */}
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '8px',
-                                    right: '10px',
-                                    background: 'rgba(6, 182, 212, 0.18)',
-                                    border: '1px solid rgba(6, 182, 212, 0.35)',
-                                    borderRadius: '6px',
-                                    padding: '2px 6px',
-                                    fontSize: '9px',
-                                    fontWeight: '700',
-                                    color: 'rgba(6, 182, 212, 0.9)',
-                                    letterSpacing: '0.4px',
-                                    textTransform: 'uppercase',
-                                }}>New</div>
-                                <div style={{
-                                    width: '42px',
-                                    height: '42px',
-                                    borderRadius: '11px',
-                                    background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(8, 145, 178, 0.15) 100%)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '21px',
-                                    flexShrink: 0,
-                                    fontWeight: '600',
-                                    color: 'rgba(6, 182, 212, 0.85)',
-                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                                }}>
-                                    B
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        color: '#ffffff',
-                                        letterSpacing: '-0.01em',
-                                        lineHeight: '1.2',
-                                        marginBottom: '4px',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
-                                    }}>
-                                        Body Stats
-                                    </div>
-                                    <div style={{
-                                        fontSize: '11px',
-                                        fontWeight: '500',
-                                        color: 'rgba(6, 182, 212, 0.7)',
-                                        letterSpacing: '0.3px'
-                                    }}>
-                                        View metrics
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.03)',
-                                    backdropFilter: 'blur(20px)',
-                                    borderRadius: '16px',
-                                    padding: '18px 16px',
-                                    cursor: 'not-allowed',
-                                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    minHeight: '68px',
-                                    opacity: '0.5'
-                                }}
-                            >
-                                <div style={{
-                                    width: '42px',
-                                    height: '42px',
-                                    borderRadius: '11px',
-                                    background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.1) 100%)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '21px',
-                                    flexShrink: 0,
-                                    fontWeight: '600',
-                                    color: 'rgba(6, 182, 212, 0.6)',
-                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                                }}>
-                                    B
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        letterSpacing: '-0.01em',
-                                        lineHeight: '1.2',
-                                        marginBottom: '4px',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
-                                    }}>
-                                        Body Stats
-                                    </div>
-                                    <div style={{
-                                        fontSize: '11px',
-                                        fontWeight: '500',
-                                        color: 'rgba(255, 255, 255, 0.4)',
-                                        letterSpacing: '0.3px'
-                                    }}>
-                                        Coming Soon
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        {/* Body Stats - Available to all users */}
 
-                        {/* Wellness Tip - Always disabled */}
                         <div
+                            onMouseDown={e => {
+                                e.currentTarget.style.transform = 'scale(0.96)';
+                                e.currentTarget.style.opacity = '0.75';
+                            }}
+                            onMouseUp={e => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.opacity = '1';
+                            }}
+                            onTouchStart={e => {
+                                e.currentTarget.style.transform = 'scale(0.96)';
+                                e.currentTarget.style.opacity = '0.75';
+                            }}
+                            onTouchEnd={e => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.opacity = '1';
+                            }}
+                            onClick={() => router.push('/bgmi')}
                             style={{
-                                background: 'rgba(255, 255, 255, 0.03)',
+                                background: 'rgba(6, 182, 212, 0.06)',
                                 backdropFilter: 'blur(20px)',
                                 borderRadius: '16px',
                                 padding: '18px 16px',
-                                cursor: 'not-allowed',
-                                border: '1px solid rgba(255, 255, 255, 0.05)',
+                                cursor: 'pointer',
+                                border: '1px solid rgba(6, 182, 212, 0.25)',
+                                boxShadow: '0 0 10px rgba(6, 182, 212, 0.08)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '12px',
                                 minHeight: '68px',
-                                opacity: '0.5'
+                                opacity: '1',
+                                position: 'relative',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
+                            }}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.background = 'rgba(6, 182, 212, 0.12)';
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.background = 'rgba(6, 182, 212, 0.06)';
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.opacity = '1';
                             }}
                         >
+                            {/* New badge */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '8px',
+                                right: '10px',
+                                background: 'rgba(6, 182, 212, 0.18)',
+                                border: '1px solid rgba(6, 182, 212, 0.35)',
+                                borderRadius: '6px',
+                                padding: '2px 6px',
+                                fontSize: '9px',
+                                fontWeight: '700',
+                                color: 'rgba(6, 182, 212, 0.9)',
+                                letterSpacing: '0.4px',
+                                textTransform: 'uppercase',
+                            }}>New</div>
                             <div style={{
                                 width: '42px',
                                 height: '42px',
                                 borderRadius: '11px',
-                                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(37, 99, 235, 0.18) 100%)',
+                                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(8, 145, 178, 0.15) 100%)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontSize: '21px',
                                 flexShrink: 0,
                                 fontWeight: '600',
-                                color: 'rgba(59, 130, 246, 0.5)',
+                                color: 'rgba(6, 182, 212, 0.85)',
                                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
                             }}>
-                                💡
+                                B
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{
                                     fontSize: '14px',
                                     fontWeight: '600',
-                                    color: 'rgba(255, 255, 255, 0.6)',
+                                    color: '#ffffff',
                                     letterSpacing: '-0.01em',
                                     lineHeight: '1.2',
                                     marginBottom: '4px',
@@ -948,15 +856,86 @@ export default function Dashboard() {
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis'
                                 }}>
-                                    Wellness Tip
+                                    Body Stats
                                 </div>
                                 <div style={{
                                     fontSize: '11px',
                                     fontWeight: '500',
-                                    color: 'rgba(255, 255, 255, 0.4)',
+                                    color: 'rgba(6, 182, 212, 0.7)',
                                     letterSpacing: '0.3px'
                                 }}>
-                                    Stay tuned for more!
+                                    View metrics
+                                </div>
+                            </div>
+                        </div>
+
+
+                        {/* Mindfulness - Enabled for all users */}
+                        <div
+                            onMouseDown={e => {
+                                e.currentTarget.style.transform = 'scale(0.96)';
+                                e.currentTarget.style.opacity = '0.75';
+                            }}
+                            onMouseUp={e => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.opacity = '1';
+                            }}
+                            onTouchStart={e => {
+                                e.currentTarget.style.transform = 'scale(0.96)';
+                                e.currentTarget.style.opacity = '0.75';
+                            }}
+                            onTouchEnd={e => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.opacity = '1';
+                            }}
+                            onClick={() => router.push('/mindfullness')}
+                            style={{
+                                background: 'rgba(16, 185, 129, 0.07)',
+                                backdropFilter: 'blur(20px)',
+                                borderRadius: '16px',
+                                padding: '18px 16px',
+                                cursor: 'pointer',
+                                border: '1px solid rgba(16, 185, 129, 0.22)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                minHeight: '68px',
+                                position: 'relative',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.13)'; }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.07)';
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.opacity = '1';
+                            }}
+                        >
+                            <div style={{
+                                position: 'absolute', top: '8px', right: '10px',
+                                background: 'rgba(16, 185, 129, 0.15)',
+                                border: '1px solid rgba(16, 185, 129, 0.30)',
+                                borderRadius: '6px', padding: '2px 6px',
+                                fontSize: '9px', fontWeight: '700',
+                                color: 'rgba(16, 185, 129, 0.9)',
+                                letterSpacing: '0.4px', textTransform: 'uppercase',
+                            }}>New</div>
+                            <div style={{
+                                width: '42px', height: '42px', borderRadius: '11px',
+                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '22px', flexShrink: 0,
+                            }}>🧘</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                    fontSize: '14px', fontWeight: '600', color: '#ffffff',
+                                    letterSpacing: '-0.01em', lineHeight: '1.2',
+                                    marginBottom: '4px', whiteSpace: 'nowrap',
+                                    overflow: 'hidden', textOverflow: 'ellipsis'
+                                }}>Mindfulness</div>
+                                <div style={{ fontSize: '11px', fontWeight: '500', color: 'rgba(16, 185, 129, 0.75)', letterSpacing: '0.3px' }}>
+                                    Calm & focus
                                 </div>
                             </div>
                         </div>

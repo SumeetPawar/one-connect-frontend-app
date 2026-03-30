@@ -12,7 +12,11 @@ export default function HomePage() {
 
   // ✅ Auth guard
   useEffect(() => {
-    if (!isAuthed()) router.replace("/login");
+    const check = async () => {
+      const authed = await isAuthed();
+      if (!authed) router.replace("/login");
+    };
+    check();
   }, [router]);
 
   // Animated word loop
@@ -47,7 +51,7 @@ export default function HomePage() {
   const handleModuleClick = (moduleId: string) => {
     // ✅ Real routing map (V1)
     if (moduleId === "fitness") return router.push("/steps");
-    if (moduleId === "wellness") return router.push("/bmi");
+    if (moduleId === "wellness") return router.push("/bgmi");
 
     // placeholders for future
     if (moduleId === "announcements") return router.push("/home");

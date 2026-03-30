@@ -1,27 +1,75 @@
-self.addEventListener('push', function(event) {
-  console.log('[Service Worker] Push notification received:', event);
-  let data = {};
+/**
+ * service-worker.js
+ * Place this file in your Next.js /public folder as: /public/service-worker.js
+ *
+ * Handles:
+ *   - push events → shows notification
+ *   - notificationclick → opens the app at the right URL
+ */
+
+const APP_URL = self.location.origin;
+const BASE = "/socialapp"; // must match Next.js basePath
+
+// ── Push received from server ─────────────────────────────────────────────────
+self.addEventListener("push", (event) => {
+  console.log("[SW] Push received:", event);
+
+  let data = { title: "New notification", body: "", url: "/" };
+
   if (event.data) {
-    data = event.data.json();
-    console.log('[Service Worker] Push data:', data);
+    try {
+      data = { ...data, ...event.data.json() };
+    } catch {
+      data.body = event.data.text();
+    }
   }
-  const title = data.title || 'Hony Fitness Notification';
+
   const options = {
-    body: data.body || 'You have a new notification!',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    data: data.url || '/',
+    body: data.body,
+    icon: BASE + "/web-app-manifest-192x192.png",
+    // badge: BASE + "/favicon-192.png",
+    data: { url: data.url || "/socialapp/" },
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+    tag: "ges-push-" + (data.url || "default"),  // prevents silent drop from too many notifications
+    renotify: true,                               // buzz even if same tag
   };
-  console.log('[Service Worker] Showing notification:', title, options);
-  event.waitUntil(self.registration.showNotification(title, options));
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
 });
 
-self.addEventListener('notificationclick', function(event) {
-  console.log('[Service Worker] Notification clicked:', event.notification);
-  const urlToOpen = event.notification.data || '/';
-  console.log('[Service Worker] Opening URL:', urlToOpen);
+// ── Notification clicked ──────────────────────────────────────────────────────
+self.addEventListener("notificationclick", (event) => {
+  console.log("[SW] Notification clicked:", event);
   event.notification.close();
+
+  const targetUrl = APP_URL + (event.notification.data?.url || "/");
+
   event.waitUntil(
-    clients.openWindow(urlToOpen)
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        // If app is already open, focus it and navigate
+        for (const client of clientList) {
+          if (client.url.startsWith(APP_URL) && "focus" in client) {
+            return client.focus().then(() => client.navigate(targetUrl));
+          }
+        }
+        // Otherwise open a new tab
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+      })
   );
+});
+
+// ── Activate immediately (don't wait for old SW to die) ──────────────────────
+self.addEventListener("install", (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
 });

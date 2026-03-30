@@ -2,6 +2,8 @@
 
 import router, { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getCachedUserMe } from "@/lib/api";
+import NotificationBell from "../components/NotificationBell";
 
 type UserProfile = {
     id: string;
@@ -29,26 +31,21 @@ export default function Header({
     const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
     const [resetUserId, setResetUserId] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [isStandalone, setIsStandalone] = useState(true); // default true to avoid flash
+    const [isMobile, setIsMobile] = useState(false);
     const router = useRouter();
+    // Detect standalone mode (PWA installed) and mobile device
+    useEffect(() => {
+        setIsStandalone(window.matchMedia('(display-mode: standalone)').matches);
+        setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+    }, []);
+
     // Fetch user profile
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
-                const API_BASE =
-                    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
-                    "https://cbiqa.dev.honeywellcloud.com/socialapi";
-                const token = localStorage.getItem("access_token");
-
-                if (!token) return;
-
-                const res = await fetch(`${API_BASE}/api/me`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-
-                if (res.ok) {
-                    const userData: UserProfile = await res.json();
-                    setUser(userData);
-                }
+                const userData = await getCachedUserMe();
+                setUser(userData as UserProfile);
             } catch (e) {
                 console.error('User profile fetch error:', e);
             }
@@ -185,6 +182,37 @@ export default function Header({
                         )}
                     </div>
 
+
+                    {/* Right-side icons: Bell + User Avatar */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+
+                    {/* Download / Install icon — only in browser, not in installed PWA */}
+                    {!isStandalone && (
+                        <button
+                            onClick={() => window.dispatchEvent(new CustomEvent('show-install-prompt'))}
+                            title="Install app"
+                            style={{
+                                width: 38, height: 38, borderRadius: '50%',
+                                background: 'rgba(124,58,237,0.15)',
+                                border: '1px solid rgba(124,58,237,0.3)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', color: '#a78bfa',
+                                flexShrink: 0, padding: 0, outline: 'none',
+                                WebkitTapHighlightColor: 'transparent',
+                                transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.background = 'rgba(124,58,237,0.28)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(124,58,237,0.15)'; }}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                        </button>
+                    )}
+
+                    <NotificationBell />
 
                     {/* User Profile Circle */}
                     <div style={{ position: 'relative' }} className="user-menu-container">
@@ -323,6 +351,7 @@ export default function Header({
                             </div>
                         )}
                     </div>
+                    </div>{/* end right-side icons wrapper */}
                 </div>
             </div>
 

@@ -70,7 +70,13 @@ export async function api<T>(
   // Still failing
   if (!res.ok) {
     if (res.status === 401) {
-      logout();
+      // Only force-logout if the refresh token is also gone — a truly dead session.
+      // If refresh token is still present, the failure is likely transient (server blip,
+      // race condition during token rotation) — don't kick the user out.
+      const hasRefreshToken = typeof window !== "undefined" && !!localStorage.getItem("refresh_token");
+      if (!hasRefreshToken) {
+        logout();
+      }
     }
     const msg = (data && (data.detail || data.message)) ||
       (typeof data === "string" ? data : "Request failed");
@@ -253,11 +259,14 @@ export interface BodyMetricScan {
   body_fat_pct: number | null;
   visceral_fat: number | null;
   muscle_mass_kg: number | null;
+  skeletal_muscle_pct: number | null;  // % skeletal muscle (preferred)
+  muscle_pct: number | null;           // alternate field name from some API versions
   bone_mass_kg: number | null;
   hydration_pct: number | null;
   protein_pct: number | null;
   bmr_kcal: number | null;
   metabolic_age: number | null;
+  subcutaneous_fat_pct: number | null;
 }
 
 export interface BodyMetricHistory {
@@ -272,7 +281,9 @@ export interface BodyMetricCreateRequest {
   weight_kg?: number | null;
   body_fat_pct?: number | null;
   visceral_fat?: number | null;
+  subcutaneous_fat_pct?: number | null;
   muscle_mass_kg?: number | null;
+  skeletal_muscle_pct?: number | null;
   bone_mass_kg?: number | null;
   hydration_pct?: number | null;
   protein_pct?: number | null;
@@ -332,11 +343,62 @@ export async function getBodyProfile(): Promise<BodyProfile> {
   });
 }
 
-// PUT /api/users/me/profile
+// PUT /api/me/profile
 export async function updateBodyProfile(data: BodyProfileUpdateRequest): Promise<BodyProfile> {
   return api<BodyProfile>("/api/me/profile", {
     method: "PUT",
     auth: true,
     body: JSON.stringify(data),
   });
+}
+
+// ==========================================
+// /api/me CACHE (user identity: name, role, email)
+// ==========================================
+
+export interface UserMe {
+  id: string;
+  email: string;
+  name?: string;
+  role?: string;
+}
+
+export async function getMe(): Promise<UserMe> {
+  return api<UserMe>("/api/me", { method: "GET", auth: true });
+}
+
+const ME_CACHE_KEY = "user_me";
+let _meInflight: Promise<UserMe> | null = null;
+
+/**
+ * Returns user identity (/api/me) from localStorage cache.
+ * If multiple callers fire simultaneously, they share ONE in-flight request.
+ * Pass forceRefresh=true to bypass cache.
+ */
+export async function getCachedUserMe(forceRefresh = false): Promise<UserMe> {
+  if (typeof window !== "undefined" && !forceRefresh) {
+    const cached = localStorage.getItem(ME_CACHE_KEY);
+    if (cached) {
+      try { return JSON.parse(cached); } catch {}
+    }
+  }
+  // Deduplicate parallel calls — share the same inflight promise
+  if (!_meInflight) {
+    _meInflight = getMe()
+      .then(me => {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(ME_CACHE_KEY, JSON.stringify(me));
+        }
+        return me;
+      })
+      .finally(() => { _meInflight = null; });
+  }
+  return _meInflight;
+}
+
+/** Call on logout to wipe cached user identity. */
+export function clearCachedUserMe(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(ME_CACHE_KEY);
+  }
 }
