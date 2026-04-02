@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, TrendingUp, Flame } from 'lucide-react';
+import { Trophy, TrendingUp, Flame, History } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface LeaderboardUser {
@@ -43,6 +43,7 @@ interface LeaderboardResponse {
     my_badge: string | null;
     my_days_met_goal: number;     // NEW
     my_completion_pct: number;    // NEW
+    dept_id?: string;
     leaderboard: LeaderboardUser[];
 }
 
@@ -56,6 +57,8 @@ interface ChallengeChip {
     start_date: string;
     end_date: string;
     is_current?: boolean;
+    dept_id?: string;
+    department_ids?: string[];
 }
 
 export default function LeaderboardPage() {
@@ -71,14 +74,15 @@ export default function LeaderboardPage() {
 
     // Challenge chips
     const [allChallenges, setAllChallenges] = useState<ChallengeChip[]>([]);
-    const [chipsLoading, setChipsLoading] = useState(true);
+    const [chipsLoading, setChipsLoading] = useState(false);
     const [selectedChipId, setSelectedChipId] = useState<string>(challengeId);
     const [chipData, setChipData] = useState<LeaderboardResponse | null>(null);
     const [chipDataLoading, setChipDataLoading] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     useEffect(() => {
         fetchLeaderboard();
-        fetchAllChallenges();
+        fetchDeptHistory();
 
         const handleScroll = () => {
             setShowScrollTop(window.scrollY > 300);
@@ -102,10 +106,10 @@ export default function LeaderboardPage() {
         }
     };
 
-    const fetchAllChallenges = async () => {
+    const fetchDeptHistory = async () => {
+        if (allChallenges.length > 0) return; // already loaded
         setChipsLoading(true);
         try {
-            // Fetch all available challenges
             const response = await api<ChallengeChip[] | { challenges: ChallengeChip[] }>(
                 `/api/challenges/available`,
                 { method: "GET", auth: true }
@@ -127,6 +131,10 @@ export default function LeaderboardPage() {
         } finally {
             setChipsLoading(false);
         }
+    };
+
+    const toggleHistory = () => {
+        setShowHistory(prev => !prev);
     };
 
     const handleSelectChip = async (id: string) => {
@@ -264,6 +272,10 @@ export default function LeaderboardPage() {
     const displayData = activeData;
     const selectedChip = allChallenges.find(c => c.challenge_id === selectedChipId);
 
+    // Derive current challenge's dept ids from the available list
+    const currentChip = allChallenges.find(c => c.challenge_id === challengeId);
+    const myDeptIds: string[] = currentChip?.department_ids ?? [];
+
     return (
         <div className="min-h-screen bg-zinc-950 text-white pb-6">
             {/* Header */}
@@ -278,43 +290,81 @@ export default function LeaderboardPage() {
                         </svg>
                     </button>
                     <h1 className="text-xl font-bold text-white">Rankings</h1>
+                    <div className="ml-auto">
+                        <button
+                            onClick={toggleHistory}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                                showHistory
+                                    ? 'bg-purple-600 border-purple-600 text-white'
+                                    : 'bg-zinc-900 border-zinc-700 text-gray-400 hover:text-white hover:border-zinc-500'
+                            }`}
+                        >
+                            <History className="w-3.5 h-3.5" />
+                            History
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Challenge Chips — all challenges as a scrollable row */}
-            <div className="px-5 mt-4">
-                {chipsLoading ? (
-                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                        {[1,2,3,4].map(i => (
-                            <div key={i} className="h-8 w-24 bg-zinc-800 rounded-full animate-pulse flex-shrink-0" />
-                        ))}
-                    </div>
-                ) : allChallenges.length > 0 ? (
-                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                        {allChallenges.map(c => {
-                            const isCurrent = c.challenge_id === challengeId;
-                            const isSelected = c.challenge_id === selectedChipId;
-                            return (
-                                <button
-                                    key={c.challenge_id}
-                                    onClick={() => handleSelectChip(c.challenge_id)}
-                                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                                        isSelected
-                                            ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-500/20'
-                                            : 'bg-zinc-900 border-zinc-700 text-gray-400 hover:text-white hover:border-zinc-500'
-                                    }`}
-                                >
-                                    {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />}
-                                    {c.start_date
-                                        ? new Date(c.start_date).toLocaleString('default', { month: 'short' })
-                                        : c.challenge_title}
-                                    {isCurrent && <span className="text-[9px] opacity-70">(now)</span>}
-                                </button>
-                            );
-                        })}
-                    </div>
-                ) : null}
-            </div>
+            {/* Challenge History Chips — dept challenges, shown only when history is toggled */}
+            <AnimatePresence>
+                {showHistory && (
+                    <motion.div
+                        key="history-chips"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="px-5 mt-4">
+                            {chipsLoading ? (
+                                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                    {[1,2,3,4].map(i => (
+                                        <div key={i} className="h-8 w-24 bg-zinc-800 rounded-full animate-pulse flex-shrink-0" />
+                                    ))}
+                                </div>
+                            ) : allChallenges.length > 0 ? (
+                                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                    {allChallenges
+                                        .filter(c => {
+                                            if (c.challenge_id === challengeId) return true; // always show current
+                                            if (myDeptIds.length === 0) return false; // current has no dept scope
+                                            // include if chip shares at least one dept with current
+                                            if (c.department_ids && c.department_ids.length > 0)
+                                                return c.department_ids.some(id => myDeptIds.includes(id));
+                                            return false; // empty department_ids = not dept-scoped, hide
+                                        })
+                                        .map(c => {
+                                            const isCurrent = c.challenge_id === challengeId;
+                                            const isSelected = c.challenge_id === selectedChipId;
+                                            return (
+                                                <button
+                                                    key={c.challenge_id}
+                                                    onClick={() => isCurrent
+                                                        ? (setSelectedChipId(challengeId), setChipData(null))
+                                                        : handleSelectChip(c.challenge_id)}
+                                                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                                                        isSelected
+                                                            ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-500/20'
+                                                            : 'bg-zinc-900 border-zinc-700 text-gray-400 hover:text-white hover:border-zinc-500'
+                                                    }`}
+                                                >
+                                                    {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />}
+                                                    {c.start_date
+                                                        ? new Date(c.start_date).toLocaleString('default', { month: 'short', year: '2-digit' })
+                                                        : c.challenge_title}
+                                                </button>
+                                            );
+                                        })}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-gray-500 pb-2">No earlier challenges found for your dept.</p>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Rankings Title */}
             <div className="px-5 mt-4">

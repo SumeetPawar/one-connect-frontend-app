@@ -296,8 +296,13 @@ export default function Dashboard() {
                         </div>
                     </div>
                 ) : (
-                    challenges.map((ch, idx) => {
-                        const isFeatured = idx === latestIdx;
+                    challenges.filter(ch => {
+                        const end = new Date(ch.end_date).getTime();
+                        const now = Date.now();
+                        const daysPast = end < now ? (now - end) / (1000 * 60 * 60 * 24) : 0;
+                        return daysPast < 4; // show active + ended within last 4 days
+                    }).map((ch, idx) => {
+                        const isFeatured = idx === 0;
                         const bgGradient = idx % 2 === 0
                             ? "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)"
                             : "linear-gradient(135deg, rgba(59, 130, 246, 0.85) 0%, rgba(37, 99, 235, 0.85) 100%)";
@@ -322,8 +327,10 @@ export default function Dashboard() {
                                 }}
                                 style={{
                                     borderRadius: "18px",
-                                    padding: "28px 22px",
+                                    padding: "36px 28px",
                                     marginBottom: "12px",
+                                    width: "100%",
+                                    boxSizing: "border-box",
                                     position: "relative",
                                     overflow: "hidden",
                                     cursor: "pointer",
@@ -522,424 +529,195 @@ export default function Dashboard() {
                     </div>
                 </div> */}
 
-                {/* Quick Actions */}
-                <div style={{ marginTop: '24px' }}>
-                    <h3 style={{
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        color: '#ffffff',
-                        marginBottom: '12px',
-                        letterSpacing: '-0.02em'
-                    }}>
-                        Quick Actions
-                    </h3>
+            </div>
 
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-                        gap: '8px'
-                    }}>
-                        {/* Log Steps - Active if user joined a challenge */}
-                        {challenges.some(ch => ch.user_joined) ? (
-                            <div
-                                onMouseDown={(e) => {
-                                    e.currentTarget.style.transform = 'scale(0.96)';
-                                    e.currentTarget.style.opacity = '0.75';
-                                }}
-                                onMouseUp={(e) => {
-                                    if (!navigating) {
-                                        e.currentTarget.style.transform = 'scale(1)';
-                                        e.currentTarget.style.opacity = '1';
-                                    }
-                                }}
-                                onTouchStart={(e) => {
-                                    e.currentTarget.style.transform = 'scale(0.96)';
-                                    e.currentTarget.style.opacity = '0.75';
-                                }}
-                                onTouchEnd={(e) => {
-                                    if (!navigating) {
-                                        e.currentTarget.style.transform = 'scale(1)';
-                                        e.currentTarget.style.opacity = '1';
-                                    }
-                                }}
-                                onClick={() => {
-                                    if (navigating) return;
-                                    const joinedChallenge = challenges.find(ch => ch.user_joined);
-                                    if (joinedChallenge) {
-                                        setNavigating(true);
-                                        router.push(`/challanges/${joinedChallenge.id}/steps`);
-                                    }
-                                }}
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    backdropFilter: 'blur(20px)',
-                                    borderRadius: '16px',
-                                    padding: '18px 16px',
-                                    cursor: navigating ? 'default' : 'pointer',
-                                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                                    transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    minHeight: '68px',
-                                    userSelect: 'none',
-                                    WebkitUserSelect: 'none',
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!navigating) {
-                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)';
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!navigating) {
-                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                        e.currentTarget.style.transform = 'scale(1)';
-                                        e.currentTarget.style.opacity = '1';
-                                    }
-                                }}
-                            >
-                                <style>{`@keyframes qa-spin { to { transform: rotate(360deg); } }`}</style>
-                                <div style={{
-                                    width: '38px',
-                                    height: '38px',
-                                    borderRadius: '10px',
-                                    background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(168, 85, 247, 0.18) 100%)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0,
-                                }}>
-                                    {navigating ? (
-                                        <div style={{
-                                            width: '18px',
-                                            height: '18px',
-                                            borderRadius: '50%',
-                                            border: '2px solid rgba(168, 85, 247, 0.25)',
-                                            borderTopColor: 'rgba(168, 85, 247, 0.9)',
-                                            animation: 'qa-spin 0.7s linear infinite',
-                                        }} />
-                                    ) : (
-                                        <span style={{
-                                            fontSize: '18px',
-                                            fontWeight: '600',
-                                            color: 'rgba(168, 85, 247, 0.9)',
-                                            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                                        }}>S</span>
-                                    )}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        color: '#ffffff',
-                                        letterSpacing: '-0.01em',
-                                        lineHeight: '1.2',
-                                        marginBottom: '4px',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
-                                    }}>
-                                        Log Steps
-                                    </div>
-                                    <div style={{
-                                        fontSize: '12px',
-                                        fontWeight: '400',
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        lineHeight: '1.3'
-                                    }}>
-                                        {navigating ? 'Opening...' : 'Track your activity'}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.03)',
-                                    backdropFilter: 'blur(20px)',
-                                    borderRadius: '16px',
-                                    padding: '18px 16px',
-                                    cursor: 'not-allowed',
-                                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    minHeight: '68px',
-                                    opacity: '0.5'
-                                }}
-                            >
-                                <div style={{
-                                    width: '42px',
-                                    height: '42px',
-                                    borderRadius: '11px',
-                                    background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(168, 85, 247, 0.18) 100%)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '21px',
-                                    flexShrink: 0,
-                                    fontWeight: '600',
-                                    color: 'rgba(168, 85, 247, 0.5)',
-                                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                                }}>
-                                    S
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        letterSpacing: '-0.01em',
-                                        lineHeight: '1.2',
-                                        marginBottom: '4px',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
-                                    }}>
-                                        Log Steps
-                                    </div>
-                                    <div style={{
-                                        fontSize: '11px',
-                                        fontWeight: '500',
-                                        color: 'rgba(255, 255, 255, 0.4)',
-                                        letterSpacing: '0.3px'
-                                    }}>
-                                        Join a challenge first
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+            {/* Quick Actions */}
+            <div style={{ padding: '0 20px 28px 20px' }}>
+                <h3 style={{
+                    fontWeight: '600',
+                    color: 'rgba(255,255,255,0.5)',
+                    marginBottom: '10px',
+                    letterSpacing: '0.04em',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                }}>
+                    Quick Actions
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
-                        {/* Track Habit - Coming Soon */}
+                    {/* Log Steps */}
+                    {challenges.some(ch => ch.user_joined) ? (
                         <div
+                            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                            onMouseUp={e => { if (!navigating) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; } }}
+                            onTouchStart={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                            onTouchEnd={e => { if (!navigating) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; } }}
+                            onClick={() => {
+                                if (navigating) return;
+                                const joinedChallenge = challenges.find(ch => ch.user_joined);
+                                if (joinedChallenge) { setNavigating(true); router.push(`/challanges/${joinedChallenge.id}/steps`); }
+                            }}
+                            onMouseEnter={e => { if (!navigating) e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+                            onMouseLeave={e => { if (!navigating) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; } }}
                             style={{
-                                background: 'rgba(255, 255, 255, 0.03)',
+                                background: 'rgba(255,255,255,0.05)',
                                 backdropFilter: 'blur(20px)',
                                 borderRadius: '16px',
-                                padding: '18px 16px',
-                                cursor: 'not-allowed',
-                                border: '1px solid rgba(255, 255, 255, 0.05)',
+                                padding: '16px 18px',
+                                cursor: navigating ? 'default' : 'pointer',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '12px',
-                                minHeight: '68px',
-                                opacity: '0.5'
-                            }}
-                        >
-                            <div style={{
-                                width: '42px',
-                                height: '42px',
-                                borderRadius: '11px',
-                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '21px',
-                                flexShrink: 0,
-                                fontWeight: '600',
-                                color: 'rgba(16, 185, 129, 0.6)',
-                                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                            }}>
-                                H
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{
-                                    fontSize: '14px',
-                                    fontWeight: '600',
-                                    color: 'rgba(255, 255, 255, 0.6)',
-                                    letterSpacing: '-0.01em',
-                                    lineHeight: '1.2',
-                                    marginBottom: '4px',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis'
-                                }}>
-                                    Track Habit
-                                </div>
-                                <div style={{
-                                    fontSize: '11px',
-                                    fontWeight: '500',
-                                    color: 'rgba(255, 255, 255, 0.4)',
-                                    letterSpacing: '0.3px'
-                                }}>
-                                    Coming Soon
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Body Stats - Available to all users */}
-
-                        <div
-                            onMouseDown={e => {
-                                e.currentTarget.style.transform = 'scale(0.96)';
-                                e.currentTarget.style.opacity = '0.75';
-                            }}
-                            onMouseUp={e => {
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.opacity = '1';
-                            }}
-                            onTouchStart={e => {
-                                e.currentTarget.style.transform = 'scale(0.96)';
-                                e.currentTarget.style.opacity = '0.75';
-                            }}
-                            onTouchEnd={e => {
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.opacity = '1';
-                            }}
-                            onClick={() => router.push('/bgmi')}
-                            style={{
-                                background: 'rgba(6, 182, 212, 0.06)',
-                                backdropFilter: 'blur(20px)',
-                                borderRadius: '16px',
-                                padding: '18px 16px',
-                                cursor: 'pointer',
-                                border: '1px solid rgba(6, 182, 212, 0.25)',
-                                boxShadow: '0 0 10px rgba(6, 182, 212, 0.08)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                minHeight: '68px',
-                                opacity: '1',
-                                position: 'relative',
+                                gap: '14px',
                                 userSelect: 'none',
                                 WebkitUserSelect: 'none',
-                                transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
-                            }}
-                            onMouseEnter={e => {
-                                e.currentTarget.style.background = 'rgba(6, 182, 212, 0.12)';
-                            }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.background = 'rgba(6, 182, 212, 0.06)';
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.opacity = '1';
                             }}
                         >
-                            {/* New badge */}
-                            <div style={{
-                                position: 'absolute',
-                                top: '8px',
-                                right: '10px',
-                                background: 'rgba(6, 182, 212, 0.18)',
-                                border: '1px solid rgba(6, 182, 212, 0.35)',
-                                borderRadius: '6px',
-                                padding: '2px 6px',
-                                fontSize: '9px',
-                                fontWeight: '700',
-                                color: 'rgba(6, 182, 212, 0.9)',
-                                letterSpacing: '0.4px',
-                                textTransform: 'uppercase',
-                            }}>New</div>
-                            <div style={{
-                                width: '42px',
-                                height: '42px',
-                                borderRadius: '11px',
-                                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(8, 145, 178, 0.15) 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '21px',
-                                flexShrink: 0,
-                                fontWeight: '600',
-                                color: 'rgba(6, 182, 212, 0.85)',
-                                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif'
-                            }}>
-                                B
+                            <style>{`@keyframes qa-spin { to { transform: rotate(360deg); } }`}</style>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(168,85,247,0.18) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {navigating ? (
+                                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '2px solid rgba(168,85,247,0.25)', borderTopColor: 'rgba(168,85,247,0.9)', animation: 'qa-spin 0.7s linear infinite' }} />
+                                ) : (
+                                    <span style={{ fontSize: '18px', fontWeight: '600', color: 'rgba(168,85,247,0.9)' }}>S</span>
+                                )}
                             </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{
-                                    fontSize: '14px',
-                                    fontWeight: '600',
-                                    color: '#ffffff',
-                                    letterSpacing: '-0.01em',
-                                    lineHeight: '1.2',
-                                    marginBottom: '4px',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis'
-                                }}>
-                                    Body Stats
-                                </div>
-                                <div style={{
-                                    fontSize: '11px',
-                                    fontWeight: '500',
-                                    color: 'rgba(6, 182, 212, 0.7)',
-                                    letterSpacing: '0.3px'
-                                }}>
-                                    View metrics
-                                </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '2px' }}>Log Steps</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)' }}>{navigating ? 'Opening...' : 'Track your activity'}</div>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                    ) : (
+                        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '16px', padding: '16px 18px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '14px', opacity: 0.5, cursor: 'not-allowed' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(168,85,247,0.18) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: '18px', fontWeight: '600', color: 'rgba(168,85,247,0.5)' }}>S</span>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.6)', marginBottom: '2px' }}>Log Steps</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>Join a challenge first</div>
                             </div>
                         </div>
+                    )}
 
-
-                        {/* Mindfulness - Enabled for all users */}
-                        <div
-                            onMouseDown={e => {
-                                e.currentTarget.style.transform = 'scale(0.96)';
-                                e.currentTarget.style.opacity = '0.75';
-                            }}
-                            onMouseUp={e => {
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.opacity = '1';
-                            }}
-                            onTouchStart={e => {
-                                e.currentTarget.style.transform = 'scale(0.96)';
-                                e.currentTarget.style.opacity = '0.75';
-                            }}
-                            onTouchEnd={e => {
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.opacity = '1';
-                            }}
-                            onClick={() => router.push('/mindfullness')}
-                            style={{
-                                background: 'rgba(16, 185, 129, 0.07)',
-                                backdropFilter: 'blur(20px)',
-                                borderRadius: '16px',
-                                padding: '18px 16px',
-                                cursor: 'pointer',
-                                border: '1px solid rgba(16, 185, 129, 0.22)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                minHeight: '68px',
-                                position: 'relative',
-                                userSelect: 'none',
-                                WebkitUserSelect: 'none',
-                                transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.13)'; }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.07)';
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.opacity = '1';
-                            }}
-                        >
-                            <div style={{
-                                position: 'absolute', top: '8px', right: '10px',
-                                background: 'rgba(16, 185, 129, 0.15)',
-                                border: '1px solid rgba(16, 185, 129, 0.30)',
-                                borderRadius: '6px', padding: '2px 6px',
-                                fontSize: '9px', fontWeight: '700',
-                                color: 'rgba(16, 185, 129, 0.9)',
-                                letterSpacing: '0.4px', textTransform: 'uppercase',
-                            }}>New</div>
-                            <div style={{
-                                width: '42px', height: '42px', borderRadius: '11px',
-                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '22px', flexShrink: 0,
-                            }}>🧘</div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{
-                                    fontSize: '14px', fontWeight: '600', color: '#ffffff',
-                                    letterSpacing: '-0.01em', lineHeight: '1.2',
-                                    marginBottom: '4px', whiteSpace: 'nowrap',
-                                    overflow: 'hidden', textOverflow: 'ellipsis'
-                                }}>Mindfulness</div>
-                                <div style={{ fontSize: '11px', fontWeight: '500', color: 'rgba(16, 185, 129, 0.75)', letterSpacing: '0.3px' }}>
-                                    Calm & focus
-                                </div>
-                            </div>
+                    {/* Body Stats */}
+                    <div
+                        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                        onTouchStart={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                        onTouchEnd={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                        onClick={() => router.push('/bgmi')}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(6,182,212,0.12)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(6,182,212,0.06)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                        style={{
+                            background: 'rgba(6,182,212,0.06)',
+                            backdropFilter: 'blur(20px)',
+                            borderRadius: '16px',
+                            padding: '16px 18px',
+                            cursor: 'pointer',
+                            border: '1px solid rgba(6,182,212,0.25)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '14px',
+                            position: 'relative',
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
+                        }}
+                    >
+                        {/* <div style={{ position: 'absolute', top: '8px', right: '12px', background: 'rgba(6,182,212,0.18)', border: '1px solid rgba(6,182,212,0.35)', borderRadius: '6px', padding: '2px 6px', fontSize: '9px', fontWeight: '700', color: 'rgba(6,182,212,0.9)', letterSpacing: '0.4px', textTransform: 'uppercase' }}>New</div> */}
+                        <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, rgba(6,182,212,0.15) 0%, rgba(8,145,178,0.15) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ fontSize: '18px', fontWeight: '600', color: 'rgba(6,182,212,0.85)' }}>B</span>
                         </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '2px' }}>Body Stats</div>
+                            <div style={{ fontSize: '12px', color: 'rgba(6,182,212,0.7)' }}>View metrics</div>
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
+
+                    {/* Mindfulness */}
+                    <div
+                        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                        onTouchStart={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                        onTouchEnd={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                        onClick={() => router.push('/mindfullness')}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.13)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.07)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                        style={{
+                            background: 'rgba(16,185,129,0.07)',
+                            backdropFilter: 'blur(20px)',
+                            borderRadius: '16px',
+                            padding: '16px 18px',
+                            cursor: 'pointer',
+                            border: '1px solid rgba(16,185,129,0.22)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '14px',
+                            position: 'relative',
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
+                        }}
+                    >
+                        {/* <div style={{ position: 'absolute', top: '8px', right: '12px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', padding: '2px 6px', fontSize: '9px', fontWeight: '700', color: 'rgba(16,185,129,0.9)', letterSpacing: '0.4px', textTransform: 'uppercase' }}>New</div> */}
+                        <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.15) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ fontSize: '22px' }}>🧘</span>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '2px' }}>Mindfulness</div>
+                            <div style={{ fontSize: '12px', color: 'rgba(16,185,129,0.75)' }}>Calm & focus</div>
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+
+                    {/* Track Habit - Enabled for Sumeet */}
+                    {(user as any)?.name?.includes('Sumeet') ? (
+                        <div
+                            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                            onTouchStart={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                            onTouchEnd={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                            onClick={() => router.push('/habits')}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.13)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.07)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                            style={{
+                                background: 'rgba(16,185,129,0.07)',
+                                backdropFilter: 'blur(20px)',
+                                borderRadius: '16px',
+                                padding: '16px 18px',
+                                cursor: 'pointer',
+                                border: '1px solid rgba(16,185,129,0.22)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '14px',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
+                            }}
+                        >
+                            <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.15) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: '18px', fontWeight: '600', color: 'rgba(16,185,129,0.9)' }}>H</span>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '2px' }}>Track Habit</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(16,185,129,0.75)' }}>Habits to help you grow</div>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                    ) : (
+                        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '16px', padding: '16px 18px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '14px', opacity: 0.45, cursor: 'not-allowed' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.1) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: '18px', fontWeight: '600', color: 'rgba(16,185,129,0.6)' }}>H</span>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.6)', marginBottom: '2px' }}>Track Habit</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>Coming Soon</div>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             </div>
 
