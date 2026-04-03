@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Droplets, Footprints, BookOpen, Moon, Flame, Zap, ChevronRight, Check } from "lucide-react";
 
-import { api } from "@/lib/api";
+import { api, getCachedUserMe } from "@/lib/api";
 import { NavBar } from "./NavBar";
 import { ForestHistory } from "../../components/ForestHistory";
 import { Leaderboard } from "../../components/Leaderboard";
@@ -695,6 +695,13 @@ export default function HabitTree() {
   const [celebrating, setCelebrating] = useState(false);
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const [userName,  setUserName]  = useState("You");
+
+  // Fetch real first name from cached /api/me
+  useEffect(() => {
+    getCachedUserMe()
+      .then(me => { if (me?.name) setUserName(me.name.split(' ')[0]); })
+      .catch(() => {});
+  }, []);
   const [stagesOpen,setStagesOpen]= useState(false);
   const [shields,   setShields]   = useState(0);
   const [activeTab, setActiveTab] = useState("habit"); // habit | forest | leaderboard

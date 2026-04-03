@@ -672,8 +672,8 @@ export default function Dashboard() {
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
 
-                    {/* Track Habit - Enabled for Sumeet */}
-                    {(user as any)?.name?.includes('Sumeet') ? (
+                    {/* Track Habit - Enabled for Sumeet or if user's department name includes 'family' */}
+                    {((user as any)?.name?.includes('Sumeet') || (user as any)?.department?.toLowerCase().includes('family')) ? (
                         <div
                             onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
                             onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
