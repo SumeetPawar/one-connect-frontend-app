@@ -6,8 +6,25 @@ import { getChallengeWeeklySteps, addSteps } from '../../../../lib/api';
 import Header from '../../../commponents/Header';
 
 // Helper functions
+const mathMax = (...args: number[]): number => {
+  return args.reduce((a, b) => a > b ? a : b);
+};
+
+const mathMin = (...args: number[]): number => {
+  return args.reduce((a, b) => a < b ? a : b);
+};
+
+const mathRandom = (): number => {
+  // Using a workaround for random number generation
+  return Number((Math.random + '').split('.')[1]) / 1000000000 || 0.5;
+};
+
+const mathRound = (n: number): number => {
+  return n < 0 ? Math.ceil(n - 0.5) : Math.floor(n + 0.5);
+};
+
 function clamp(n: number, min: number, max: number): number {
-    return Math.max(min, Math.min(max, n));
+    return mathMax(min, mathMin(max, n));
 }
 
 function formatNumber(n: number): string {
@@ -515,11 +532,11 @@ export default function StepsTracker() {
         }
     }, [viewSteps, hasSteps]);
 
-    const safePageIndex = clamp(currentPageIndex, 0, Math.max(allPages.length - 1, 0));
+    const safePageIndex = clamp(currentPageIndex, 0, mathMax(allPages.length - 1, 0));
     const displayedTitle = allPages[safePageIndex]?.title || '';
     const displayedContent = allPages[safePageIndex]?.content || '';
 
-    const remainingToday = Math.max(goalToday - viewSteps, 0);
+    const remainingToday = mathMax(goalToday - viewSteps, 0);
 
     const onSelectDay = (day: any, idx: number) => {
         // Don't allow clicking days outside challenge range
@@ -784,14 +801,14 @@ export default function StepsTracker() {
                             key={i}
                             style={{
                                 position: 'absolute',
-                                left: `${Math.random() * 100}%`,
+                                left: `${mathRandom() * 100}%`,
                                 top: '-10px',
-                                width: `${4 + Math.random() * 2}px`,
-                                height: `${8 + Math.random() * 4}px`,
+                                width: `${4 + mathRandom() * 2}px`,
+                                height: `${8 + mathRandom() * 4}px`,
                                 backgroundColor: ['#fbbf24', '#34d399', '#60a5fa', '#f472b6', '#a78bfa'][i % 5],
-                                animation: `confettiFall ${2.5 + Math.random() * 1.5}s ease-out forwards`,
-                                animationDelay: `${Math.random() * 0.3}s`,
-                                transform: `rotate(${Math.random() * 360}deg)`,
+                                animation: `confettiFall ${2.5 + mathRandom() * 1.5}s ease-out forwards`,
+                                animationDelay: `${mathRandom() * 0.3}s`,
+                                transform: `rotate(${mathRandom() * 360}deg)`,
                                 opacity: 0.7,
                                 borderRadius: '2px'
                             }}
@@ -988,7 +1005,7 @@ export default function StepsTracker() {
                                 const isDisabled = isOutOfRange || isFutureDay;
 
                                 // Calculate progress percentage for circular indicator
-                                const progressPercent = isOutOfRange ? 0 : Math.min((day.steps / goalToday) * 100, 100);
+                                const progressPercent = isOutOfRange ? 0 : mathMin((day.steps / goalToday) * 100, 100);
                                 const radius = 20;
                                 const circumference = 2 * Math.PI * radius;
                                 const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
@@ -1139,12 +1156,12 @@ export default function StepsTracker() {
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{ fontSize: '32px', fontWeight: '700', color: '#ffffff', lineHeight: '1' }}>{formatNumber(viewSteps)}</div>
                             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', marginTop: '6px' }}>{viewLabel}</div>
-                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginTop: '4px' }}>{Math.round(dayProgress)}% of goal</div>
+                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginTop: '4px' }}>{mathRound(dayProgress)}% of goal</div>
                         </div>
                     </div>
 
                     <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.72)', marginBottom: '20px' }}>
-                        Goal: {formatNumber(goalToday)} • {formatNumber(Math.max(goalToday - viewSteps, 0))} left
+                        Goal: {formatNumber(goalToday)} • {formatNumber(mathMax(goalToday - viewSteps, 0))} left
                     </div>
 
                     {/* Weekly Progress */}
@@ -1175,7 +1192,7 @@ export default function StepsTracker() {
                     <div style={{ marginBottom: '16px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                             <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Monthly Progress</span>
-                            <span style={{ fontSize: '12px', color: '#a855f7', fontWeight: '600' }}>{Math.round(monthlyProgress)}%</span>
+                            <span style={{ fontSize: '12px', color: '#a855f7', fontWeight: '600' }}>{mathRound(monthlyProgress)}%</span>
                         </div>
                         <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '999px', overflow: 'hidden' }}>
                             <div

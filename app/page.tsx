@@ -16,7 +16,7 @@ export default function Home() {
         const authed = await isAuthed();
         console.log("User authenticated:", authed);
         setChecking(false);
-        router.replace(authed ? "/challanges" : "/login");
+        router.replace(authed ? "/home" : "/login");
       };
       checkAuth();
     } else {
