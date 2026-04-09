@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "../commponents/Header";
-import { api, getCachedUserMe } from "@/lib/api";
+import { api, addSteps, getCachedUserMe } from "@/lib/api";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 
 // ─── animated counters ───────────────────────────────────────────────────────
@@ -42,23 +42,36 @@ function usePct(target: number, delay = 400, dur = 1100) {
 
 // ─── theme ────────────────────────────────────────────────────────────────────
 const T = {
-  bg: "#08080F",
-  grad: "linear-gradient(135deg,#A78BF5 0%,#7C5CE8 100%)",
-  purple: "#9B7FE8",
-  purpleL: "#C4B0F8",
-  green: "#2DD4BF",
-  orange: "#F4A261",
-  rose: "#E87A8A",
-  teal: "#38BDF8",
+  bg:       "#08080F",
+  card:     "#100E1A",
+  grad:     "linear-gradient(135deg,#A78BF5 0%,#7C5CE8 100%)",
+  gradSoft: "linear-gradient(180deg,rgba(155,127,232,.22) 0%,rgba(124,92,232,.04) 100%)",
+  gradHero: "linear-gradient(180deg,rgba(167,139,245,.28) 0%,rgba(124,92,232,.08) 60%,rgba(91,65,200,.02) 100%)",
+  purple:   "#9B7FE8",
+  purpleL:  "#C4B0F8",
+  violet:   "#6D4FCC",
+  green:    "#2DD4BF",
+  orange:   "#F4A261",
+  rose:     "#E87A8A",
+  teal:     "#38BDF8",
   t1: "#F2EEFF",
   t2: "rgba(242,238,255,0.65)",
   t3: "rgba(242,238,255,0.38)",
   t4: "rgba(242,238,255,0.20)",
   t5: "rgba(242,238,255,0.09)",
+  s1: "rgba(255,255,255,0.06)",
+  b1: "rgba(255,255,255,0.09)",
+  b2: "rgba(255,255,255,0.06)",
 };
 
 // ─── icons ────────────────────────────────────────────────────────────────────
 const Ic = {
+  Bell: ({ c = T.t2, s = 17 }: { c?: string; s?: number }) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 01-3.46 0" />
+    </svg>
+  ),
   Flame: ({ c = T.t1, s = 17 }: { c?: string; s?: number }) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 2s-5 4.5-5 9.5a5 5 0 0010 0C17 7.5 14.5 4 12 2z" />
@@ -109,68 +122,165 @@ function Arc({ pct, size, sw, color, bg }: { pct: number; size: number; sw: numb
   );
 }
 
-// ─── tree svg ─────────────────────────────────────────────────────────────────
+// ─── tree svg — richly illustrated 4-stage ───────────────────────────────────
 function TreeSvg({ stage, size = 90 }: { stage: 0 | 1 | 2 | 3; size?: number }) {
-  const g = "#4ADE9F", gd = "#2A9E6E", br = "#8B6A45", brd = "#6B4E2E";
   if (stage === 0) return (
     <svg width={size} height={size} viewBox="0 0 120 120">
-      <ellipse cx="60" cy="108" rx="22" ry="6" fill="rgba(139,106,69,.25)" />
-      <path d="M58 108 Q57 94 59 84 Q60 78 61 84 Q63 94 62 108Z" fill={br} />
-      <path d="M59 88 Q50 80 46 72 Q52 76 59 82Z" fill={gd} opacity=".85" />
-      <path d="M61 85 Q70 77 74 69 Q68 74 61 80Z" fill={gd} opacity=".85" />
-      <circle cx="60" cy="78" r="5" fill={g} />
-      <circle cx="60" cy="75" r="3" fill="#5EE8A8" />
-      <circle cx="60" cy="76" r="12" fill="none" stroke="rgba(74,222,159,.22)" strokeWidth="2" />
-      <circle cx="60" cy="76" r="18" fill="none" stroke="rgba(74,222,159,.12)" strokeWidth="1.5" />
+      <ellipse cx="60" cy="108" rx="22" ry="6" fill="rgba(139,106,69,.25)"/>
+      <path d="M58 108 Q57 94 59 84 Q60 78 61 84 Q63 94 62 108Z" fill="#8B6A45"/>
+      <path d="M59 88 Q50 80 46 72 Q52 76 59 82Z" fill="#2A9E6E" opacity=".85"/>
+      <path d="M61 85 Q70 77 74 69 Q68 74 61 80Z" fill="#2A9E6E" opacity=".85"/>
+      <circle cx="60" cy="78" r="5" fill="#4ADE9F"/>
+      <circle cx="60" cy="75" r="3" fill="#5EE8A8"/>
+      <circle cx="60" cy="76" r="12" fill="none" stroke="rgba(74,222,159,.22)" strokeWidth="2"/>
+      <circle cx="60" cy="76" r="18" fill="none" stroke="rgba(74,222,159,.12)" strokeWidth="1.5"/>
+      <circle cx="60" cy="76" r="25" fill="none" stroke="rgba(74,222,159,.06)" strokeWidth="1"/>
+      <circle cx="42" cy="68" r="1.5" fill="rgba(94,232,168,.70)"/>
+      <circle cx="78" cy="64" r="1.5" fill="rgba(94,232,168,.70)"/>
     </svg>
   );
   if (stage === 1) return (
     <svg width={size} height={size} viewBox="0 0 120 120">
-      <ellipse cx="60" cy="108" rx="24" ry="6" fill="rgba(139,106,69,.22)" />
-      <path d="M56 72 Q54 58 57 46 Q59 38 61 46 Q64 58 63 72Z" fill={br} opacity=".9" />
-      <ellipse cx="60" cy="42" rx="18" ry="16" fill={gd} opacity=".9" />
-      <ellipse cx="60" cy="36" rx="14" ry="13" fill="#34C47A" />
-      <ellipse cx="60" cy="30" rx="10" ry="10" fill={g} />
-      <ellipse cx="56" cy="26" rx="5" ry="4" fill="rgba(94,232,168,.55)" />
+      <ellipse cx="60" cy="108" rx="24" ry="6" fill="rgba(139,106,69,.22)"/>
+      <path d="M56 108 Q54 90 57 76 Q59 68 61 76 Q64 90 64 108Z" fill="#8B6A45" opacity=".9"/>
+      <path d="M56 106 Q48 108 44 112" stroke="#6B4E2E" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".5"/>
+      <path d="M64 106 Q72 108 76 112" stroke="#6B4E2E" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".5"/>
+      <ellipse cx="60" cy="62" rx="26" ry="20" fill="rgba(30,100,60,.35)"/>
+      <ellipse cx="60" cy="58" rx="22" ry="18" fill="rgba(42,158,110,.55)"/>
+      <path d="M38 64 Q30 54 34 44 Q40 56 46 62Z" fill="#2A9E6E" opacity=".80"/>
+      <path d="M82 60 Q90 50 86 40 Q80 52 74 58Z" fill="#2A9E6E" opacity=".80"/>
+      <ellipse cx="60" cy="52" rx="18" ry="20" fill="#2A9E6E"/>
+      <ellipse cx="60" cy="46" rx="14" ry="16" fill="#34C47A"/>
+      <ellipse cx="60" cy="40" rx="10" ry="12" fill="#4ADE9F"/>
+      <ellipse cx="56" cy="36" rx="5" ry="4" fill="rgba(94,232,168,.55)"/>
     </svg>
   );
   if (stage === 2) return (
     <svg width={size} height={size} viewBox="0 0 120 120">
-      <ellipse cx="60" cy="110" rx="28" ry="7" fill="rgba(139,106,69,.20)" />
-      <path d="M54 110 Q52 88 55 72 Q58 62 62 72 Q65 88 66 110Z" fill={brd} />
-      <ellipse cx="30" cy="56" rx="15" ry="11" fill={gd} />
-      <ellipse cx="90" cy="52" rx="15" ry="11" fill={gd} />
-      <ellipse cx="60" cy="44" rx="22" ry="24" fill={gd} />
-      <ellipse cx="60" cy="37" rx="18" ry="20" fill="#34C47A" />
-      <ellipse cx="60" cy="30" rx="13" ry="15" fill={g} />
+      <ellipse cx="60" cy="110" rx="28" ry="7" fill="rgba(139,106,69,.20)"/>
+      <path d="M54 110 Q52 88 55 72 Q58 62 62 72 Q65 88 66 110Z" fill="#7A5C3A"/>
+      <path d="M57 100 Q55 88 57 78" stroke="rgba(0,0,0,.15)" strokeWidth="1" fill="none" strokeLinecap="round"/>
+      <path d="M56 82 Q44 76 36 66" stroke="#7A5C3A" strokeWidth="6" strokeLinecap="round" fill="none"/>
+      <path d="M64 78 Q76 72 84 62" stroke="#7A5C3A" strokeWidth="6" strokeLinecap="round" fill="none"/>
+      <ellipse cx="34" cy="58" rx="18" ry="14" fill="rgba(30,100,60,.40)"/>
+      <ellipse cx="34" cy="55" rx="16" ry="12" fill="#2A9E6E"/>
+      <ellipse cx="34" cy="52" rx="12" ry="9" fill="#3ABD7E"/>
+      <ellipse cx="86" cy="54" rx="18" ry="14" fill="rgba(30,100,60,.40)"/>
+      <ellipse cx="86" cy="51" rx="16" ry="12" fill="#2A9E6E"/>
+      <ellipse cx="86" cy="48" rx="12" ry="9" fill="#3ABD7E"/>
+      <ellipse cx="60" cy="50" rx="24" ry="26" fill="rgba(30,100,60,.35)"/>
+      <ellipse cx="60" cy="46" rx="21" ry="23" fill="#2A9E6E"/>
+      <ellipse cx="60" cy="40" rx="17" ry="19" fill="#34C47A"/>
+      <ellipse cx="60" cy="34" rx="13" ry="14" fill="#4ADE9F"/>
+      <ellipse cx="54" cy="30" rx="6" ry="5" fill="rgba(94,232,168,.50)"/>
     </svg>
   );
   return (
     <svg width={size} height={size} viewBox="0 0 120 120">
-      <ellipse cx="60" cy="112" rx="32" ry="7" fill="rgba(139,106,69,.18)" />
-      <path d="M52 112 Q50 88 53 70 Q56 58 60 58 Q64 58 67 70 Q70 88 68 112Z" fill={brd} />
-      <ellipse cx="42" cy="42" rx="12" ry="8" fill="#34C47A" />
-      <ellipse cx="78" cy="38" rx="12" ry="8" fill="#34C47A" />
-      <ellipse cx="60" cy="35" rx="24" ry="26" fill={gd} />
-      <ellipse cx="60" cy="28" rx="20" ry="22" fill="#34C47A" />
-      <ellipse cx="60" cy="22" rx="15" ry="17" fill={g} />
-      <ellipse cx="60" cy="16" rx="10" ry="12" fill="#5EE8A8" />
-      <circle cx="60" cy="11" r="6" fill="#7EFFC0" />
+      <ellipse cx="60" cy="112" rx="32" ry="7" fill="rgba(139,106,69,.18)"/>
+      <path d="M54 110 Q42 112 36 118" stroke="#6B4E2E" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55"/>
+      <path d="M66 110 Q78 112 84 118" stroke="#6B4E2E" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55"/>
+      <path d="M52 112 Q50 88 53 70 Q56 58 60 58 Q64 58 67 70 Q70 88 68 112Z" fill="#6B4E2E"/>
+      <path d="M53 88 Q38 82 28 70" stroke="#6B4E2E" strokeWidth="8" strokeLinecap="round" fill="none"/>
+      <path d="M67 84 Q82 78 92 66" stroke="#6B4E2E" strokeWidth="8" strokeLinecap="round" fill="none"/>
+      <path d="M54 76 Q42 70 36 60" stroke="#7A5C3A" strokeWidth="5" strokeLinecap="round" fill="none"/>
+      <path d="M66 72 Q78 66 84 56" stroke="#7A5C3A" strokeWidth="5" strokeLinecap="round" fill="none"/>
+      <ellipse cx="24" cy="62" rx="16" ry="12" fill="rgba(30,100,60,.45)"/>
+      <ellipse cx="24" cy="58" rx="14" ry="11" fill="#1F7A4A"/>
+      <ellipse cx="24" cy="54" rx="11" ry="9" fill="#2A9E6E"/>
+      <ellipse cx="96" cy="58" rx="16" ry="12" fill="rgba(30,100,60,.45)"/>
+      <ellipse cx="96" cy="54" rx="14" ry="11" fill="#1F7A4A"/>
+      <ellipse cx="96" cy="50" rx="11" ry="9" fill="#2A9E6E"/>
+      <ellipse cx="38" cy="50" rx="18" ry="14" fill="rgba(30,100,60,.40)"/>
+      <ellipse cx="38" cy="46" rx="16" ry="12" fill="#2A9E6E"/>
+      <ellipse cx="38" cy="42" rx="12" ry="9" fill="#34C47A"/>
+      <ellipse cx="82" cy="46" rx="18" ry="14" fill="rgba(30,100,60,.40)"/>
+      <ellipse cx="82" cy="42" rx="16" ry="12" fill="#2A9E6E"/>
+      <ellipse cx="82" cy="38" rx="12" ry="9" fill="#34C47A"/>
+      <ellipse cx="60" cy="44" rx="28" ry="30" fill="rgba(30,100,60,.30)"/>
+      <ellipse cx="60" cy="40" rx="25" ry="27" fill="#1F7A4A"/>
+      <ellipse cx="60" cy="35" rx="22" ry="24" fill="#2A9E6E"/>
+      <ellipse cx="60" cy="29" rx="18" ry="20" fill="#34C47A"/>
+      <ellipse cx="60" cy="23" rx="14" ry="16" fill="#4ADE9F"/>
+      <ellipse cx="60" cy="17" rx="10" ry="11" fill="#5EE8A8"/>
+      <circle cx="60" cy="13" r="6" fill="#7EFFC0"/>
+      <circle cx="60" cy="12" r="3" fill="rgba(180,255,220,.90)"/>
+      <ellipse cx="48" cy="24" rx="7" ry="5" fill="rgba(126,255,192,.30)"/>
+      <ellipse cx="72" cy="20" rx="7" ry="5" fill="rgba(126,255,192,.30)"/>
     </svg>
   );
 }
 
 const SEP = () => <div style={{ height: ".5px", background: "rgba(242,238,255,.07)", margin: "0 18px" }} />;
 
+// ─── sparkline ────────────────────────────────────────────────────────────────────
+function Spark({ color, pts }: { color: string; pts: number[] }) {
+  const w = 72, h = 22, p = 2;
+  const mn = Math.min(...pts), mx = Math.max(...pts);
+  const x = (i: number) => p + (i / (pts.length - 1)) * (w - p * 2);
+  const y = (v: number) => h - p - ((v - mn) / (mx - mn || 1)) * (h - p * 2);
+  const d = pts.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <path d={d} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity=".45" />
+      <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1])} r="2.5" fill={color} opacity=".85" />
+    </svg>
+  );
+}
+
 // ─── API types ────────────────────────────────────────────────────────────────
+type RichSegment = { text: string; color: string | null; style: string };
 type HomeData = {
   steps: { yesterday: number; today: number; daily_target: number; pct: number; step_streak: number };
   challenge: { id: string; rank: number; rank_change: number } | null;
   habits: { challenge_id: number; day_number: number; total_days: number; completed_count: number; total_count: number; all_done: boolean } | null;
   habit_streak: number;
-  ai_insight: { badge: string; headline: string; detail: string } | null;
+  ai_insight: {
+    badge: string;
+    // new rich-text format
+    segments?: RichSegment[];
+    detail?: RichSegment[] | string;
+    hook?: string;
+    // legacy plain-string format (fallback)
+    headline?: string;
+  } | null;
   user: { name: string; profile_pic_url: string | null };
 };
+
+// resolve a colour name from the API to a theme token
+function segColor(c: string | null, fallback: string): string {
+  if (!c) return fallback;
+  const map: Record<string, string> = {
+    purple: T.purple, green: T.green, orange: T.orange,
+    rose: T.rose, teal: T.teal, white: T.t1,
+  };
+  return map[c] ?? fallback;
+}
+
+// render an array of rich segments as inline spans
+function toStr(v: unknown): string {
+  if (!v) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "object" && !Array.isArray(v) && "text" in (v as any)) return (v as any).text ?? "";
+  return String(v);
+}
+function toSegs(v: unknown): RichSegment[] | string | undefined {
+  if (!v) return undefined;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) return v as RichSegment[];
+  // single segment object — wrap in array
+  if (typeof v === "object" && "text" in (v as any)) return [v as RichSegment];
+  return undefined;
+}
+function RichText({ segs, fallback, base }: { segs: RichSegment[] | string | undefined; fallback: string; base: string }) {
+  if (!segs) return <>{fallback}</>;
+  if (typeof segs === "string") return <>{segs}</>;
+  return <>{segs.map((s, i) => (
+    <span key={i} style={{ color: segColor(s.color, base), fontWeight: s.style === "stat" || s.style === "highlight" ? 700 : undefined }}>
+      {s.text}
+    </span>
+  ))}</>;
+}
 
 // ─── AI Insight card ──────────────────────────────────────────────────────────
 function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.CSSProperties }) {
@@ -180,44 +290,51 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
     ? (habits.day_number <= 7 ? "Week 1" : habits.day_number <= 14 ? "Week 2" : "Week 3")
     : "Week 1";
 
-  const lines = insight
-    ? [
-        { icon: "◈", color: T.purpleL, text: insight.headline },
-        { icon: "◈", color: T.green, text: insight.detail },
-        ...(insight.badge ? [{ icon: "◈", color: T.orange, text: insight.badge }] : []),
-      ]
-    : [
-        { icon: "◈", color: T.purpleL, text: `Rank #${data.challenge?.rank ?? "—"} in the team challenge.` },
-        { icon: "◈", color: T.green, text: `${data.steps.yesterday.toLocaleString()} steps yesterday. Keep it up!` },
-        { icon: "◈", color: T.orange, text: `${data.habit_streak} day habit streak — don't break the chain.` },
-      ];
+  // Hide card entirely when there's no AI insight and no meaningful activity data yet
+  const hasInsight = !!insight;
+  const hasMeaningfulData = data.steps.yesterday > 0 || data.habit_streak > 0 || (habits && habits.completed_count > 0);
+  if (!hasInsight && !hasMeaningfulData) return null;
+
+  const moodTag = toStr(insight?.badge) || `Your best ${week}`;
+  const fallbackHeadline = `Kept ${habits ? `${habits.completed_count} of ${habits.total_count}` : "—"} habits & walked ${data.steps.yesterday.toLocaleString()} steps yesterday.`;
+  const fallbackDetail   = `${data.habit_streak} day habit streak — keep showing up every day.`;
 
   return (
     <div style={{
-      ...fd(40), margin: "16px 16px 0",
-      background: "linear-gradient(180deg,rgba(155,127,232,.20) 0%,rgba(124,92,232,.04) 100%)",
-      border: ".5px solid rgba(155,127,232,.18)", borderRadius: 20,
-      boxShadow: "0 4px 24px rgba(0,0,0,.50),0 1px 0 rgba(242,238,255,.05) inset",
+      ...fd(40), margin: "14px 16px 8px",
+      background: T.gradSoft,
+      border: ".5px solid rgba(155,127,232,.18)", borderRadius: 22,
+      boxShadow: "0 4px 28px rgba(0,0,0,.55),0 1px 0 rgba(242,238,255,.04) inset",
+      overflow: "hidden",
     }}>
-      <div style={{ padding: "13px 16px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-            background: T.grad, display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 12px rgba(124,92,232,.40)",
-          }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L4.5 13.5H11L10 22L20.5 10H14L13 2z" /></svg>
-          </div>
-          <p style={{ fontSize: 9, fontWeight: 700, color: T.purple, letterSpacing: ".12em", textTransform: "uppercase" as const }}>{week} · AI Summary</p>
+      <div style={{ padding: "18px 20px 16px" }}>
+        {/* Mood tag */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 5,
+          background: "rgba(45,212,191,.10)", border: ".5px solid rgba(45,212,191,.22)",
+          borderRadius: 99, padding: "3px 10px", marginBottom: 12,
+        }}>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: T.green }} />
+          <span style={{ fontSize: 10, fontWeight: 700, color: T.green, letterSpacing: ".08em", textTransform: "uppercase" as const }}>{moodTag}</span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
-          {lines.map(({ icon, color, text }, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-              <span style={{ fontSize: 8, color, marginTop: 3, flexShrink: 0 }}>{icon}</span>
-              <p style={{ fontSize: 12, fontWeight: 400, color: T.t2, lineHeight: 1.5, margin: 0 }}>{text}</p>
-            </div>
-          ))}
-        </div>
+        {/* Headline — rich segments or legacy string */}
+        <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.4, letterSpacing: "-.3px", margin: 0, color: T.t1 }}>
+          <RichText segs={toSegs(insight?.segments) ?? toSegs(insight?.headline)} fallback={fallbackHeadline} base={T.t1} />
+        </p>
+        {/* Detail */}
+        <p style={{
+          fontSize: 13, fontWeight: 400, color: T.t3, lineHeight: 1.6,
+          marginTop: 10, paddingTop: 10,
+          borderTop: ".5px solid rgba(155,127,232,.12)",
+        }}>
+          <RichText segs={toSegs(insight?.detail)} fallback={fallbackDetail} base={T.t3} />
+        </p>
+        {/* Hook line */}
+        {insight?.hook && (
+          <p style={{ fontSize: 11, fontWeight: 500, color: T.t4, marginTop: 8, lineHeight: 1.5 }}>
+            {toStr(insight.hook)}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -225,32 +342,56 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
 
 // ─── steps card ───────────────────────────────────────────────────────────────
 function StepsCard({
-  data, showLog, setShowLog, animSteps, animPct, fd,
+  data, showLog, setShowLog, animSteps, animPct, fd, onNavigate,
 }: {
   data: HomeData; showLog: boolean; setShowLog: (b: boolean) => void;
   animSteps: number; animPct: number; fd: (d: number) => React.CSSProperties;
+  onNavigate: () => void;
 }) {
   const { steps, challenge } = data;
   const isLogged = steps.today > 0;
   const hasChallenge = !!challenge;
+  const isEvening = new Date().getHours() >= 17;
 
-  const wrap = (accent: string, children: React.ReactNode) => (
-    <div style={{
-      ...fd(250), margin: "0 16px 12px",
-      background: `linear-gradient(180deg,${accent}1E 0%,${accent}05 100%)`,
-      border: `.5px solid ${accent}28`, borderRadius: 22, overflow: "hidden",
-      boxShadow: "0 8px 40px rgba(0,0,0,.60),0 1px 0 rgba(255,255,255,.05) inset",
-    }}>{children}</div>
+  const wrap = (accent: string, children: React.ReactNode, tappable = false) => (
+    <div
+      className={tappable ? "hp-card-tap" : undefined}
+      onClick={tappable ? onNavigate : undefined}
+      style={{
+        ...fd(250), margin: "0 16px 8px",
+        background: `linear-gradient(180deg,${accent}1E 0%,${accent}05 100%)`,
+        border: `.5px solid ${accent}28`, borderRadius: 22, overflow: "hidden",
+        boxShadow: "0 8px 40px rgba(0,0,0,.60),0 1px 0 rgba(255,255,255,.05) inset",
+        cursor: tappable ? "pointer" : undefined,
+      }}>{children}</div>
   );
 
   if (!hasChallenge) return wrap(T.purple, (
     <div style={{ padding: "22px 20px 18px", position: "relative" as const, overflow: "hidden" }}>
       <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle,rgba(167,139,245,.14) 0%,transparent 70%)", pointerEvents: "none" as const }} />
-      <p style={{ fontSize: 9, fontWeight: 700, color: T.purpleL, letterSpacing: ".14em", textTransform: "uppercase" as const, marginBottom: 10 }}>Monthly Team Challenge</p>
+      <p style={{ fontSize: 10, fontWeight: 700, color: T.purpleL, letterSpacing: ".12em", textTransform: "uppercase" as const, marginBottom: 10 }}>Monthly Team Challenge</p>
       <p style={{ fontSize: 22, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", lineHeight: 1.2, marginBottom: 8 }}>Walk together.<br />Rise together.</p>
-      <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, lineHeight: 1.65 }}>Log your daily steps and compete with colleagues.</p>
+      <p style={{ fontSize: 13, fontWeight: 400, color: T.t3, lineHeight: 1.65 }}>Log your daily steps and compete with colleagues.</p>
     </div>
-  ));
+  ), true);
+
+  if (!isLogged && !isEvening) return wrap(T.purple, (
+    <div style={{ padding: "20px 18px 18px", position: "relative" as const, overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle,rgba(167,139,245,.12) 0%,transparent 70%)", pointerEvents: "none" as const }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(155,127,232,.12)", border: ".5px solid rgba(155,127,232,.22)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Ic.Walk c={T.purple} s={17} />
+        </div>
+        <p style={{ fontSize: 10, fontWeight: 700, color: T.purpleL, letterSpacing: ".10em", textTransform: "uppercase" as const }}>Daily Step Goal</p>
+      </div>
+      <p style={{ fontSize: 20, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", lineHeight: 1.25, marginBottom: 6 }}>
+        Target: {steps.daily_target.toLocaleString()} steps
+      </p>
+      <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, lineHeight: 1.6 }}>
+        Rank #{challenge.rank} · Log your steps in the evening to track today's progress.
+      </p>
+    </div>
+  ), true);
 
   if (!isLogged) return wrap(T.purple, (
     <div style={{ padding: "20px 18px 18px", textAlign: "center" as const }}>
@@ -263,17 +404,17 @@ function StepsCard({
         <Ic.Walk c={T.purple} s={22} />
       </div>
       <p style={{ fontSize: 16, fontWeight: 700, color: T.t1, letterSpacing: "-.2px", lineHeight: 1.35, marginBottom: 6 }}>How many steps today?</p>
-      <p style={{ fontSize: 11, fontWeight: 400, color: T.t3, marginBottom: 18, lineHeight: 1.55 }}>
+      <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, marginBottom: 18, lineHeight: 1.55 }}>
         Currently rank #{challenge.rank} · target {steps.daily_target.toLocaleString()} steps
       </p>
-      <button onClick={() => setShowLog(true)} style={{
+      <button onClick={e => { e.stopPropagation(); setShowLog(true); }} style={{
         width: "100%", padding: "15px 0", borderRadius: 14, border: "none",
         cursor: "pointer", background: T.grad, color: "#fff", fontSize: 14, fontWeight: 700,
-        letterSpacing: "-.1px", fontFamily: "'Syne',sans-serif",
+        letterSpacing: "-.1px", fontFamily: "'Plus Jakarta Sans',sans-serif",
         boxShadow: "0 8px 28px rgba(124,92,232,.40),0 1px 0 rgba(255,255,255,.14) inset",
       }}>Log Today's Steps</button>
     </div>
-  ));
+  ), true);
 
   // logged state
   return wrap(T.green, (
@@ -285,15 +426,15 @@ function StepsCard({
               <div style={{ width: 17, height: 17, borderRadius: "50%", background: T.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 2px 8px ${T.green}55` }}>
                 <Ic.Check c="#08080F" s={8} />
               </div>
-              <span style={{ fontSize: 9, fontWeight: 700, color: T.green, letterSpacing: ".10em", textTransform: "uppercase" as const }}>Logged today</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: T.green, letterSpacing: ".08em", textTransform: "uppercase" as const }}>Logged today</span>
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 4 }}>
               <span style={{ fontSize: 30, fontWeight: 800, color: T.t1, letterSpacing: "-.04em", lineHeight: 1 }}>{animSteps.toLocaleString()}</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: T.t3 }}>steps</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.t3 }}>steps</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <Ic.Up c={T.green} s={8} />
-              <span style={{ fontSize: 10, fontWeight: 600, color: T.green }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: T.green }}>
                 {steps.today >= steps.daily_target ? "Above daily goal" : `${(steps.daily_target - steps.today).toLocaleString()} to reach goal`}
               </span>
             </div>
@@ -306,7 +447,7 @@ function StepsCard({
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 0 2px" }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: T.green }}>Rank #{challenge.rank}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.green }}>Rank #{challenge.rank}</span>
           {challenge.rank_change > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               <Ic.Up c={T.green} s={8} />
@@ -317,32 +458,61 @@ function StepsCard({
       </div>
       <SEP />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 18px 13px" }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: T.green }}>Steps logged ✓</span>
-        <span style={{ fontSize: 11, fontWeight: 400, color: T.t3 }}>{steps.step_streak} day streak</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: T.green }}>Steps logged ✓</span>
+        <span style={{ fontSize: 12, fontWeight: 400, color: T.t3 }}>{steps.step_streak} day streak · <span style={{ color: T.purple, fontWeight: 600 }}>View →</span></span>
       </div>
     </>
-  ));
+  ), true);
 }
 
 // ─── habits card ──────────────────────────────────────────────────────────────
-function HabitsCard({ data, fd }: { data: HomeData; fd: (d: number) => React.CSSProperties }) {
+function HabitsCard({ data, fd, onNavigate }: { data: HomeData; fd: (d: number) => React.CSSProperties; onNavigate: () => void }) {
   const { habits, habit_streak } = data;
 
   const base: React.CSSProperties = {
-    ...fd(180), margin: "0 16px 12px", borderRadius: 22, overflow: "hidden",
+    ...fd(180), margin: "0 16px 8px", borderRadius: 22, overflow: "hidden",
     boxShadow: "0 8px 40px rgba(0,0,0,.60),0 1px 0 rgba(255,255,255,.05) inset",
   };
 
   if (!habits) return (
-    <div style={{
+    <div className="hp-card-tap" onClick={onNavigate} style={{
       ...base,
-      background: "linear-gradient(180deg,rgba(167,139,245,.22) 0%,rgba(124,92,232,.06) 60%,rgba(74,222,159,.03) 100%)",
-      border: ".5px solid rgba(155,127,232,.20)",
+      background: "linear-gradient(180deg,rgba(167,139,245,.26) 0%,rgba(139,63,212,.08) 60%,rgba(74,222,159,.02) 100%)",
+      border: ".5px solid rgba(155,127,232,.22)",
+      cursor: "pointer",
     }}>
-      <div style={{ padding: "22px 20px 20px" }}>
-        <p style={{ fontSize: 9, fontWeight: 700, color: T.purpleL, letterSpacing: ".14em", textTransform: "uppercase" as const, marginBottom: 10 }}>21-Day Habit Challenge</p>
-        <p style={{ fontSize: 21, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", lineHeight: 1.25, marginBottom: 8 }}>Grow your tree.<br />Grow yourself.</p>
-        <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, lineHeight: 1.65 }}>Pick your daily habits. Every habit you log grows your tree — one branch at a time.</p>
+      <div style={{ padding: "22px 20px 16px", position: "relative" as const, overflow: "hidden" }}>
+        <div style={{ position: "absolute", bottom: -30, right: -20, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle,rgba(167,139,245,0.14) 0%,transparent 70%)", pointerEvents: "none" as const }} />
+        <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(74,222,159,.70)", letterSpacing: ".10em", textTransform: "uppercase" as const, marginBottom: 8 }}>21-Day Habit Challenge</p>
+        <p style={{ fontSize: 20, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", lineHeight: 1.3, marginBottom: 6 }}>Grow your tree.<br />Grow yourself.</p>
+        <p style={{ fontSize: 13, fontWeight: 400, color: T.t3, lineHeight: 1.6, marginBottom: 16 }}>Pick your daily habits. Every habit you log grows your tree — one branch at a time.</p>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 4, padding: "8px 0 4px", background: "rgba(0,0,0,.12)", borderRadius: 16 }}>
+          {([{
+            s: 0 as const, size: 34, label: "Day 1",  bright: true,
+          }, {
+            s: 1 as const, size: 50, label: "Day 7",  bright: false,
+          }, {
+            s: 2 as const, size: 64, label: "Day 14", bright: false,
+          }, {
+            s: 3 as const, size: 80, label: "Day 21", bright: false,
+          }]).map(({ s, size, label, bright }, i) => (
+            <div key={s} style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 3, flex: 1 }}>
+              <div style={{ opacity: bright ? 1 : 0.55 + i * 0.10 }}>
+                <TreeSvg stage={s} size={size} />
+              </div>
+              <span style={{ fontSize: 9, fontWeight: 700, color: bright ? T.green : T.t4, letterSpacing: ".04em", paddingBottom: 6 }}>{label}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={e => { e.stopPropagation(); onNavigate(); }}
+          style={{
+            marginTop: 14, width: "100%", padding: "13px 0", borderRadius: 14, border: "none",
+            cursor: "pointer", background: T.grad, color: "#fff", fontSize: 14, fontWeight: 700,
+            letterSpacing: "-.1px", fontFamily: "'Plus Jakarta Sans',sans-serif",
+            boxShadow: "0 8px 28px rgba(124,92,232,.40),0 1px 0 rgba(255,255,255,.14) inset",
+          }}
+        >Join Challenge</button>
       </div>
     </div>
   );
@@ -355,10 +525,11 @@ function HabitsCard({ data, fd }: { data: HomeData; fd: (d: number) => React.CSS
     : "linear-gradient(180deg,rgba(167,139,245,.24) 0%,rgba(124,92,232,.06) 100%)";
 
   return (
-    <div style={{
+    <div className="hp-card-tap" onClick={onNavigate} style={{
       ...base,
       background: "linear-gradient(180deg,rgba(155,127,232,.18) 0%,rgba(124,92,232,.04) 100%)",
       border: ".5px solid rgba(155,127,232,.18)",
+      cursor: "pointer",
     }}>
       <div style={{ background: heroBg, padding: "16px 18px 14px", position: "relative" as const, overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: `radial-gradient(circle,${all_done ? "rgba(45,212,191,.10)" : "rgba(167,139,245,.10)"} 0%,transparent 70%)`, pointerEvents: "none" as const }} />
@@ -367,30 +538,30 @@ function HabitsCard({ data, fd }: { data: HomeData; fd: (d: number) => React.CSS
             {all_done ? (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(45,212,191,.12)", border: ".5px solid rgba(45,212,191,.24)", borderRadius: 99, padding: "3px 10px", marginBottom: 10 }}>
                 <div style={{ width: 5, height: 5, borderRadius: "50%", background: T.green }} />
-                <span style={{ fontSize: 9, fontWeight: 700, color: T.green, letterSpacing: ".08em", textTransform: "uppercase" as const }}>Day {day_number} complete</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: T.green, letterSpacing: ".06em", textTransform: "uppercase" as const }}>Day {day_number} complete</span>
               </div>
             ) : (
-              <p style={{ fontSize: 9, fontWeight: 700, color: T.purpleL, letterSpacing: ".12em", textTransform: "uppercase" as const, marginBottom: 8 }}>My Habits</p>
+              <p style={{ fontSize: 10, fontWeight: 700, color: T.purpleL, letterSpacing: ".10em", textTransform: "uppercase" as const, marginBottom: 8 }}>My Habits</p>
             )}
             <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginBottom: 10 }}>
               <span style={{ fontSize: 30, fontWeight: 800, color: T.t1, letterSpacing: "-.04em", lineHeight: 1 }}>Day {day_number}</span>
               <span style={{ fontSize: 12, fontWeight: 400, color: T.t3 }}>of {total_days}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <div style={{ width: 88, height: 3, background: "rgba(155,127,232,.14)", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ width: 100, height: 3, background: "rgba(155,127,232,.14)", borderRadius: 99, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: T.grad, borderRadius: 99 }} />
               </div>
-              <span style={{ fontSize: 10, fontWeight: 700, color: T.purple }}>{pct}%</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: T.purple }}>{pct}%</span>
             </div>
             {all_done ? (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: T.green }}>All {total_count} habits kept today</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: T.green }}>All {total_count} habits kept today</span>
               </div>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 5, height: 5, borderRadius: "50%", background: T.orange }} />
-                <span style={{ fontSize: 11, fontWeight: 400, color: T.t3 }}>
+                <span style={{ fontSize: 12, fontWeight: 400, color: T.t3 }}>
                   <span style={{ color: T.t2, fontWeight: 600 }}>{completed_count} of {total_count}</span> logged today
                 </span>
               </div>
@@ -403,10 +574,7 @@ function HabitsCard({ data, fd }: { data: HomeData; fd: (d: number) => React.CSS
       {!all_done && (
         <>
           <SEP />
-          <div style={{ padding: "11px 18px 13px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontSize: 10, fontWeight: 400, color: T.t3 }}>Today's progress</span>
-            </div>
+          <div style={{ padding: "11px 20px 13px" }}>
             <div style={{ display: "flex", gap: 4 }}>
               {Array.from({ length: total_count }).map((_, i) => (
                 <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i < completed_count ? "linear-gradient(90deg,#A78BF5,#7C5CE8)" : "rgba(242,238,255,.09)" }} />
@@ -417,11 +585,16 @@ function HabitsCard({ data, fd }: { data: HomeData; fd: (d: number) => React.CSS
       )}
 
       <SEP />
-      <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 18px 13px" }}>
-        <Ic.Flame c={T.orange} s={12} />
-        <span style={{ fontSize: 11, fontWeight: 400, color: T.t2 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px 14px" }}>
+        <Ic.Flame c={T.orange} s={13} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: T.t2 }}>
           Showing up for <span style={{ color: T.orange, fontWeight: 700 }}>{habit_streak} days</span> in a row
         </span>
+        <button
+          onClick={onNavigate}
+          style={{ marginLeft: "auto", fontSize: 13, fontWeight: 600, color: T.purple, background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", flexShrink: 0 }}>
+          Open →
+        </button>
       </div>
     </div>
   );
@@ -437,7 +610,31 @@ export default function HomePage() {
   const [vis, setVis] = useState(false);
   const [showLog, setShowLog] = useState(false);
   const [logVal, setLogVal] = useState("");
+  const [logError, setLogError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [stepsRefreshing, setStepsRefreshing] = useState(false);
+  const [mindWeekly, setMindWeekly] = useState(0);
+  const [navigating, setNavigating] = useState(false);
+
+  const navigate = (path: string) => {
+    setNavigating(true);
+    router.push(path);
+  };
+
+  // Read mindfulness weekly sessions from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("mindfulness_sessions");
+      const sessions: Array<{ date: string }> = raw ? JSON.parse(raw) : [];
+      const now = new Date();
+      const day = now.getDay();
+      const monday = new Date(now);
+      monday.setHours(0, 0, 0, 0);
+      monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+      const monStr = monday.toISOString().slice(0, 10);
+      setMindWeekly(sessions.filter(s => s.date >= monStr).length);
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => { const t = setTimeout(() => setVis(true), 50); return () => clearTimeout(t); }, []);
 
@@ -487,22 +684,59 @@ export default function HomePage() {
   });
 
   const padPress = (k: string) => {
+    setLogError("");
     if (k === "⌫") setLogVal(v => v.slice(0, -1));
     else if (logVal.length < 6) setLogVal(v => v + k);
   };
 
   const confirmLog = async () => {
-    if (!logVal || !homeData?.challenge?.id) return;
+    const n = parseInt(logVal);
+
+    // ── Validations (same rules as steps page) ─────────────────────────
+    if (!logVal || !Number.isFinite(n) || n <= 0) {
+      setLogError("Please enter a valid number of steps.");
+      return;
+    }
+    if (n < 1) {
+      setLogError("Minimum steps must be at least 1.");
+      return;
+    }
+    if (n > 50000) {
+      setLogError("Maximum allowed is 50,000 steps per entry.");
+      return;
+    }
+
+    setLogError("");
     setSubmitting(true);
     try {
-      await api(`/api/challenges/${homeData.challenge.id}/steps`, {
-        method: "POST",
-        body: JSON.stringify({ steps: parseInt(logVal) }),
-      });
-      router.push(`/challanges/${homeData.challenge.id}/steps`);
-    } catch {
+      const today = new Date();
+      const log_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      await addSteps({ steps: n, log_date, source: "manual", note: "Logged from home" });
       setShowLog(false);
       setLogVal("");
+      setLogError("");
+      setStepsRefreshing(true);
+      // Re-fetch home data so the StepsCard renders the logged state
+      try {
+        const fresh = await api<HomeData>("/api/home", { method: "GET" });
+        setHomeData(fresh);
+      } catch {
+        // Optimistic fallback — update today's count locally
+        if (homeData) {
+          setHomeData({
+            ...homeData,
+            steps: {
+              ...homeData.steps,
+              today: (homeData.steps.today ?? 0) + n,
+              pct: Math.min(Math.round(((homeData.steps.today ?? 0 + n) / homeData.steps.daily_target) * 100), 100),
+            },
+          });
+        }
+      } finally {
+        setStepsRefreshing(false);
+      }
+    } catch (err: any) {
+      setLogError(err?.message || "Failed to save steps. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -510,53 +744,173 @@ export default function HomePage() {
 
   // ── loading skeleton ───────────────────────────────────────────────────────
   if (loading || !homeData) {
+    // wave shimmer rect — pure inline, no className needed
+    const SR = ({ w, h, r = 6, mt = 0, delay = 0 }: { w: number | string; h: number; r?: number; mt?: number; delay?: number }) => (
+      <div style={{
+        width: w, height: h, borderRadius: r, marginTop: mt, flexShrink: 0,
+        background: "linear-gradient(90deg,rgba(255,255,255,.055) 25%,rgba(255,255,255,.11) 50%,rgba(255,255,255,.055) 75%)",
+        backgroundSize: "200% 100%",
+        animation: `skshimmer 1.6s ${delay}ms ease-in-out infinite`,
+      }} />
+    );
+    // card shell — subtle border, dark fill, rounded
+    const Shell = ({ children, mt = 0, delay = 0 }: { children: React.ReactNode; mt?: number; delay?: number }) => (
+      <div style={{
+        margin: `${mt}px 16px 0`,
+        borderRadius: 22, overflow: "hidden",
+        background: "rgba(255,255,255,.028)",
+        border: ".5px solid rgba(255,255,255,.07)",
+        animation: `skfade ${0.4 + delay * 0.001}s ease both`,
+      }}>{children}</div>
+    );
+
     return (
       <div style={{ minHeight: "100vh", width: "100%", backgroundColor: T.bg }}>
-        <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
-        <div style={{ padding: "20px 20px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ width: 80, height: 22, borderRadius: 8, background: "linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.10) 50%,rgba(255,255,255,.05) 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite" }} />
-          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.10) 50%,rgba(255,255,255,.05) 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite" }} />
+      <div style={{ maxWidth: 430, margin: "0 auto", paddingBottom: 56 }}>
+        <style>{`
+          @keyframes skshimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+          @keyframes skfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+        `}</style>
+
+        {/* ── header ── */}
+        <div style={{ padding: "20px 20px 19px", borderBottom: ".5px solid rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <SR w={52} h={18} r={6} delay={0} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <SR w={36} h={36} r={11} delay={40} />
+            <SR w={36} h={36} r={11} delay={60} />
+          </div>
         </div>
-        <div style={{ padding: "24px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-          {[1, 2, 3].map(i => (
-            <div key={i} style={{ height: 120, borderRadius: 22, background: "linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite" }} />
+
+        {/* ── greeting ── */}
+        <div style={{ padding: "18px 20px 6px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <SR w={80} h={10} r={5} delay={60} />
+          <SR w={160} h={26} r={8} delay={80} />
+        </div>
+
+        <div style={{ padding: "8px 0 0", display: "flex", flexDirection: "column", gap: 8 }}>
+
+          {/* ── insight card ── */}
+          <Shell mt={6} delay={60}>
+            <div style={{ padding: "18px 20px 16px" }}>
+              {/* mood tag pill */}
+              <SR w={96} h={22} r={99} delay={80} />
+              {/* headline – 2 lines */}
+              <SR w="76%" h={16} r={6} mt={14} delay={100} />
+              <SR w="52%" h={16} r={6} mt={7} delay={110} />
+              {/* divider */}
+              <div style={{ height: .5, background: "rgba(155,127,232,.10)", margin: "12px 0" }} />
+              {/* detail – 2 lines */}
+              <SR w="92%" h={13} r={5} delay={120} />
+              <SR w="64%" h={13} r={5} mt={6} delay={130} />
+            </div>
+          </Shell>
+
+          {/* ── habits card ── */}
+          <Shell delay={140}>
+            <div style={{ padding: "16px 18px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+              <div style={{ flex: 1, paddingRight: 14 }}>
+                {/* label pill */}
+                <SR w={114} h={22} r={99} delay={160} />
+                {/* day number */}
+                <SR w={90} h={30} r={7} mt={12} delay={170} />
+                {/* progress bar */}
+                <SR w={110} h={4} r={99} mt={12} delay={180} />
+                {/* status line */}
+                <SR w={140} h={13} r={5} mt={10} delay={190} />
+              </div>
+              {/* tree silhouette */}
+              <SR w={72} h={72} r={16} delay={200} />
+            </div>
+            {/* habit dots strip */}
+            <div style={{ height: .5, background: "rgba(255,255,255,.06)", margin: "0 18px" }} />
+            <div style={{ padding: "11px 18px 13px", display: "flex", gap: 4 }}>
+              {[1,2,3,4].map(i => <SR key={i} w="25%" h={4} r={99} delay={210 + i * 10} />)}
+            </div>
+          </Shell>
+
+          {/* ── steps card ── */}
+          <Shell delay={220}>
+            <div style={{ padding: "20px 18px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+              {/* icon circle */}
+              <SR w={50} h={50} r={15} delay={240} />
+              {/* title */}
+              <SR w="55%" h={17} r={6} mt={14} delay={250} />
+              {/* subtitle */}
+              <SR w="72%" h={13} r={5} mt={8} delay={260} />
+              {/* button */}
+              <SR w="100%" h={48} r={14} mt={20} delay={270} />
+            </div>
+          </Shell>
+
+          {/* ── wellbeing buttons ── */}
+          {[280, 320].map((delay, i) => (
+            <Shell key={i} delay={delay}>
+              <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+                {/* icon box */}
+                <SR w={38} h={38} r={11} delay={delay} />
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
+                  <SR w="45%" h={15} r={6} delay={delay + 10} />
+                  <SR w="65%" h={12} r={5} delay={delay + 20} />
+                </div>
+                {/* value */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
+                  <SR w={32} h={20} r={5} delay={delay + 30} />
+                  <SR w={24} h={9} r={4} delay={delay + 40} />
+                </div>
+              </div>
+            </Shell>
           ))}
         </div>
+      </div>
       </div>
     );
   }
 
   const userName = homeData.user.name;
-  const initials = userName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
         @keyframes notif{0%,100%{opacity:1}50%{opacity:.15}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes navprogress{0%{width:0%;opacity:1}60%{width:75%}85%{width:88%}100%{width:96%}}
+        .hp-navbar{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:2.5px;z-index:999;pointer-events:none;}
+        .hp-navbar-fill{height:100%;background:linear-gradient(90deg,#A78BF5,#7C5CE8);animation:navprogress 2.5s cubic-bezier(.1,0,.2,1) forwards;border-radius:0 2px 2px 0;box-shadow:0 0 8px rgba(167,139,245,.7);}
+        .hp-card-tap{transition:transform .12s,opacity .12s;}
+        .hp-card-tap:active{transform:scale(.975);opacity:.85;}
+        .hp-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(242,238,255,.25);border-top-color:rgba(242,238,255,.75);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:7px;}
         @keyframes slideUp{from{transform:translateX(-50%) translateY(100%)}to{transform:translateX(-50%) translateY(0)}}
-        .hp-page{min-height:100vh;max-width:430px;margin:0 auto;background:${T.bg};font-family:'Syne',-apple-system,sans-serif;color:${T.t1};-webkit-font-smoothing:antialiased;padding-bottom:56px;}
+        .hp-page{min-height:100vh;max-width:430px;margin:0 auto;background:${T.bg};font-family:'Plus Jakarta Sans',-apple-system,sans-serif;color:${T.t1};-webkit-font-smoothing:antialiased;padding-bottom:56px;}
         .hp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:40;backdrop-filter:blur(10px);}
-        .hp-sheet{position:fixed;bottom:0;left:50%;width:100%;max-width:430px;background:#0E0C18;border-radius:26px 26px 0 0;border-top:.5px solid rgba(155,127,232,.22);box-shadow:0 -16px 60px rgba(0,0,0,.80);z-index:50;animation:slideUp .3s cubic-bezier(.22,1,.36,1);}
-        .hp-kbtn{padding:15px 0;border-radius:13px;border:.5px solid rgba(242,238,255,.07);background:rgba(242,238,255,.05);cursor:pointer;font-size:18px;font-weight:600;color:${T.t1};font-family:'Syne',sans-serif;transition:background .12s,transform .1s;}
+        .hp-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#0E0C18;border-radius:26px 26px 0 0;border-top:.5px solid rgba(155,127,232,.22);box-shadow:0 -16px 60px rgba(0,0,0,.80);z-index:50;animation:slideUp .3s cubic-bezier(.22,1,.36,1);}
+        .hp-kbtn{padding:15px 0;border-radius:13px;border:.5px solid rgba(242,238,255,.07);background:rgba(242,238,255,.05);cursor:pointer;font-size:18px;font-weight:600;color:${T.t1};font-family:'Plus Jakarta Sans',sans-serif;transition:background .12s,transform .1s;}
         .hp-kbtn:active{background:rgba(155,127,232,.20);transform:scale(.95);}
-        .hp-sec{font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:${T.t4};padding:18px 20px 8px;}
+        .hp-sec{font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:${T.t4};padding:18px 20px 9px;}
       `}</style>
 
       {/* Step log sheet */}
       {showLog && (
         <>
-          <div className="hp-overlay" onClick={() => setShowLog(false)} />
+          <div className="hp-overlay" onClick={() => { setShowLog(false); setLogVal(""); setLogError(""); }} />
           <div className="hp-sheet">
             <div style={{ width: 34, height: 4, borderRadius: 99, background: "rgba(242,238,255,.18)", margin: "14px auto 0" }} />
             <div style={{ padding: "20px 20px 6px", textAlign: "center" as const }}>
-              <p style={{ fontSize: 9, fontWeight: 700, color: T.t4, letterSpacing: ".13em", textTransform: "uppercase" as const, marginBottom: 14 }}>Today's steps</p>
-              <p style={{ fontSize: 48, fontWeight: 800, color: logVal ? T.t1 : "rgba(242,238,255,.14)", letterSpacing: "-.05em", lineHeight: 1, minHeight: 56 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: T.t4, letterSpacing: ".10em", textTransform: "uppercase" as const, marginBottom: 14 }}>Today's steps</p>
+              <p style={{ fontSize: 48, fontWeight: 800, color: logError ? T.rose : logVal ? T.t1 : "rgba(242,238,255,.14)", letterSpacing: "-.05em", lineHeight: 1, minHeight: 56, transition: "color .15s" }}>
                 {logVal ? parseInt(logVal).toLocaleString() : "—"}
               </p>
+              {logError ? (
+                <p style={{ fontSize: 12, fontWeight: 600, color: T.rose, marginTop: 10, lineHeight: 1.4 }}>{logError}</p>
+              ) : (
+                <p style={{ fontSize: 12, fontWeight: 400, color: T.t4, marginTop: 10 }}>
+                  {logVal ? (parseInt(logVal) > 50000 ? "Max 50,000 steps" : parseInt(logVal) < 1 ? "Min 1 step" : `${parseInt(logVal).toLocaleString()} steps`) : "Enter your steps"}
+                </p>
+              )}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, padding: "16px 16px 6px" }}>
               {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "000", "⌫"].map(k => (
@@ -570,75 +924,109 @@ export default function HomePage() {
                 style={{
                   width: "100%", padding: "15px 0", borderRadius: 14, border: "none",
                   cursor: !logVal || submitting ? "default" : "pointer",
-                  background: !logVal || submitting ? "rgba(242,238,255,.07)" : T.grad,
-                  color: !logVal || submitting ? T.t4 : "#fff", fontSize: 14, fontWeight: 700,
-                  letterSpacing: "-.1px", fontFamily: "'Syne',sans-serif",
-                  boxShadow: !logVal || submitting ? "none" : "0 8px 28px rgba(124,92,232,.40)",
+                  background: logError ? "rgba(232,122,138,.15)" : !logVal || submitting ? "rgba(242,238,255,.07)" : T.grad,
+                  color: logError ? T.rose : !logVal || submitting ? T.t4 : "#fff", fontSize: 14, fontWeight: 700,
+                  letterSpacing: "-.1px", fontFamily: "'Plus Jakarta Sans',sans-serif",
+                  boxShadow: !logVal || submitting || logError ? "none" : "0 8px 28px rgba(124,92,232,.40)",
                   transition: "all .18s",
                 }}
               >
-                {submitting ? "Saving…" : logVal ? `Save ${parseInt(logVal).toLocaleString()} steps` : "Enter your steps above"}
+                {submitting ? (<><span className="hp-spinner" />Saving…</>) : logError ? logError : logVal ? `Save ${parseInt(logVal).toLocaleString()} steps` : "Enter your steps above"}
               </button>
             </div>
           </div>
         </>
       )}
 
+      {/* Top navigation progress bar */}
+      {navigating && (
+        <div className="hp-navbar"><div className="hp-navbar-fill" /></div>
+      )}
+
+      {/* Content dim while navigating */}
+      {navigating && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(8,8,15,.45)", zIndex: 30, pointerEvents: "none", transition: "opacity .2s" }} />
+      )}
+
       <div className="hp-page">
         {/* Header — same style as challenge page */}
         <Header title="GES" showAnimatedWord={true} />
 
-        {/* Greeting subheader */}
-        <div style={{ ...fd(0), padding: "16px 20px 4px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: T.t3, marginBottom: 3, letterSpacing: ".01em" }}>{greeting}</p>
-            <h1 style={{ fontSize: 23, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", lineHeight: 1.1 }}>{userName.split(" ")[0]}</h1>
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 11, background: T.grad,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 700, color: "#fff",
-              boxShadow: "0 4px 16px rgba(124,92,232,.40)", letterSpacing: ".02em",
-            }}>{initials}</div>
-          </div>
+        {/* Greeting */}
+        <div style={{ ...fd(0), padding: "18px 20px 6px" }}>
+          <p style={{ fontSize: 12, fontWeight: 500, color: T.t4, letterSpacing: ".04em", textTransform: "uppercase" as const, marginBottom: 4 }}>{greeting}</p>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: T.t1, letterSpacing: "-.6px", lineHeight: 1.05 }}>{userName.split(" ")[0]} <span style={{ color: T.purple }}>👋</span></h1>
         </div>
 
         {/* AI insight */}
         <AiInsightCard data={homeData} fd={fd} />
 
         {/* Habits section */}
-        <p className="hp-sec" style={fd(130)}>My Habits</p>
-        <HabitsCard data={homeData} fd={fd} />
+        <HabitsCard data={homeData} fd={fd} onNavigate={() => navigate(homeData.habits ? "/habits/tree" : "/habits")} />
 
         {/* Steps challenge */}
-        <p className="hp-sec" style={fd(250)}>Monthly Team Challenge</p>
-        <StepsCard
-          data={homeData}
-          showLog={showLog}
-          setShowLog={setShowLog}
-          animSteps={animSteps}
-          animPct={animPct}
-          fd={fd}
-        />
+        {stepsRefreshing ? (
+          <div style={{
+            margin: "0 16px 8px", borderRadius: 22, overflow: "hidden",
+            background: "rgba(255,255,255,.028)",
+            border: ".5px solid rgba(255,255,255,.07)",
+          }}>
+            <style>{`@keyframes skshimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
+            {/* logged-state top row */}
+            <div style={{ padding: "16px 18px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+              <div style={{ flex: 1 }}>
+                {/* "Logged today" badge pill */}
+                <div style={{ width: 110, height: 21, borderRadius: 99, background: "linear-gradient(90deg,rgba(45,212,191,.10) 25%,rgba(45,212,191,.18) 50%,rgba(45,212,191,.10) 75%)", backgroundSize: "200% 100%", animation: "skshimmer 1.6s ease-in-out infinite" }} />
+                {/* step count */}
+                <div style={{ width: 120, height: 30, borderRadius: 8, marginTop: 12, background: "linear-gradient(90deg,rgba(255,255,255,.06) 25%,rgba(255,255,255,.11) 50%,rgba(255,255,255,.06) 75%)", backgroundSize: "200% 100%", animation: "skshimmer 1.6s 40ms ease-in-out infinite" }} />
+                {/* "N to reach goal" line */}
+                <div style={{ width: 148, height: 12, borderRadius: 5, marginTop: 10, background: "linear-gradient(90deg,rgba(45,212,191,.08) 25%,rgba(45,212,191,.14) 50%,rgba(45,212,191,.08) 75%)", backgroundSize: "200% 100%", animation: "skshimmer 1.6s 80ms ease-in-out infinite" }} />
+                {/* rank line */}
+                <div style={{ width: 70, height: 12, borderRadius: 5, marginTop: 16, background: "linear-gradient(90deg,rgba(45,212,191,.07) 25%,rgba(45,212,191,.12) 50%,rgba(45,212,191,.07) 75%)", backgroundSize: "200% 100%", animation: "skshimmer 1.6s 100ms ease-in-out infinite" }} />
+              </div>
+              {/* arc circle */}
+              <div style={{ width: 52, height: 52, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(90deg,rgba(45,212,191,.09) 25%,rgba(45,212,191,.16) 50%,rgba(45,212,191,.09) 75%)", backgroundSize: "200% 100%", animation: "skshimmer 1.6s 60ms ease-in-out infinite" }} />
+            </div>
+            {/* separator */}
+            <div style={{ height: .5, background: "rgba(255,255,255,.06)", margin: "0 18px" }} />
+            {/* bottom "steps logged · streak" row */}
+            <div style={{ padding: "9px 18px 13px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ width: 90, height: 13, borderRadius: 5, background: "linear-gradient(90deg,rgba(45,212,191,.08) 25%,rgba(45,212,191,.14) 50%,rgba(45,212,191,.08) 75%)", backgroundSize: "200% 100%", animation: "skshimmer 1.6s 120ms ease-in-out infinite" }} />
+              <div style={{ width: 110, height: 13, borderRadius: 5, background: "linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.05) 75%)", backgroundSize: "200% 100%", animation: "skshimmer 1.6s 140ms ease-in-out infinite" }} />
+            </div>
+          </div>
+        ) : (
+          <StepsCard
+            data={homeData}
+            showLog={showLog}
+            setShowLog={setShowLog}
+            animSteps={animSteps}
+            animPct={animPct}
+            fd={fd}
+            onNavigate={() => navigate(homeData.challenge ? `/challanges/${homeData.challenge.id}/steps` : "/challanges")}
+          />
+        )}
 
         {/* Wellbeing */}
-        <p className="hp-sec" style={fd(390)}>Wellbeing</p>
-        <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, margin: "0 16px", ...fd(420) }}>
+        <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, margin: "0 16px 8px", ...fd(420) }}>
           {[
             {
               color: T.rose, bg: "rgba(232,122,138,.08)", border: "rgba(232,122,138,.18)",
-              Icon: <Ic.Body c={T.rose} s={16} />, label: "Body Metrics",
-              sub: "Track your body composition",
-              onClick: () => router.push("/bgmi"),
+              Icon: <Ic.Body c={T.rose} s={17} />, label: "Body Metrics",
+              val: "BMI", unit: "metrics",
+              sub: <><span style={{ color: T.rose, fontWeight: 600 }}>Track</span> your body composition</>,
+              onClick: () => navigate("/bgmi"),
             },
             {
               color: T.teal, bg: "rgba(56,189,248,.08)", border: "rgba(56,189,248,.18)",
-              Icon: <Ic.Breath c={T.teal} s={16} />, label: "Mindfulness",
-              sub: "Calm & focus",
-              onClick: () => router.push("/mindfullness"),
+              Icon: <Ic.Breath c={T.teal} s={17} />, label: "Mindfulness",
+              val: mindWeekly > 0 ? String(mindWeekly) : "0", unit: "this week",
+              sub: mindWeekly > 0
+                ? <><span style={{ color: T.teal, fontWeight: 600 }}>Keep it up</span> · breathe &amp; focus</>
+                : <><span style={{ color: T.teal, fontWeight: 600 }}>Start</span> your first session</>,
+              onClick: () => navigate("/mindfullness"),
             },
-          ].map(({ color, bg, border, Icon, label, sub, onClick }) => (
+          ].map(({ color, bg, border, Icon, label, val, unit, sub, onClick }) => (
             <button key={label}
               onMouseDown={e => e.currentTarget.style.transform = "scale(.98)"}
               onMouseUp={e => e.currentTarget.style.transform = "none"}
@@ -649,12 +1037,16 @@ export default function HomePage() {
                 border: `.5px solid ${border}`, borderRadius: 18, padding: "14px 16px",
                 cursor: "pointer", textAlign: "left" as const, width: "100%",
                 boxShadow: "0 4px 20px rgba(0,0,0,.40),0 1px 0 rgba(255,255,255,.04) inset",
-                fontFamily: "'Syne',sans-serif", transition: "transform .15s",
+                fontFamily: "'Plus Jakarta Sans',sans-serif", transition: "transform .15s",
               }}>
               <div style={{ width: 38, height: 38, borderRadius: 11, background: `${color}18`, border: `.5px solid ${color}28`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Icon}</div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: T.t1, marginBottom: 3 }}>{label}</p>
-                <p style={{ fontSize: 11, fontWeight: 400, color: T.t3, lineHeight: 1.4 }}>{sub}</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: T.t1, marginBottom: 3 }}>{label}</p>
+                <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, lineHeight: 1.4 }}>{sub}</p>
+              </div>
+              <div style={{ textAlign: "right" as const, flexShrink: 0, marginRight: 6 }}>
+                <p style={{ fontSize: 22, fontWeight: 700, color, letterSpacing: "-.03em", lineHeight: 1 }}>{val}</p>
+                <p style={{ fontSize: 9, fontWeight: 600, color: T.t4, letterSpacing: ".07em", textTransform: "uppercase" as const, marginTop: 2 }}>{unit}</p>
               </div>
               <Ic.ChevR c={T.t4} s={11} />
             </button>

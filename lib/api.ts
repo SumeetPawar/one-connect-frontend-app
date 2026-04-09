@@ -396,8 +396,9 @@ export async function getCachedUserMe(forceRefresh = false): Promise<UserMe> {
   return _meInflight;
 }
 
-/** Call on logout to wipe cached user identity. */
+/** Call on logout to wipe cached user identity (localStorage + in-memory). */
 export function clearCachedUserMe(): void {
+  _meInflight = null;
   if (typeof window !== "undefined") {
     localStorage.removeItem(ME_CACHE_KEY);
   }

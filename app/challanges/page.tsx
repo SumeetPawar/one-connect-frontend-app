@@ -673,7 +673,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Track Habit - Enabled for Sumeet or if user's department name includes 'family' */}
-                    {((user as any)?.name?.includes('Sumeet') || (user as any)?.department?.toLowerCase().includes('family')) ? (
+                    {((user as any)?.name?.includes('Sumeet') || String((user as any)?.department?.name ?? (user as any)?.department ?? '').toLowerCase().includes('family')) ? (
                         <div
                             onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
                             onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}

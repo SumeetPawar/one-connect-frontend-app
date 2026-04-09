@@ -17,7 +17,7 @@ export default function LoginPage() {
     // Only redirect away if the access token exists AND is not expired
     const token = localStorage.getItem("access_token");
     if (token && !isAccessTokenExpiredOrExpiring(0)) {
-      router.replace("/challanges");
+      router.replace("/home");
     }
   }, [router]);
 
@@ -57,7 +57,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace("/challanges");
+      router.replace("/home");
     } catch (err) {
       console.error("Login exception:", err);
       setError("An unexpected error occurred");

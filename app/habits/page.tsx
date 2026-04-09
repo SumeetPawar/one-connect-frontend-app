@@ -531,37 +531,15 @@ function PackPickerScreen({ onSelectPack, onStartDirect, onCustom }: {
                         display:"flex", alignItems:"center", justifyContent:"center" }}>
                         {pack.icon}
                       </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:1 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
                           <span style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.88)", letterSpacing:"-0.02em" }}>
                             {pack.label}
                           </span>
-                          {isProven && (
-                            <span style={{ fontSize:8, fontWeight:600, padding:"1px 5px", borderRadius:99, flexShrink:0,
-                              background:"rgba(255,255,255,0.07)", color:"rgba(255,255,255,0.52)", letterSpacing:"0.04em" }}>
-                              PROVEN
-                            </span>
-                          )}
-                          {meta.pill && !isProven && (
-                            <span style={{ fontSize:8, fontWeight:600, padding:"1px 5px", borderRadius:99, flexShrink:0,
-                              background:"rgba(255,255,255,0.06)", color:"rgba(255,255,255,0.50)", letterSpacing:"0.03em" }}>
-                              {meta.pill}
-                            </span>
-                          )}
+                          <p style={{ fontSize:10, color:"rgba(255,255,255,0.48)", margin:"2px 0 0" }}>{meta.benefit || pack.subtitle}</p>
                         </div>
-                        <p style={{ fontSize:10, color:"rgba(255,255,255,0.48)", margin:0 }}>{meta.benefit || pack.subtitle}</p>
-                      </div>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
                         <path d="M9 18l6-6-6-6"/>
                       </svg>
-                    </div>
-                    <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                      {pack.tags.map((tag: string, i: number) => (
-                        <span key={i} style={{
-                          fontSize:9, fontWeight:500, padding:"2px 6px", borderRadius:5,
-                          background:"rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.50)",
-                        }}>{tag}</span>
-                      ))}
                     </div>
                   </div>
                 </button>

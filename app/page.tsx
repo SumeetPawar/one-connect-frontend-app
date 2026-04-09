@@ -1,8 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthed } from "@/lib/auth";
+import { useState, useEffect } from "react";
+
+function useCount(target: number, delay = 300, dur = 900) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const s = performance.now();
+      const f = (n: number) => {
+        const p = Math.min((n - s) / dur, 1);
+        setV(Math.round((1 - Math.pow(1 - p, 3)) * target));
+        if (p < 1) requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+    }, delay);
+    return () => clearTimeout(t);
+  }, [target, delay, dur]);
+  return v;
+}
+function usePct(target: number, delay = 400, dur = 1100) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const s = performance.now();
+      const f = (n: number) => {
+        const p = Math.min((n - s) / dur, 1);
+        setV((1 - Math.pow(1 - p, 4)) * target);
+        if (p < 1) requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+    }, delay);
+    return () => clearTimeout(t);
+  }, [target, delay, dur]);
+  return v;
+}
 
 export default function Home() {
   const router = useRouter();

@@ -49,6 +49,61 @@ const Globe = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
+// ─── localStorage helpers ────────────────────────────────────────────────────
+const LS_KEY = "mindfulness_sessions";
+
+interface SessionRecord {
+  date: string;        // ISO date string YYYY-MM-DD
+  technique: string;   // technique id
+  durationSecs: number;
+  cycles: number;
+}
+
+function loadSessions(): SessionRecord[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSession(record: SessionRecord): void {
+  try {
+    const all = loadSessions();
+    all.push(record);
+    localStorage.setItem(LS_KEY, JSON.stringify(all));
+  } catch { /* quota full or SSR — silently skip */ }
+}
+
+function calcStreak(sessions: SessionRecord[]): number {
+  if (!sessions.length) return 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const days = [...new Set(sessions.map(s => s.date))].sort().reverse();
+  let streak = 0;
+  let cursor = new Date(today);
+  for (const day of days) {
+    const d = new Date(day);
+    const diff = Math.round((cursor.getTime() - d.getTime()) / 86400000);
+    if (diff > 1) break;
+    streak++;
+    cursor = d;
+  }
+  return streak;
+}
+
+function calcWeeklySessions(sessions: SessionRecord[]): number {
+  const now = new Date();
+  // Monday as start of week
+  const day = now.getDay(); // 0=Sun
+  const diffToMon = (day === 0 ? 6 : day - 1);
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(now.getDate() - diffToMon);
+  const monStr = monday.toISOString().slice(0, 10);
+  return sessions.filter(s => s.date >= monStr).length;
+}
+
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 type PhaseDir = "expand" | "shrink" | "hold";
@@ -827,6 +882,8 @@ export default function MeditationPage() {
   const sessionCountRef             = useRef<number>(0);
   const [milestone, setMilestone]   = useState<number | null>(null);
   const [summary, setSummary] = useState<{ cycles: number; secs: number; tech: Technique; sessionCount: number; msgIdx: number } | null>(null);
+  const [streak, setStreak] = useState<number>(0);
+  const [weeklySessions, setWeeklySessions] = useState<number>(0);
 
   const phaseStartRef   = useRef<number>(0);
   const sessionStartRef = useRef<number>(0);
@@ -845,7 +902,13 @@ export default function MeditationPage() {
   const { cue, visible: cueVisible } = useMindfulCues(active, tech.id);
 
   useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { techRef.current = tech; }, [tech]);
+  // Restore session count + streak from localStorage
+  useEffect(() => {
+    const past = loadSessions();
+    sessionCountRef.current = past.length;
+    setStreak(calcStreak(past));
+    setWeeklySessions(calcWeeklySessions(past));
+  }, []);
   useEffect(() => { phaseIdxRef.current = phaseIdx; }, [phaseIdx]);
 
   // Reacquire wake lock if tab becomes visible again mid-session
@@ -962,6 +1025,11 @@ export default function MeditationPage() {
     // Summary on every session, milestone badge every 5th
     if (secs > 10) {
       sessionCountRef.current += 1;
+      const today = new Date().toISOString().slice(0, 10);
+      saveSession({ date: today, technique: tech.id, durationSecs: secs, cycles });
+      const past = loadSessions();
+      setStreak(calcStreak(past));
+      setWeeklySessions(calcWeeklySessions(past));
       if (sessionCountRef.current % 5 === 0) {
         setMilestone(sessionCountRef.current);
         setTimeout(() => setMilestone(null), 3500);
@@ -1477,10 +1545,11 @@ export default function MeditationPage() {
             {[
               { value: `${Math.floor(summary.secs / 60)}:${String(summary.secs % 60).padStart(2,"0")}`, label: "Duration" },
               { value: String(summary.cycles), label: "Cycles" },
+              { value: String(weeklySessions), label: "This Week" },
             ].map((stat, i) => (
               <div key={i} style={{
                 flex: 1, padding: "20px 0", textAlign: "center",
-                borderRight: i === 0 ? "1px solid rgba(255,255,255,0.07)" : "none",
+                borderRight: i < 2 ? "1px solid rgba(255,255,255,0.07)" : "none",
               }}>
                 <p style={{ fontSize: 28, fontWeight: 200, letterSpacing: "-0.03em", color: "#fff", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
                   {stat.value}

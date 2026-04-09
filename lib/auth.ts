@@ -229,6 +229,7 @@ export function logout(): void {
   if (typeof window !== "undefined") {
     localStorage.removeItem("user_profile");
     localStorage.removeItem("user_me");
+    localStorage.removeItem("mindfulness_sessions");
     window.location.href = LOGIN_URL;
   }
 }
