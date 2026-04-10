@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { BottomNav } from "../components/BottomNav";
 // ─── Icons — inline SVGs (lucide style, strokeWidth 1.5) ─────────────────────
 // In your Next.js app swap these for the lucide-react package imports
 
@@ -1702,6 +1703,7 @@ export default function MeditationPage() {
       </div>
     </div>
 
+    <BottomNav active="wellness" />
     </>
   );
 }

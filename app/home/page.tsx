@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "../commponents/Header";
 import { api, addSteps, getCachedUserMe } from "@/lib/api";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
+import { BottomNav } from "../components/BottomNav";
 
 // ─── animated counters ───────────────────────────────────────────────────────
 function useCount(target: number, delay = 300, dur = 900) {
@@ -73,9 +74,8 @@ const Ic = {
     </svg>
   ),
   Flame: ({ c = T.t1, s = 17 }: { c?: string; s?: number }) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2s-5 4.5-5 9.5a5 5 0 0010 0C17 7.5 14.5 4 12 2z" />
-      <path d="M12 12s-2-1.5-2-3c0-1.2.8-2.5 2-3 1.2.5 2 1.8 2 3 0 1.5-2 3-2 3z" />
+    <svg width={s} height={s} viewBox="0 0 24 24" fill={c}>
+      <path d="M13.5 0.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/>
     </svg>
   ),
   Check: ({ c = T.t1, s = 12 }: { c?: string; s?: number }) => (
@@ -280,6 +280,109 @@ function RichText({ segs, fallback, base }: { segs: RichSegment[] | string | und
       {s.text}
     </span>
   ))}</>;
+}
+
+// ─── Feedback trigger + bottom sheet ─────────────────────────────────────────
+function FeedbackButton() {
+  const [open, setOpen] = useState(false);
+  const [type, setType] = useState<"suggestion"|"bug"|"other">("suggestion");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [rating, setRating] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const close = () => { setOpen(false); };
+  const reset = () => { setTitle(""); setBody(""); setRating(0); setType("suggestion"); setDone(false); };
+
+  const submit = async () => {
+    if (!title.trim() || !body.trim()) return;
+    setSubmitting(true);
+    try {
+      const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+      await fetch(`${base}/api/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ type, title: title.trim(), body: body.trim(), rating: rating || undefined, meta: { screen: window.location.pathname, app_version: "1.0.0" } }),
+      });
+    } catch { /* ignore */ }
+    setSubmitting(false);
+    setDone(true);
+    setTimeout(() => { close(); reset(); }, 1800);
+  };
+
+  return (
+    <>
+      {/* Subtle text link at page bottom */}
+      <div style={{ textAlign: "center" as const, padding: "4px 0 32px" }}>
+        <button onClick={() => setOpen(true)} style={{
+          background: "none", border: "none", cursor: "pointer",
+          fontSize: 12, color: T.t4, letterSpacing: ".02em",
+          textDecoration: "underline", textDecorationColor: "rgba(255,255,255,.12)",
+          textUnderlineOffset: 3,
+        }}>
+          Share feedback or suggestion
+        </button>
+      </div>
+
+      {/* Bottom sheet */}
+      {open && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.72)", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={() => { close(); reset(); }}>
+          <div style={{ background: "#0E0C18", borderRadius: "20px 20px 0 0", border: ".5px solid rgba(155,127,232,.22)", padding: "20px 20px 44px", width: "100%", maxWidth: 480, boxShadow: "0 -8px 40px rgba(0,0,0,.7)" }}
+            onClick={e => e.stopPropagation()}>
+
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,.12)", margin: "0 auto 18px" }} />
+
+            {done ? (
+              <div style={{ textAlign: "center" as const, padding: "20px 0" }}>
+                <p style={{ fontSize: 28, margin: "0 0 8px" }}>✓</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: T.t1, margin: "0 0 4px" }}>Thanks!</p>
+                <p style={{ fontSize: 13, color: T.t3, margin: 0 }}>We read every submission.</p>
+              </div>
+            ) : (<>
+              <p style={{ fontSize: 18, fontWeight: 700, color: T.t1, margin: "0 0 4px", letterSpacing: "-.3px" }}>Send Feedback</p>
+              <p style={{ fontSize: 13, color: T.t3, margin: "0 0 16px" }}>Suggestions, bugs, or anything on your mind.</p>
+
+              <div style={{ display: "flex", gap: 7, marginBottom: 14 }}>
+                {(["suggestion","bug","other"] as const).map(t => (
+                  <button key={t} onClick={() => setType(t)} style={{
+                    padding: "5px 13px", borderRadius: 99, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    background: type === t ? "rgba(155,127,232,.2)" : "rgba(255,255,255,.05)",
+                    border: `.5px solid ${type === t ? "rgba(155,127,232,.5)" : "rgba(255,255,255,.1)"}`,
+                    color: type === t ? T.purpleL : T.t3, textTransform: "capitalize" as const,
+                  }}>{t}</button>
+                ))}
+              </div>
+
+              <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Short title"
+                style={{ width: "100%", padding: "11px 14px", borderRadius: 12, marginBottom: 10, background: "rgba(255,255,255,.05)", border: `.5px solid ${title ? "rgba(155,127,232,.35)" : "rgba(255,255,255,.1)"}`, color: T.t1, fontSize: 14, outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit" }} />
+
+              <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Tell us more…" rows={3}
+                style={{ width: "100%", padding: "11px 14px", borderRadius: 12, marginBottom: 14, background: "rgba(255,255,255,.05)", border: `.5px solid ${body ? "rgba(155,127,232,.35)" : "rgba(255,255,255,.1)"}`, color: T.t1, fontSize: 14, outline: "none", resize: "none" as const, boxSizing: "border-box" as const, fontFamily: "inherit", lineHeight: 1.5 }} />
+
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 16 }}>
+                {[1,2,3,4,5].map(s => (
+                  <button key={s} onClick={() => setRating(s === rating ? 0 : s)}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: 22, color: T.orange, opacity: s <= rating ? 1 : 0.18, transition: "opacity .15s" }}>★</button>
+                ))}
+                {rating > 0 && <span style={{ fontSize: 11, color: T.t3, marginLeft: 4 }}>{["","Poor","Fair","Good","Great","Excellent"][rating]}</span>}
+              </div>
+
+              <button onClick={submit} disabled={submitting || !title.trim() || !body.trim()} style={{
+                width: "100%", padding: 14, borderRadius: 14, border: "none",
+                background: title.trim() && body.trim() ? "linear-gradient(135deg,rgba(155,127,232,.5),rgba(124,58,237,.7))" : "rgba(255,255,255,.07)",
+                color: title.trim() && body.trim() ? T.t1 : T.t4,
+                fontSize: 14, fontWeight: 700, cursor: title.trim() && body.trim() ? "pointer" : "default",
+                opacity: submitting ? .7 : 1, transition: "all .2s",
+              }}>{submitting ? "Sending…" : "Submit"}</button>
+            </>)}
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 // ─── AI Insight card ──────────────────────────────────────────────────────────
@@ -770,13 +873,8 @@ export default function HomePage() {
   useEffect(() => {
     const load = async () => {
       try {
-        // Check identity first using the already-working user endpoint
-        const me = await getCachedUserMe() as any;
-        if (!me?.name?.toLowerCase().includes("sumeet")) {
-          router.replace("/challanges");
-          return;
-        }
         // Fetch home data; fall back gracefully if endpoint not yet live
+        const me = await getCachedUserMe() as any;
         let data: HomeData;
         try {
           data = await api<HomeData>("/api/home", { method: "GET" });
@@ -793,7 +891,7 @@ export default function HomePage() {
         }
         setHomeData(data);
       } catch {
-        router.replace("/challanges");
+        router.replace("/home");
       } finally {
         setLoading(false);
       }
@@ -1181,7 +1279,13 @@ export default function HomePage() {
             </button>
           ))}
         </div>
+
+        {/* Feedback — end of page */}
+        <FeedbackButton />
+
       </div>
+
+      <BottomNav active="home" />
     </>
   );
 }

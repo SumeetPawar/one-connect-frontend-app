@@ -527,7 +527,7 @@ export default function StepsTracker() {
       }}>
         <p style={{ color: '#ef4444', textAlign: 'center' }}>{apiError}</p>
         <button
-          onClick={() => router.push('/challanges')}
+          onClick={() => router.push("/home")}
           style={{
             padding: '12px 24px',
             background: '#7c3aed',
@@ -561,7 +561,7 @@ export default function StepsTracker() {
           {/* Back Button + Challenge Name */}
           <div style={{ marginBottom: '16px' }}>
             <button
-              onClick={() => router.push('/challanges')}
+              onClick={() => router.push("/home")}
               style={{
                 background: 'none',
                 border: 'none',

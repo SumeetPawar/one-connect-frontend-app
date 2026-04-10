@@ -21,23 +21,23 @@ const TABS: { id: TabId; label: string; icon: (color: string) => React.ReactNode
   },
   {
     id: "habit",
-    label: "Habit",
+    label: "Today",
     icon: (color) => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="4" width="18" height="16" rx="2.5" stroke={color} strokeWidth="1.5"/>
-        <path d="M7 9l2.5 2.5L13 8" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M7 14h4" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M7 17h6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+        <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.5"/>
+        <path d="M8.5 12l2.5 2.5 4.5-5" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
   },
   {
     id: "forest",
-    label: "Forest",
+    label: "History",
     icon: (color) => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L8 8H10L6 14H9L5 20H19L15 14H18L14 8H16L12 2Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" fill="none"/>
-        <line x1="12" y1="20" x2="12" y2="23" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+        <rect x="3" y="4" width="18" height="17" rx="2" stroke={color} strokeWidth="1.5"/>
+        <path d="M3 9h18" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M8 2v4M16 2v4" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -60,7 +60,7 @@ export function NavBar({ activeTab, accent, onTabChange }: { activeTab: TabId; a
   function handleTap(id: TabId) {
     if (id === activeTab) return;
     if (id === "home") {
-      router.push("/challanges");
+      router.push("/home");
     } else if (onTabChange) {
       onTabChange(id);
     } else {

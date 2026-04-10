@@ -22,7 +22,7 @@ export default function SignupPage() {
   // ✅ If already logged in, go home
   // useEffect(() => {
   //   const token = localStorage.getItem("auth_token");
-  //   if (token) router.replace("/challanges");
+  //   if (token) router.replace("/home");
   // }, [router]);
 
   // Animated word loop
@@ -77,7 +77,7 @@ export default function SignupPage() {
         setError(res.error || "Signup failed");
         return;
       }
-      router.replace("/challanges");
+      router.replace("/home");
     } catch (err) {
       console.error(err);
       setError("Something went wrong. Please try again.");

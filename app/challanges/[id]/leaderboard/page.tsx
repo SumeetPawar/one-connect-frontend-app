@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, TrendingUp, Flame, History } from 'lucide-react';
 import { api } from '@/lib/api';
+import { BottomNav } from '../../../components/BottomNav';
 
 interface LeaderboardUser {
     rank: number;
@@ -229,7 +230,7 @@ export default function LeaderboardPage() {
 
     if (loading || tabSwitching) {
         return (
-            <div className="min-h-screen bg-zinc-950 text-white pb-6">
+            <div className="min-h-screen bg-zinc-950 text-white pb-24">
                 <div className="sticky top-0 z-40 bg-zinc-950 border-b border-zinc-800">
                     <div className="px-5 py-4 flex items-center gap-4">
                         <div className="w-9 h-9 bg-zinc-800 rounded-lg animate-pulse"></div>
@@ -277,7 +278,7 @@ export default function LeaderboardPage() {
     const myDeptIds: string[] = currentChip?.department_ids ?? [];
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-white pb-6">
+        <div className="min-h-screen bg-zinc-950 text-white pb-24">
             {/* Header */}
             <div className="sticky top-0 z-40 bg-zinc-950 border-b border-zinc-800">
                 <div className="px-5 py-4 flex items-center gap-4">
@@ -668,7 +669,7 @@ export default function LeaderboardPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         onClick={scrollToTop}
-                        className="fixed bottom-6 right-6 bg-purple-600 text-white p-3 rounded-full shadow-lg z-50"
+                        className="fixed bottom-24 right-6 bg-purple-600 text-white p-3 rounded-full shadow-lg z-50"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -676,6 +677,8 @@ export default function LeaderboardPage() {
                     </motion.button>
                 )}
             </AnimatePresence>
+
+            <BottomNav active="steps" />
         </div>
     );
 }
