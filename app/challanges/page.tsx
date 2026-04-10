@@ -2,21 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Header from "../commponents/Header";
+import { BottomNav } from "../components/BottomNav";
 import { api, isApiError, getCachedUserMe } from "@/lib/api";
 import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
     // Use same user/admin detection logic as Header
-    const [user, setUser] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
     useEffect(() => {
         getCachedUserMe()
-            .then(userData => {
-                setUser(userData as any);
-                setIsAdmin((userData as any).role === "admin");
-            })
-            .catch(() => { setUser(null); setIsAdmin(false); });
+            .then(userData => { setIsAdmin((userData as any).role === "admin"); })
+            .catch(() => { setIsAdmin(false); });
     }, []);
     type ApiChallenge = {
         id: string;
@@ -672,51 +669,39 @@ export default function Dashboard() {
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
 
-                    {/* Track Habit - Enabled for Sumeet or if user's department name includes 'family' */}
-                    {((user as any)?.name?.includes('Sumeet') || String((user as any)?.department?.name ?? (user as any)?.department ?? '').toLowerCase().includes('family')) ? (
-                        <div
-                            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
-                            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
-                            onTouchStart={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
-                            onTouchEnd={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
-                            onClick={() => router.push('/habits')}
-                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.13)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.07)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
-                            style={{
-                                background: 'rgba(16,185,129,0.07)',
-                                backdropFilter: 'blur(20px)',
-                                borderRadius: '16px',
-                                padding: '16px 18px',
-                                cursor: 'pointer',
-                                border: '1px solid rgba(16,185,129,0.22)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '14px',
-                                userSelect: 'none',
-                                WebkitUserSelect: 'none',
-                                transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
-                            }}
-                        >
-                            <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.15) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <span style={{ fontSize: '18px', fontWeight: '600', color: 'rgba(16,185,129,0.9)' }}>H</span>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '2px' }}>Track Habit</div>
-                                <div style={{ fontSize: '12px', color: 'rgba(16,185,129,0.75)' }}>Habits to help you grow</div>
-                            </div>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    {/* Track Habit */}
+                    <div
+                        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                        onTouchStart={e => { e.currentTarget.style.transform = 'scale(0.98)'; e.currentTarget.style.opacity = '0.8'; }}
+                        onTouchEnd={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                        onClick={() => router.push('/habits')}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.13)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.07)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1'; }}
+                        style={{
+                            background: 'rgba(16,185,129,0.07)',
+                            backdropFilter: 'blur(20px)',
+                            borderRadius: '16px',
+                            padding: '16px 18px',
+                            cursor: 'pointer',
+                            border: '1px solid rgba(16,185,129,0.22)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '14px',
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            transition: 'transform 0.1s ease, opacity 0.1s ease, background 0.2s',
+                        }}
+                    >
+                        <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.15) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ fontSize: '18px', fontWeight: '600', color: 'rgba(16,185,129,0.9)' }}>H</span>
                         </div>
-                    ) : (
-                        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '16px', padding: '16px 18px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '14px', opacity: 0.45, cursor: 'not-allowed' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.1) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <span style={{ fontSize: '18px', fontWeight: '600', color: 'rgba(16,185,129,0.6)' }}>H</span>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.6)', marginBottom: '2px' }}>Track Habit</div>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>Coming Soon</div>
-                            </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '2px' }}>Track Habit</div>
+                            <div style={{ fontSize: '12px', color: 'rgba(16,185,129,0.75)' }}>Habits to help you grow</div>
                         </div>
-                    )}
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
 
                 </div>
             </div>
@@ -1223,6 +1208,7 @@ export default function Dashboard() {
                 </>
             )}
 
+            <BottomNav active="steps" />
         </div>
     );
 }

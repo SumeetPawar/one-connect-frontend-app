@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getChallengeWeeklySteps, addSteps } from '../../../../lib/api';
 import Header from '../../../commponents/Header';
+import { BottomNav } from '../../../components/BottomNav';
 
 // Helper functions
 const mathMax = (...args: number[]): number => {
@@ -767,7 +768,7 @@ export default function StepsTracker() {
             }}>
                 <p style={{ color: '#ef4444', textAlign: 'center' }}>{apiError}</p>
                 <button
-                    onClick={() => router.push('/challanges')}
+                    onClick={() => router.push("/home")}
                     style={{
                         padding: '12px 24px',
                         background: '#7c3aed',
@@ -874,7 +875,7 @@ export default function StepsTracker() {
                     }}>
                         {/* Back Button with Text - Android Style */}
                         <button
-                            onClick={() => router.push('/challanges')}
+                            onClick={() => router.push("/home")}
                             style={{
                                 background: 'none',
                                 border: 'none',
@@ -1506,6 +1507,8 @@ export default function StepsTracker() {
           `}</style>
                 </div>
             </div>
+
+            <BottomNav active="steps" />
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, CSSProperties } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ReferenceArea, ResponsiveContainer } from "recharts";
 import { useRouter } from "next/navigation";
 import { api, BodyMetricHistory, BodyMetricScan, BodyProfile, getBodyProfile, getCachedUserMe, getLatestScan, getScanHistory, saveScan, updateBodyProfile } from "@/lib/api";
+import { BottomNav } from "../components/BottomNav";
 
 
 const C = {
@@ -724,8 +725,21 @@ export default function ScanReport() {
         : daysUntilScan === 0 ? "Due today"
           : `Overdue · ${daysUntilScan < 0 ? -daysUntilScan : daysUntilScan}d`;
 
-  const [insightIdx, setInsightIdx] = useState(0);
-  const [insightAnimate, setInsightAnimate] = useState(false);
+  // ── AI insight state ──────────────────────────────────────────
+  type RichSeg = { text: string; style: "normal"|"bold"|"highlight"|"stat"; color: string|null };
+  type AiHighlight = { metric: string; direction: "up"|"down"|"stable"; value: string; delta: string; priority: "high"|"medium"|"low"; note: RichSeg[] };
+  type AiInsight = { summary: RichSeg[]; highlights: AiHighlight[]; warning?: RichSeg[]; action?: RichSeg[]; generated_at: string; cached: boolean };
+  const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const fetchAiInsight = useCallback(async () => {
+    setAiLoading(true);
+    try {
+      const d = await api<AiInsight>("/api/body-metrics/insight");
+      setAiInsight(d);
+    } catch { /* insight is optional */ }
+    finally { setAiLoading(false); }
+  }, []);
 
   const scanDueColor = daysUntilScan === null ? "rgba(255,255,255,0.38)"
     : daysUntilScan > 3 ? "rgba(255,255,255,0.45)"
@@ -733,21 +747,13 @@ export default function ScanReport() {
         : daysUntilScan === 0 ? C.bad
           : "rgba(255,69,58,0.60)";
 
-  // ── Insight rotation ─────────────────────────────────────────
-  useEffect(() => {
-    if (loading) return;
-    const t = setInterval(() => {
-      setInsightIdx(i => i + 1);
-    }, 7000);
-    return () => clearInterval(t);
-  }, [loading]);
-
-  // ── Fetch user name from cached /api/me ─────────────────────
+// ── Fetch user name from cached /api/me ─────────────────────
   useEffect(() => {
     getCachedUserMe()
       .then(me => { if (me?.name) setUserName(me.name.split(' ')[0]); })
       .catch(() => { });
-  }, []);
+    fetchAiInsight();
+  }, [fetchAiInsight]);
 
   // ── Load profile + latest scan + history on mount ─────────────
   useEffect(() => {
@@ -880,20 +886,26 @@ export default function ScanReport() {
         bmr_kcal: parseInt(form.bmr) || null,
         metabolic_age: parseInt(form.metage) || null,
       });
-      const sv = scanToValues(newScan);
+      // Fetch the full latest scan — saveScan only echoes submitted fields;
+      // getLatestScan returns all fields (including server-computed bmi etc.)
+      const [latestScan, h] = await Promise.all([
+        getLatestScan().catch(() => newScan),
+        getScanHistory(),
+      ]);
+      const sv = scanToValues(latestScan);
       setScanValues(sv);
       setLastScanDate(
-        new Date(newScan.recorded_date).toLocaleDateString("en-GB", {
+        new Date(latestScan.recorded_date).toLocaleDateString("en-GB", {
           day: "numeric", month: "short", year: "numeric",
         })
       );
-      const h = await getScanHistory();
       setTrendData({
         all: historyToTrend(h.all), y1: historyToTrend(h.y1),
         m6: historyToTrend(h.m6), m3: historyToTrend(h.m3),
       });
       setShowStartMeasure(false);
       setSaving(false); setSaved(true);
+      fetchAiInsight(); // POST already triggered AI generation server-side; fetch the result
       setTimeout(() => { setSaved(false); setShowModal(false); }, 1800);
     } catch {
       setSaving(false);
@@ -1462,7 +1474,7 @@ export default function ScanReport() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 14px" }}>
 
               {/* Left — Back button */}
-              <button onClick={() => router.push("/challanges")} style={{
+              <button onClick={() => router.push("/home")} style={{
                 display: "flex", alignItems: "center", gap: 5, background: "transparent",
                 border: "none", cursor: "pointer", fontFamily: "Figtree, sans-serif",
                 color: "rgba(255,255,255,0.60)", fontSize: 15, fontWeight: 400,
@@ -1520,240 +1532,142 @@ export default function ScanReport() {
             </div>
           </div>
 
-          {/* ── HERO ── */}
+          {/* ── AI BODY INSIGHT ── */}
           {(() => {
-            const worst = [...METRICS].sort((a, b) => {
-              const g = (m: Metric) => m.value > m.ideal[1]
-                ? (m.value - m.ideal[1]) / (m.max - m.ideal[1])
-                : m.value < m.ideal[0]
-                  ? (m.ideal[0] - m.value) / (m.ideal[0] - m.min) : 0;
-              return g(b) - g(a);
-            })[0];
-            const worstInRange = worst.value >= worst.ideal[0] && worst.value <= worst.ideal[1];
-            const over = worst.value > worst.ideal[1];
-            const gap = over ? (worst.value - worst.ideal[1]).toFixed(1) : (worst.ideal[0] - worst.value).toFixed(1);
-                    const wLast = Number(trendData.all[trendData.all.length - 1]?.[worst.trendKey]);
-            const wPrev = Number(trendData.all[trendData.all.length - 2]?.[worst.trendKey]);
-            const wMidIdeal = (worst.ideal[0] + worst.ideal[1]) / 2;
-            const wHasTwo = wLast > 0 && wPrev > 0 && !isNaN(wLast) && !isNaN(wPrev);
-            const wDistLast = Math.abs(wLast - wMidIdeal);
-            const wDistPrev = Math.abs(wPrev - wMidIdeal);
-            // Only say "improving" when we have 2 valid data points AND the gap to ideal shrank
-            const wImproving = wHasTwo && wDistLast < wDistPrev;
-            const best = METRICS.filter(m => m.value >= m.ideal[0] && m.value <= m.ideal[1])
-              .sort((a, b) => {
-                const d = (m: Metric) => {
-                  const diff = m.value - (m.ideal[0] + m.ideal[1]) / 2;
-                  return (diff < 0 ? -diff : diff) / ((m.ideal[1] - m.ideal[0]) / 2);
-                };
-                return d(a) - d(b);
-              })[0];
-            const iColor = worstInRange ? C.good : wImproving ? C.good : C.bad;
-            const headline = worstInRange ? "All clear" : goodCount >= 6 ? "Looking good" : "Needs work";
-            // Arc circumference for r=36 → 2π×36 ≈ 226.2
-            const ARC = 226.2;
-            const pct = METRICS.length > 0 ? goodCount / METRICS.length : 0;
+            const SEG_COLORS: Record<string, string> = { green: C.good, rose: C.bad, teal: "#2DD4BF", orange: C.warn, purple: C.purple };
+            const renderSegs = (segs: { text: string; style: string; color: string | null }[]) =>
+              segs.map((s, i) => {
+                const base = "rgba(255,255,255,0.72)";
+                const c = s.color ? (SEG_COLORS[s.color] ?? s.color) : base;
+                return (
+                  <span key={i} style={{
+                    color: s.style === "normal" ? base : c,
+                    fontWeight: s.style === "bold" || s.style === "stat" ? 700 : s.style === "highlight" ? 600 : 400,
+                  }}>{s.text}</span>
+                );
+              });
+
+            const PRIORITY_COLOR: Record<string, string> = { high: C.bad, medium: C.warn, low: "rgba(255,255,255,0.30)" };
+            const DIR_ICON: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
+
+            if (aiLoading && !aiInsight) return (
+              <div style={{ padding: "12px 16px 0", ...fade(0) }}>
+                <div style={{
+                  borderRadius: 22,
+                  background: "rgba(191,90,242,0.06)",
+                  border: ".5px solid rgba(191,90,242,.14)",
+                  padding: "18px 20px",
+                }}>
+                  <div style={{ height: 10, borderRadius: 6, background: "rgba(255,255,255,0.07)", marginBottom: 14, width: 88 }} />
+                  <div style={{ height: 16, borderRadius: 6, background: "rgba(255,255,255,0.08)", marginBottom: 8, width: "88%" }} />
+                  <div style={{ height: 16, borderRadius: 6, background: "rgba(255,255,255,0.05)", width: "65%" }} />
+                </div>
+              </div>
+            );
+
+            if (!aiInsight) return null;
+
             return (
               <div style={{ padding: "12px 16px 0", ...fade(0) }}>
                 <div style={{
-                  borderRadius: 24,
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.13)",
+                  borderRadius: 22,
+                  background: "linear-gradient(180deg,rgba(191,90,242,.11) 0%,rgba(124,92,232,.03) 100%)",
+                  border: ".5px solid rgba(191,90,242,.20)",
+                  boxShadow: "0 4px 28px rgba(0,0,0,.55),0 1px 0 rgba(242,238,255,.04) inset",
                   overflow: "hidden",
-                  position: "relative",
-                  boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
                 }}>
-                  {/* Ambient glow */}
-                  <div style={{
-                    position: "absolute", top: -50, right: -50,
-                    width: 180, height: 180, borderRadius: "50%",
-                    background: iColor, opacity: 0.12, filter: "blur(55px)",
-                    pointerEvents: "none",
-                  }} />
+                  <div style={{ padding: "18px 20px 18px" }}>
 
-                  {/* Top section: score ring + text */}
-                  <div style={{ padding: "20px 20px 16px", display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
-
-                    {/* Score ring */}
-                    <div style={{ flexShrink: 0, position: "relative", width: 88, height: 88 }}>
-                      <svg width={88} height={88} style={{ transform: "rotate(-90deg)" }}>
-                        <circle cx={44} cy={44} r={36} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={7.5} />
-                        <circle
-                          cx={44} cy={44} r={36}
-                          fill="none"
-                          stroke={iColor}
-                          strokeWidth={7.5}
-                          strokeLinecap="round"
-                          strokeDasharray={ARC}
-                          strokeDashoffset={ARC * (1 - pct)}
-                          style={{ transition: "stroke-dashoffset 0.7s cubic-bezier(.4,0,.2,1)" }}
-                        />
-                      </svg>
+                    {/* Top row: badge + scan meta */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                       <div style={{
-                        position: "absolute", inset: 0,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        lineHeight: 1,
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        background: "rgba(191,90,242,.10)",
+                        border: ".5px solid rgba(191,90,242,.28)",
+                        borderRadius: 99, padding: "3px 10px",
                       }}>
-                        <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: iColor, lineHeight: 1 }}>{goodCount}</span>
-                        <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.28)", letterSpacing: "-0.01em", lineHeight: 1, marginTop: 3 }}>/{METRICS.length}</span>
+                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: C.purple, boxShadow: `0 0 6px ${C.purple}` }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: C.purple, letterSpacing: ".08em", textTransform: "uppercase" as const }}>
+                          Body Insight
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Right — headline + chips */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.30)", marginBottom: 5, letterSpacing: "0em" }}>
-                        {userName ? `Hi, ${userName}` : "Your summary"}
-                      </div>
-                      <div style={{
-                        fontSize: 23, fontWeight: 700, color: "#fff",
-                        letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: 10,
-                      }}>{headline}</div>
-                      {/* Pills */}
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {goodCount > 0 && (
-                          <span style={{
-                            display: "inline-flex", alignItems: "center",
-                            padding: "3px 10px", borderRadius: 20,
-                            background: `${C.good}18`, border: `1px solid ${C.good}30`,
-                            fontSize: 11, fontWeight: 600, color: C.good, letterSpacing: "0em",
-                          }}>
-                            {goodCount} healthy
-                          </span>
-                        )}
-                        {outOfRange.length > 0 && (
-                          <span style={{
-                            display: "inline-flex", alignItems: "center",
-                            padding: "3px 10px", borderRadius: 20,
-                            background: `${C.bad}18`, border: `1px solid ${C.bad}30`,
-                            fontSize: 11, fontWeight: 600, color: C.bad, letterSpacing: "0em",
-                          }}>
-                            {outOfRange.length} need{outOfRange.length === 1 ? "s" : ""} work
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Divider */}
-                  <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "0 20px" }} />
-
-                  {/* Insight — rotating animated */}
-                  {(() => {
-                    // Priority order: visceral (highest health risk) first, then body fat, skeletal, body age, bmi, weight, others
-                    const PRIORITY_KEYS = ["visceral", "fat", "skeletal", "metage", "subcutaneous_fat", "bmi", "weight", "bmr"];
-
-                    // Only show metrics that are OUT of range, sorted by priority
-                    const alertMetrics = PRIORITY_KEYS
-                      .map(k => METRICS.find(m => m.key === k))
-                      .filter((m): m is Metric => !!m && (m.value < m.ideal[0] || m.value > m.ideal[1]));
-
-                    const msgs: { text: React.ReactElement; accent: string }[] = [];
-
-                    if (alertMetrics.length === 0) {
-                      // All good — single simple slide
-                      msgs.push({
-                        accent: C.good,
-                        text: (
-                          <p key="allgood" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.65)" }}>
-                            <span style={{ fontWeight: 700, color: C.good }}>Everything looks good. </span>
-                            All your body metrics are in the healthy range.
-                          </p>
-                        ),
-                      });
-                    } else {
-                      // One slide per out-of-range metric (max 3 to avoid clutter)
-                      alertMetrics.slice(0, 3).forEach((m, i) => {
-                        const isHigh = m.value > m.ideal[1];
-                        const mLast = Number(trendData.all[trendData.all.length - 1]?.[m.trendKey]);
-                        const mPrev = Number(trendData.all[trendData.all.length - 2]?.[m.trendKey]);
-                        const mHasTwo = mLast > 0 && mPrev > 0 && !isNaN(mLast) && !isNaN(mPrev);
-                        const mMid = (m.ideal[0] + m.ideal[1]) / 2;
-                        const mImproving = mHasTwo && Math.abs(mLast - mMid) < Math.abs(mPrev - mMid);
-                        const gap = isHigh
-                          ? (m.value - m.ideal[1]).toFixed(m.unit === "lvl" || m.unit === "yrs" ? 0 : 1)
-                          : (m.ideal[0] - m.value).toFixed(m.unit === "lvl" || m.unit === "yrs" ? 0 : 1);
-
-                        // Simple human-readable status
-                        let trendEl: React.ReactElement;
-                        if (!mHasTwo) {
-                          trendEl = <span style={{ color: "rgba(255,255,255,0.35)" }}>measure again to see trend</span>;
-                        } else if (mImproving) {
-                          trendEl = <span style={{ fontWeight: 600, color: C.good }}>getting better ↗</span>;
-                        } else {
-                          trendEl = <span style={{ fontWeight: 600, color: C.bad }}>still worsening ↘</span>;
-                        }
-
-                        msgs.push({
-                          accent: !mHasTwo ? C.warn : mImproving ? C.good : C.bad,
-                          text: (
-                            <p key={`alert-${i}`} style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.65)" }}>
-                              <span style={{ fontWeight: 700, color: "rgba(255,255,255,0.93)" }}>{m.label}</span>
-                              {" is "}
-                              <span style={{ fontWeight: 700, color: C.bad }}>{isHigh ? "too high" : "too low"}</span>
-                              {" by "}
-                              <span style={{ fontWeight: 700, color: "rgba(255,255,255,0.88)" }}>{gap}{m.unit}</span>
-                              {" · "}{trendEl}
-                            </p>
-                          ),
-                        });
-                      });
-                    }
-
-                    const totalMsgs = msgs.length;
-                    const idx = insightIdx % totalMsgs;
-
-                    return (
-                      <div style={{ padding: "12px 20px 13px" }}>
-                        {/* Header row */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7 }}>
-                          <div style={{
-                            width: 6, height: 6, borderRadius: "50%",
-                            background: msgs[idx].accent,
-                            boxShadow: `0 0 6px 1px ${msgs[idx].accent}88`,
-                            transition: "background 0.4s",
-                          }} />
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(255,255,255,0.28)" }}>
-                            {alertMetrics.length > 0 ? `Needs attention · ${idx + 1} of ${totalMsgs}` : "All clear"}
-                          </span>
-                          {totalMsgs > 1 && (
-                            <span style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-                              {Array.from({ length: totalMsgs }).map((_, i) => (
-                                <span key={i} style={{
-                                  width: i === idx ? 14 : 4, height: 4, borderRadius: 3,
-                                  background: i === idx ? msgs[idx].accent : "rgba(255,255,255,0.13)",
-                                  transition: "all 0.35s cubic-bezier(.4,0,.2,1)",
-                                  display: "inline-block",
-                                }} />
-                              ))}
-                            </span>
-                          )}
-                        </div>
-                        {/* Animated text */}
-                        <div style={{
-                          key: idx,
-                          animation: `insightSlide 0.38s cubic-bezier(.4,0,.2,1) both`,
-                          animationName: "insightSlide",
-                        } as React.CSSProperties}>
-                          <div key={idx} style={{ animation: "insightSlide 0.38s cubic-bezier(.4,0,.2,1) both" }}>
-                            {msgs[idx].text}
+                      {lastScanDate && (
+                        <div style={{ textAlign: "right" as const }}>
+                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", lineHeight: 1.5 }}>
+                            Updated <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.45)" }}>{lastScanDate}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", lineHeight: 1.5 }}>
+                            Next <span style={{ fontWeight: 600, color: scanDueColor, transition: "color 0.2s" }}>{scanDueLabel}</span>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })()}
+                      )}
+                    </div>
 
-                  {/* Scan meta footer */}
-                  <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "0 20px" }} />
-                  <div style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "10px 20px 14px",
-                  }}>
-                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.28)", letterSpacing: "-0.01em" }}>
-                      Updated <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.42)" }}>{lastScanDate}</span>
-                    </span>
-                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.28)", letterSpacing: "-0.01em" }}>
-                      Next <span style={{ fontWeight: 600, color: scanDueColor, transition: "color 0.2s" }}>{scanDueLabel}</span>
-                    </span>
+                    {/* Summary headline */}
+                    <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.4, letterSpacing: "-.3px", margin: 0, color: "rgba(255,255,255,0.92)" }}>
+                      {renderSegs(aiInsight.summary)}
+                    </p>
+
+                    {/* Warning block */}
+                    {(aiInsight.warning?.length ?? 0) > 0 && (
+                      <div style={{
+                        background: `${C.bad}10`, border: `1px solid ${C.bad}28`,
+                        borderRadius: 14, padding: "11px 14px", marginTop: 12,
+                      }}>
+                        <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{renderSegs(aiInsight.warning!)}</p>
+                      </div>
+                    )}
+
+                    {/* Action block */}
+                    {(aiInsight.action?.length ?? 0) > 0 && (
+                      <div style={{
+                        background: "rgba(45,212,191,0.07)", border: "1px solid rgba(45,212,191,0.20)",
+                        borderRadius: 14, padding: "11px 14px", marginTop: 10,
+                      }}>
+                        <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{renderSegs(aiInsight.action!)}</p>
+                      </div>
+                    )}
+
+                    {/* Highlights */}
+                    {aiInsight.highlights.length > 0 && (
+                      <div style={{
+                        borderTop: "1px solid rgba(255,255,255,0.07)",
+                        marginTop: 16, paddingTop: 14,
+                        display: "flex", flexDirection: "column" as const, gap: 13,
+                      }}>
+                        {aiInsight.highlights.map((h, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                            {/* Direction icon box */}
+                            <div style={{
+                              width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                              background: `${PRIORITY_COLOR[h.priority]}14`,
+                              border: `1px solid ${PRIORITY_COLOR[h.priority]}28`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 15, fontWeight: 700, color: PRIORITY_COLOR[h.priority],
+                            }}>
+                              {DIR_ICON[h.direction]}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" as const }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.90)" }}>{h.metric}</span>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: PRIORITY_COLOR[h.priority] }}>{h.value}</span>
+                                {h.delta && (
+                                  <span style={{
+                                    fontSize: 11, fontWeight: 500,
+                                    color: h.direction === "down" && h.priority !== "high" ? C.good
+                                      : h.direction === "up" && h.priority === "high" ? C.bad
+                                      : "rgba(255,255,255,0.35)",
+                                  }}>{h.delta}</span>
+                                )}
+                              </div>
+                              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.48)", lineHeight: 1.5, margin: "3px 0 0" }}>
+                                {renderSegs(h.note)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1976,7 +1890,7 @@ export default function ScanReport() {
         )
       }
 
-
+      <BottomNav active="wellness" />
     </>
   );
 

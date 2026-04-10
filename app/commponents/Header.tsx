@@ -31,6 +31,13 @@ export default function Header({
     const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
     const [resetUserId, setResetUserId] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [showFeedback, setShowFeedback] = useState(false);
+    const [fbType, setFbType] = useState<'suggestion' | 'bug' | 'other'>('suggestion');
+    const [fbTitle, setFbTitle] = useState('');
+    const [fbBody, setFbBody] = useState('');
+    const [fbRating, setFbRating] = useState(0);
+    const [fbSubmitting, setFbSubmitting] = useState(false);
+    const [fbDone, setFbDone] = useState(false);
     const [isStandalone, setIsStandalone] = useState(true); // default true to avoid flash
     const [isMobile, setIsMobile] = useState(false);
     const router = useRouter();
@@ -114,6 +121,34 @@ export default function Header({
         router.push("/login");
     };
 
+    const handleFeedbackSubmit = async () => {
+        if (!fbTitle.trim() || !fbBody.trim()) return;
+        setFbSubmitting(true);
+        try {
+            const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "";
+            const token = localStorage.getItem("access_token");
+            await fetch(`${API_BASE}/api/feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    type: fbType,
+                    title: fbTitle.trim(),
+                    body: fbBody.trim(),
+                    rating: fbRating || undefined,
+                    meta: { screen: window.location.pathname, app_version: "1.0.0" },
+                }),
+            });
+            setFbDone(true);
+            setTimeout(() => { setShowFeedback(false); setFbDone(false); setFbTitle(''); setFbBody(''); setFbRating(0); setFbType('suggestion'); }, 1800);
+        } catch {
+            // fail silently — still close after delay
+            setFbDone(true);
+            setTimeout(() => { setShowFeedback(false); setFbDone(false); }, 1800);
+        } finally {
+            setFbSubmitting(false);
+        }
+    };
+
     // Update the isPasswordValid function:
     const isPasswordValid = (password: string) => {
         if (password.length < 7) return false;
@@ -140,7 +175,7 @@ export default function Header({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     {/* Title Section */}
                     <div
-                        onClick={() => router.push("/challanges")}
+                        onClick={() => router.push("/home")}
                         style={{
                             cursor: 'pointer',
                             userSelect: 'none',
@@ -323,6 +358,25 @@ export default function Header({
                                     </button>
                                 )}
 
+                                {/* Feedback Button */}
+                                <button
+                                    onClick={() => { setShowFeedback(true); setShowUserMenu(false); }}
+                                    style={{
+                                        width: '100%', padding: '10px 12px', background: 'transparent',
+                                        border: 'none', borderRadius: '6px', color: 'rgba(255,255,255,0.85)',
+                                        fontSize: '14px', fontWeight: '500', cursor: 'pointer',
+                                        textAlign: 'left', transition: 'background 0.2s', marginBottom: '4px',
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.1)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                    Send Feedback
+                                </button>
+
                                 {/* Logout Button */}
                                 <button
                                     onClick={handleLogout}
@@ -354,6 +408,100 @@ export default function Header({
                     </div>{/* end right-side icons wrapper */}
                 </div>
             </div>
+
+            {/* Feedback Modal */}
+            {showFeedback && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+                    display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1000,
+                }} onClick={() => setShowFeedback(false)}>
+                    <div style={{
+                        background: 'rgba(18,18,28,0.98)', borderRadius: '20px 20px 0 0',
+                        border: '1px solid rgba(255,255,255,0.08)', padding: '24px 20px 40px',
+                        width: '100%', maxWidth: 480,
+                        boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
+                    }} onClick={e => e.stopPropagation()}>
+
+                        {fbDone ? (
+                            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                                <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
+                                <p style={{ fontSize: 17, fontWeight: 600, color: '#fff', margin: '0 0 6px' }}>Thanks for your feedback!</p>
+                                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0 }}>We read every submission.</p>
+                            </div>
+                        ) : (<>
+                            {/* Handle bar */}
+                            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '0 auto 20px' }} />
+
+                            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 4px', letterSpacing: '-.3px' }}>Send Feedback</h2>
+                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Suggestions, bugs, or anything on your mind.</p>
+
+                            {/* Type pills */}
+                            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                                {(['suggestion', 'bug', 'other'] as const).map(t => (
+                                    <button key={t} onClick={() => setFbType(t)} style={{
+                                        padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                        background: fbType === t ? 'rgba(124,58,237,0.25)' : 'rgba(255,255,255,0.06)',
+                                        border: `1px solid ${fbType === t ? 'rgba(124,58,237,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                                        color: fbType === t ? '#c4b5fd' : 'rgba(255,255,255,0.5)',
+                                        textTransform: 'capitalize',
+                                    }}>{t}</button>
+                                ))}
+                            </div>
+
+                            {/* Title */}
+                            <input
+                                value={fbTitle} onChange={e => setFbTitle(e.target.value)}
+                                placeholder="Short title"
+                                style={{
+                                    width: '100%', padding: '11px 14px', borderRadius: 10, marginBottom: 10,
+                                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                                    color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                                }}
+                            />
+
+                            {/* Body */}
+                            <textarea
+                                value={fbBody} onChange={e => setFbBody(e.target.value)}
+                                placeholder="Tell us more..."
+                                rows={4}
+                                style={{
+                                    width: '100%', padding: '11px 14px', borderRadius: 10, marginBottom: 16,
+                                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                                    color: '#fff', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box',
+                                    fontFamily: 'inherit',
+                                }}
+                            />
+
+                            {/* Star rating */}
+                            <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+                                {[1,2,3,4,5].map(s => (
+                                    <button key={s} onClick={() => setFbRating(s === fbRating ? 0 : s)} style={{
+                                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                                        fontSize: 24, opacity: s <= fbRating ? 1 : 0.25, transition: 'opacity 0.15s',
+                                    }}>★</button>
+                                ))}
+                                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', alignSelf: 'center', marginLeft: 4 }}>
+                                    {fbRating > 0 ? ['','Poor','Fair','Good','Great','Excellent'][fbRating] : 'Optional rating'}
+                                </span>
+                            </div>
+
+                            {/* Submit */}
+                            <button
+                                onClick={handleFeedbackSubmit}
+                                disabled={fbSubmitting || !fbTitle.trim() || !fbBody.trim()}
+                                style={{
+                                    width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+                                    background: (fbTitle.trim() && fbBody.trim()) ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'rgba(255,255,255,0.08)',
+                                    color: '#fff', fontSize: 15, fontWeight: 600, cursor: (fbTitle.trim() && fbBody.trim()) ? 'pointer' : 'not-allowed',
+                                    opacity: fbSubmitting ? 0.7 : 1, transition: 'all 0.2s',
+                                }}
+                            >
+                                {fbSubmitting ? 'Sending…' : 'Submit'}
+                            </button>
+                        </>)}
+                    </div>
+                </div>
+            )}
 
             {/* Admin Popup */}
             {showAdminPanel && (
