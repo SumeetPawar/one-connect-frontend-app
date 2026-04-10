@@ -11,7 +11,7 @@ function useCount(target: number, delay = 300, dur = 900) {
   const [v, setV] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => {
-      const s = performance.now();
+      const s = performance.now();  
       const f = (n: number) => {
         const p = Math.min((n - s) / dur, 1);
         setV(Math.round((1 - Math.pow(1 - p, 3)) * target));
@@ -233,8 +233,8 @@ type RichSegment = { text: string; color: string | null; style: string };
 type HomeData = {
   steps: { yesterday: number; today: number; daily_target: number; pct: number; step_streak: number };
   challenge: { id: string; rank: number; rank_change: number } | null;
-  habits: { challenge_id: number; day_number: number; total_days: number; completed_count: number; total_count: number; all_done: boolean } | null;
-  habit_streak: number;
+  habits: { challenge_id: number; day_number: number; total_days: number; completed_count: number; total_count: number; all_done: boolean; yesterday_completed: number; yesterday_all_done: boolean } | null;
+  habit_streak: { current: number; effective: number; longest: number; perfect_days: number };
   ai_insight: {
     badge: string;
     // new rich-text format
@@ -292,13 +292,142 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
 
   // Hide card entirely when there's no AI insight and no meaningful activity data yet
   const hasInsight = !!insight;
-  const hasMeaningfulData = data.steps.yesterday > 0 || data.habit_streak > 0 || (habits && habits.completed_count > 0);
-  if (!hasInsight && !hasMeaningfulData) return null;
+  const streak = data.habit_streak;
+  // Only yesterday's actual activity counts — streak/today's habits don't make yesterday "meaningful"
+  const hasMeaningfulData = data.steps.yesterday > 0 || (habits?.yesterday_completed ?? 0) > 0;
 
-  const moodTag = toStr(insight?.badge) || `Your best ${week}`;
-  const fallbackHeadline = `Kept ${habits ? `${habits.completed_count} of ${habits.total_count}` : "—"} habits & walked ${data.steps.yesterday.toLocaleString()} steps yesterday.`;
-  const fallbackDetail   = `${data.habit_streak} day habit streak — keep showing up every day.`;
+  const moodTag = toStr(insight?.badge) || `Yesterday's recap`;
 
+  // ── Fallback card — no AI insight ──────────────────────────────────────────
+  if (!hasInsight) {
+    const ystdSteps = data.steps.yesterday;
+    const ystdHabits = habits?.yesterday_completed ?? habits?.completed_count ?? 0;
+    const ystdTotal  = habits?.total_count ?? 0;
+    const allDoneYstd = habits?.yesterday_all_done ?? false;
+    const hitSteps = ystdSteps >= data.steps.daily_target;
+
+    // Build prose headline from real data — same style as AI output
+    const headlineParts: string[] = [];
+    if (ystdSteps > 0) headlineParts.push(`walked ${ystdSteps.toLocaleString()} steps`);
+    if (habits && ystdTotal > 0 && ystdHabits > 0) {
+      headlineParts.push(allDoneYstd ? `completed all ${ystdTotal} habits` : `completed ${ystdHabits} of ${ystdTotal} habits`);
+    }
+    // ── Coach messages — random on every refresh, motivating not guilt-tripping
+    const coachMessages = [
+      {
+        headline: "Today is a perfect day to start fresh.",
+        detail: "Your habits are waiting. All it takes is showing up.",
+        hook: "Small steps build big streaks.",
+      },
+      {
+        headline: "Every great streak started with one day.",
+        detail: "Get back into motion quickly — that's the whole game.",
+        hook: "Begin. The rest follows.",
+      },
+      {
+        headline: "You're one good day away from momentum.",
+        detail: "Check off a habit and you'll feel that spark again.",
+        hook: "Done beats perfect, every time.",
+      },
+      {
+        headline: "The best time to start is right now.",
+        detail: "Yesterday was quiet. Today hasn't happened yet.",
+        hook: "One win leads to another.",
+      },
+      {
+        headline: "Your goals are still right where you left them.",
+        detail: "Nothing changed overnight — except now it's a new day.",
+        hook: "Consistency is your superpower.",
+      },
+      {
+        headline: "Champions have quiet days too.",
+        detail: "What matters is how fast you get back.",
+        hook: "Your streak is waiting.",
+      },
+      {
+        headline: "A clean slate is actually a gift.",
+        detail: "Today is day one of something great.",
+        hook: "Make it count.",
+      },
+    ];
+    const coachMsg = coachMessages[Math.floor(Math.random() * coachMessages.length)];
+
+    const headline = hasMeaningfulData
+      ? (headlineParts.length > 0
+          ? headlineParts.map((p, i) => i === 0 ? p.charAt(0).toUpperCase() + p.slice(1) : p).join(" and ") + " yesterday."
+          : "You showed up yesterday.")
+      : coachMsg.headline;
+
+    // Build detail line
+    let detail = coachMsg.detail;
+    if (hasMeaningfulData) {
+      const streakPart = streak.effective > 0
+        ? `${streak.effective} day streak${streak.effective > streak.current ? " 🛡️" : ""}`
+        : null;
+      const stepsPart = ystdSteps > 0 && hitSteps ? "steps goal hit" : ystdSteps > 0 ? `${(data.steps.daily_target - ystdSteps).toLocaleString()} steps short of goal` : null;
+      const parts = [streakPart, stepsPart].filter(Boolean);
+      detail = parts.length > 0 ? `${parts.join(" · ")} — keep the momentum going.` : "Keep logging to build your streak.";
+    }
+
+    // Hook line
+    const hook = !hasMeaningfulData
+      ? coachMsg.hook
+      : streak.effective > 0
+        ? (streak.effective >= streak.longest ? "Personal best — don't break it." : `${streak.longest - streak.effective} day${streak.longest - streak.effective === 1 ? "" : "s"} from your record.`)
+        : null;
+
+    // Badge color: orange-ish for coach mode, purple for recap
+    const isCoachMode = !hasMeaningfulData;
+
+    return (
+      <div style={{
+        ...fd(40), margin: "14px 16px 8px",
+        background: T.gradSoft,
+        border: `.5px solid ${isCoachMode ? "rgba(251,146,60,.18)" : "rgba(155,127,232,.18)"}`, borderRadius: 22,
+        boxShadow: "0 4px 28px rgba(0,0,0,.55),0 1px 0 rgba(242,238,255,.04) inset",
+        overflow: "hidden",
+      }}>
+        <div style={{ padding: "18px 20px 16px" }}>
+          {/* Badge */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            background: isCoachMode ? "rgba(251,146,60,.10)" : "rgba(155,127,232,.10)",
+            border: `.5px solid ${isCoachMode ? "rgba(251,146,60,.28)" : "rgba(155,127,232,.22)"}`,
+            borderRadius: 99, padding: "3px 10px", marginBottom: 12,
+          }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: isCoachMode ? T.orange : T.purple }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: isCoachMode ? T.orange : T.purpleL, letterSpacing: ".08em", textTransform: "uppercase" as const }}>
+              {isCoachMode ? "Your Move" : "Yesterday"}
+            </span>
+          </div>
+
+          {/* Headline */}
+          <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.4, letterSpacing: "-.3px", margin: 0, color: T.t1 }}>
+            {headline}
+          </p>
+
+          {/* Detail */}
+          <p style={{
+            fontSize: 13, fontWeight: 400, color: T.t3, lineHeight: 1.6,
+            marginTop: 10, paddingTop: 10,
+            borderTop: `.5px solid ${isCoachMode ? "rgba(251,146,60,.12)" : "rgba(155,127,232,.12)"}`,
+            marginBottom: 0,
+          }}>
+            {detail}
+          </p>
+
+          {/* Hook */}
+          {hook && (
+            <p style={{ fontSize: 11, fontWeight: 500, color: isCoachMode ? T.orange : T.t4, marginTop: 8, lineHeight: 1.5, marginBottom: 0 }}>
+              {hook}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── AI insight card ─────────────────────────────────────────────────────────
   return (
     <div style={{
       ...fd(40), margin: "14px 16px 8px",
@@ -319,7 +448,7 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
         </div>
         {/* Headline — rich segments or legacy string */}
         <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.4, letterSpacing: "-.3px", margin: 0, color: T.t1 }}>
-          <RichText segs={toSegs(insight?.segments) ?? toSegs(insight?.headline)} fallback={fallbackHeadline} base={T.t1} />
+          <RichText segs={toSegs(insight?.segments) ?? toSegs(insight?.headline)} fallback={`Kept ${habits ? `${habits.completed_count} of ${habits.total_count}` : "—"} habits & walked ${data.steps.yesterday.toLocaleString()} steps yesterday.`} base={T.t1} />
         </p>
         {/* Detail */}
         <p style={{
@@ -327,7 +456,7 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
           marginTop: 10, paddingTop: 10,
           borderTop: ".5px solid rgba(155,127,232,.12)",
         }}>
-          <RichText segs={toSegs(insight?.detail)} fallback={fallbackDetail} base={T.t3} />
+          <RichText segs={toSegs(insight?.detail)} fallback={`${streak.effective} day habit streak — keep showing up every day.`} base={T.t3} />
         </p>
         {/* Hook line */}
         {insight?.hook && (
@@ -588,7 +717,7 @@ function HabitsCard({ data, fd, onNavigate }: { data: HomeData; fd: (d: number) 
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px 14px" }}>
         <Ic.Flame c={T.orange} s={13} />
         <span style={{ fontSize: 13, fontWeight: 600, color: T.t2 }}>
-          Showing up for <span style={{ color: T.orange, fontWeight: 700 }}>{habit_streak} days</span> in a row
+          Showing up for <span style={{ color: T.orange, fontWeight: 700 }}>{habit_streak.effective} days</span>{habit_streak.effective > habit_streak.current ? " 🛡️" : ""} in a row
         </span>
         <button
           onClick={onNavigate}
@@ -657,7 +786,7 @@ export default function HomePage() {
             steps: { yesterday: 0, today: 0, daily_target: 8000, pct: 0, step_streak: 0 },
             challenge: null,
             habits: null,
-            habit_streak: 0,
+            habit_streak: { current: 0, effective: 0, longest: 0, perfect_days: 0 },
             ai_insight: null,
             user: { name: me.name, profile_pic_url: null },
           };

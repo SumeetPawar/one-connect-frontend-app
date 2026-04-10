@@ -503,7 +503,7 @@ function StreakBadge({ streak, shields, perfectStreak, bestStreak, habitCount, o
                     </div>
                     <div>
                       <p style={{ fontSize:12,fontWeight:600,color:T1,lineHeight:1.2,marginBottom:2 }}>Earn a shield</p>
-                      <p style={{ fontSize:11,color:T3,lineHeight:1.4 }}>Do at least {minHabitsForShield} of {habitCount} habits every day for 4 days straight</p>
+                      <p style={{ fontSize:11,color:T3,lineHeight:1.4 }}>Do at least {minHabitsForShield} of {habitCount} habits every day for 4 days straight. Use it before earning another.</p>
                     </div>
                   </div>
                   <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
@@ -875,7 +875,6 @@ export default function HabitTree() {
   const meta      = STAGE_META[stage];
   const dayDone      = (d: number) => (habits as typeof DEFAULT_HABITS).filter(h=>days[d]&&days[d][h.id]).length;
   const dayAny       = (d: number) => dayDone(d) > 0;  // any habit logged = streak counts
-  const todayN       = dayDone(selDay);
   // Streak: consecutive days where at least 1 habit was logged (fallback if API not yet loaded)
   const streak       = apiStreak       ?? (()=>{ let s=0; for(let i=selDay;i>=1;i--){ if(dayAny(i))s++; else break; } return s; })();
   // Perfect streak: perfect days from API or computed locally
@@ -888,18 +887,16 @@ export default function HabitTree() {
   const STAGE_UPPER = [0.05, 0.20, 0.40, 0.62, 0.85, 1.0];
   const stageRange  = STAGE_UPPER[stage] - STAGE_LOWER[stage];
   const stagePct    = stage < 5 ? Math.min(Math.max((pct - STAGE_LOWER[stage]) / stageRange, 0), 1) : 1;
-  // Missed: no habits logged AND no shield available
+  // currentDay — always anchored to today regardless of which day is selected
   const currentDay  = startedAt
     ? Math.min(TOTAL_DAYS, Math.max(1, Math.floor((Date.now() - Date.parse(startedAt)) / 86400000) + 1))
     : selDay;
-  const allDone     = selDay===currentDay && todayN===(habits as typeof DEFAULT_HABITS).length;
-  const isToday     = selDay === currentDay;
-  // Past day with nothing logged = missed
-  const rawMissed   = !isToday && dayDone(selDay) === 0;
-  // On today's view: show dried effect only if yesterday was missed and nothing is logged today
-  // As soon as any habit is logged today, tree becomes normal
-  const yesterdayMissed = isToday && selDay > 1 && dayDone(selDay - 1) === 0;
-  const isMissed    = (rawMissed || (yesterdayMissed && todayN === 0)) && shields === 0;
+  // Tree status always reflects TODAY, not the selected day
+  const todayN      = dayDone(currentDay);
+  const allDone     = todayN === (habits as typeof DEFAULT_HABITS).length;
+  // Missed: show dried tree only when yesterday was missed AND nothing logged today
+  const yesterdayMissed = currentDay > 1 && dayDone(currentDay - 1) === 0;
+  const isMissed    = (yesterdayMissed && todayN === 0) && shields === 0;
 
   const toggle = (hid: string) => {
     const cur    = stage;
@@ -960,7 +957,7 @@ export default function HabitTree() {
         setTimeout(()=>setDayReward(selDay), 300);
         const last4 = [selDay-3,selDay-2,selDay-1,selDay];
         const perfect4 = selDay>=4 && last4.every(d=>(habits as typeof DEFAULT_HABITS).every(h=>next[d]&&next[d][h.id]));
-        if(perfect4){ haptic.medium(); setShields(s=>Math.min(s+1,2)); }
+        if(perfect4){ haptic.medium(); setShields(s=>Math.min(s+1,1)); }
       }
       return next;
     });
@@ -1008,7 +1005,10 @@ export default function HabitTree() {
 
 
       {/* Bottom nav */}
-      <NavBar activeTab={activeTab as any} accent={accent} onTabChange={(tab) => setActiveTab(tab)} />
+      <NavBar activeTab={activeTab as any} accent={accent} onTabChange={(tab) => {
+        if (tab === "leaderboard") { router.push("/habits/tree/leaderboard"); return; }
+        setActiveTab(tab);
+      }} />
 
       {/* Forest History overlay */}
       <AnimatePresence>
