@@ -11,7 +11,7 @@ function useCount(target: number, delay = 300, dur = 900) {
   const [v, setV] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => {
-      const s = performance.now();  
+      const s = performance.now();
       const f = (n: number) => {
         const p = Math.min((n - s) / dur, 1);
         setV(Math.round((1 - Math.pow(1 - p, 3)) * target));
@@ -42,18 +42,18 @@ function usePct(target: number, delay = 400, dur = 1100) {
 
 // ─── theme ────────────────────────────────────────────────────────────────────
 const T = {
-  bg:       "#08080F",
-  card:     "#100E1A",
-  grad:     "linear-gradient(135deg,#A78BF5 0%,#7C5CE8 100%)",
+  bg: "#08080F",
+  card: "#100E1A",
+  grad: "linear-gradient(135deg,#A78BF5 0%,#7C5CE8 100%)",
   gradSoft: "linear-gradient(180deg,rgba(155,127,232,.22) 0%,rgba(124,92,232,.04) 100%)",
   gradHero: "linear-gradient(180deg,rgba(167,139,245,.28) 0%,rgba(124,92,232,.08) 60%,rgba(91,65,200,.02) 100%)",
-  purple:   "#9B7FE8",
-  purpleL:  "#C4B0F8",
-  violet:   "#6D4FCC",
-  green:    "#2DD4BF",
-  orange:   "#F4A261",
-  rose:     "#E87A8A",
-  teal:     "#38BDF8",
+  purple: "#9B7FE8",
+  purpleL: "#C4B0F8",
+  violet: "#6D4FCC",
+  green: "#2DD4BF",
+  orange: "#F4A261",
+  rose: "#E87A8A",
+  teal: "#38BDF8",
   t1: "#F2EEFF",
   t2: "rgba(242,238,255,0.65)",
   t3: "rgba(242,238,255,0.38)",
@@ -126,87 +126,87 @@ function Arc({ pct, size, sw, color, bg }: { pct: number; size: number; sw: numb
 function TreeSvg({ stage, size = 90 }: { stage: 0 | 1 | 2 | 3; size?: number }) {
   if (stage === 0) return (
     <svg width={size} height={size} viewBox="0 0 120 120">
-      <ellipse cx="60" cy="108" rx="22" ry="6" fill="rgba(139,106,69,.25)"/>
-      <path d="M58 108 Q57 94 59 84 Q60 78 61 84 Q63 94 62 108Z" fill="#8B6A45"/>
-      <path d="M59 88 Q50 80 46 72 Q52 76 59 82Z" fill="#2A9E6E" opacity=".85"/>
-      <path d="M61 85 Q70 77 74 69 Q68 74 61 80Z" fill="#2A9E6E" opacity=".85"/>
-      <circle cx="60" cy="78" r="5" fill="#4ADE9F"/>
-      <circle cx="60" cy="75" r="3" fill="#5EE8A8"/>
-      <circle cx="60" cy="76" r="12" fill="none" stroke="rgba(74,222,159,.22)" strokeWidth="2"/>
-      <circle cx="60" cy="76" r="18" fill="none" stroke="rgba(74,222,159,.12)" strokeWidth="1.5"/>
-      <circle cx="60" cy="76" r="25" fill="none" stroke="rgba(74,222,159,.06)" strokeWidth="1"/>
-      <circle cx="42" cy="68" r="1.5" fill="rgba(94,232,168,.70)"/>
-      <circle cx="78" cy="64" r="1.5" fill="rgba(94,232,168,.70)"/>
+      <ellipse cx="60" cy="108" rx="22" ry="6" fill="rgba(139,106,69,.25)" />
+      <path d="M58 108 Q57 94 59 84 Q60 78 61 84 Q63 94 62 108Z" fill="#8B6A45" />
+      <path d="M59 88 Q50 80 46 72 Q52 76 59 82Z" fill="#2A9E6E" opacity=".85" />
+      <path d="M61 85 Q70 77 74 69 Q68 74 61 80Z" fill="#2A9E6E" opacity=".85" />
+      <circle cx="60" cy="78" r="5" fill="#4ADE9F" />
+      <circle cx="60" cy="75" r="3" fill="#5EE8A8" />
+      <circle cx="60" cy="76" r="12" fill="none" stroke="rgba(74,222,159,.22)" strokeWidth="2" />
+      <circle cx="60" cy="76" r="18" fill="none" stroke="rgba(74,222,159,.12)" strokeWidth="1.5" />
+      <circle cx="60" cy="76" r="25" fill="none" stroke="rgba(74,222,159,.06)" strokeWidth="1" />
+      <circle cx="42" cy="68" r="1.5" fill="rgba(94,232,168,.70)" />
+      <circle cx="78" cy="64" r="1.5" fill="rgba(94,232,168,.70)" />
     </svg>
   );
   if (stage === 1) return (
     <svg width={size} height={size} viewBox="0 0 120 120">
-      <ellipse cx="60" cy="108" rx="24" ry="6" fill="rgba(139,106,69,.22)"/>
-      <path d="M56 108 Q54 90 57 76 Q59 68 61 76 Q64 90 64 108Z" fill="#8B6A45" opacity=".9"/>
-      <path d="M56 106 Q48 108 44 112" stroke="#6B4E2E" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".5"/>
-      <path d="M64 106 Q72 108 76 112" stroke="#6B4E2E" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".5"/>
-      <ellipse cx="60" cy="62" rx="26" ry="20" fill="rgba(30,100,60,.35)"/>
-      <ellipse cx="60" cy="58" rx="22" ry="18" fill="rgba(42,158,110,.55)"/>
-      <path d="M38 64 Q30 54 34 44 Q40 56 46 62Z" fill="#2A9E6E" opacity=".80"/>
-      <path d="M82 60 Q90 50 86 40 Q80 52 74 58Z" fill="#2A9E6E" opacity=".80"/>
-      <ellipse cx="60" cy="52" rx="18" ry="20" fill="#2A9E6E"/>
-      <ellipse cx="60" cy="46" rx="14" ry="16" fill="#34C47A"/>
-      <ellipse cx="60" cy="40" rx="10" ry="12" fill="#4ADE9F"/>
-      <ellipse cx="56" cy="36" rx="5" ry="4" fill="rgba(94,232,168,.55)"/>
+      <ellipse cx="60" cy="108" rx="24" ry="6" fill="rgba(139,106,69,.22)" />
+      <path d="M56 108 Q54 90 57 76 Q59 68 61 76 Q64 90 64 108Z" fill="#8B6A45" opacity=".9" />
+      <path d="M56 106 Q48 108 44 112" stroke="#6B4E2E" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".5" />
+      <path d="M64 106 Q72 108 76 112" stroke="#6B4E2E" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".5" />
+      <ellipse cx="60" cy="62" rx="26" ry="20" fill="rgba(30,100,60,.35)" />
+      <ellipse cx="60" cy="58" rx="22" ry="18" fill="rgba(42,158,110,.55)" />
+      <path d="M38 64 Q30 54 34 44 Q40 56 46 62Z" fill="#2A9E6E" opacity=".80" />
+      <path d="M82 60 Q90 50 86 40 Q80 52 74 58Z" fill="#2A9E6E" opacity=".80" />
+      <ellipse cx="60" cy="52" rx="18" ry="20" fill="#2A9E6E" />
+      <ellipse cx="60" cy="46" rx="14" ry="16" fill="#34C47A" />
+      <ellipse cx="60" cy="40" rx="10" ry="12" fill="#4ADE9F" />
+      <ellipse cx="56" cy="36" rx="5" ry="4" fill="rgba(94,232,168,.55)" />
     </svg>
   );
   if (stage === 2) return (
     <svg width={size} height={size} viewBox="0 0 120 120">
-      <ellipse cx="60" cy="110" rx="28" ry="7" fill="rgba(139,106,69,.20)"/>
-      <path d="M54 110 Q52 88 55 72 Q58 62 62 72 Q65 88 66 110Z" fill="#7A5C3A"/>
-      <path d="M57 100 Q55 88 57 78" stroke="rgba(0,0,0,.15)" strokeWidth="1" fill="none" strokeLinecap="round"/>
-      <path d="M56 82 Q44 76 36 66" stroke="#7A5C3A" strokeWidth="6" strokeLinecap="round" fill="none"/>
-      <path d="M64 78 Q76 72 84 62" stroke="#7A5C3A" strokeWidth="6" strokeLinecap="round" fill="none"/>
-      <ellipse cx="34" cy="58" rx="18" ry="14" fill="rgba(30,100,60,.40)"/>
-      <ellipse cx="34" cy="55" rx="16" ry="12" fill="#2A9E6E"/>
-      <ellipse cx="34" cy="52" rx="12" ry="9" fill="#3ABD7E"/>
-      <ellipse cx="86" cy="54" rx="18" ry="14" fill="rgba(30,100,60,.40)"/>
-      <ellipse cx="86" cy="51" rx="16" ry="12" fill="#2A9E6E"/>
-      <ellipse cx="86" cy="48" rx="12" ry="9" fill="#3ABD7E"/>
-      <ellipse cx="60" cy="50" rx="24" ry="26" fill="rgba(30,100,60,.35)"/>
-      <ellipse cx="60" cy="46" rx="21" ry="23" fill="#2A9E6E"/>
-      <ellipse cx="60" cy="40" rx="17" ry="19" fill="#34C47A"/>
-      <ellipse cx="60" cy="34" rx="13" ry="14" fill="#4ADE9F"/>
-      <ellipse cx="54" cy="30" rx="6" ry="5" fill="rgba(94,232,168,.50)"/>
+      <ellipse cx="60" cy="110" rx="28" ry="7" fill="rgba(139,106,69,.20)" />
+      <path d="M54 110 Q52 88 55 72 Q58 62 62 72 Q65 88 66 110Z" fill="#7A5C3A" />
+      <path d="M57 100 Q55 88 57 78" stroke="rgba(0,0,0,.15)" strokeWidth="1" fill="none" strokeLinecap="round" />
+      <path d="M56 82 Q44 76 36 66" stroke="#7A5C3A" strokeWidth="6" strokeLinecap="round" fill="none" />
+      <path d="M64 78 Q76 72 84 62" stroke="#7A5C3A" strokeWidth="6" strokeLinecap="round" fill="none" />
+      <ellipse cx="34" cy="58" rx="18" ry="14" fill="rgba(30,100,60,.40)" />
+      <ellipse cx="34" cy="55" rx="16" ry="12" fill="#2A9E6E" />
+      <ellipse cx="34" cy="52" rx="12" ry="9" fill="#3ABD7E" />
+      <ellipse cx="86" cy="54" rx="18" ry="14" fill="rgba(30,100,60,.40)" />
+      <ellipse cx="86" cy="51" rx="16" ry="12" fill="#2A9E6E" />
+      <ellipse cx="86" cy="48" rx="12" ry="9" fill="#3ABD7E" />
+      <ellipse cx="60" cy="50" rx="24" ry="26" fill="rgba(30,100,60,.35)" />
+      <ellipse cx="60" cy="46" rx="21" ry="23" fill="#2A9E6E" />
+      <ellipse cx="60" cy="40" rx="17" ry="19" fill="#34C47A" />
+      <ellipse cx="60" cy="34" rx="13" ry="14" fill="#4ADE9F" />
+      <ellipse cx="54" cy="30" rx="6" ry="5" fill="rgba(94,232,168,.50)" />
     </svg>
   );
   return (
     <svg width={size} height={size} viewBox="0 0 120 120">
-      <ellipse cx="60" cy="112" rx="32" ry="7" fill="rgba(139,106,69,.18)"/>
-      <path d="M54 110 Q42 112 36 118" stroke="#6B4E2E" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55"/>
-      <path d="M66 110 Q78 112 84 118" stroke="#6B4E2E" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55"/>
-      <path d="M52 112 Q50 88 53 70 Q56 58 60 58 Q64 58 67 70 Q70 88 68 112Z" fill="#6B4E2E"/>
-      <path d="M53 88 Q38 82 28 70" stroke="#6B4E2E" strokeWidth="8" strokeLinecap="round" fill="none"/>
-      <path d="M67 84 Q82 78 92 66" stroke="#6B4E2E" strokeWidth="8" strokeLinecap="round" fill="none"/>
-      <path d="M54 76 Q42 70 36 60" stroke="#7A5C3A" strokeWidth="5" strokeLinecap="round" fill="none"/>
-      <path d="M66 72 Q78 66 84 56" stroke="#7A5C3A" strokeWidth="5" strokeLinecap="round" fill="none"/>
-      <ellipse cx="24" cy="62" rx="16" ry="12" fill="rgba(30,100,60,.45)"/>
-      <ellipse cx="24" cy="58" rx="14" ry="11" fill="#1F7A4A"/>
-      <ellipse cx="24" cy="54" rx="11" ry="9" fill="#2A9E6E"/>
-      <ellipse cx="96" cy="58" rx="16" ry="12" fill="rgba(30,100,60,.45)"/>
-      <ellipse cx="96" cy="54" rx="14" ry="11" fill="#1F7A4A"/>
-      <ellipse cx="96" cy="50" rx="11" ry="9" fill="#2A9E6E"/>
-      <ellipse cx="38" cy="50" rx="18" ry="14" fill="rgba(30,100,60,.40)"/>
-      <ellipse cx="38" cy="46" rx="16" ry="12" fill="#2A9E6E"/>
-      <ellipse cx="38" cy="42" rx="12" ry="9" fill="#34C47A"/>
-      <ellipse cx="82" cy="46" rx="18" ry="14" fill="rgba(30,100,60,.40)"/>
-      <ellipse cx="82" cy="42" rx="16" ry="12" fill="#2A9E6E"/>
-      <ellipse cx="82" cy="38" rx="12" ry="9" fill="#34C47A"/>
-      <ellipse cx="60" cy="44" rx="28" ry="30" fill="rgba(30,100,60,.30)"/>
-      <ellipse cx="60" cy="40" rx="25" ry="27" fill="#1F7A4A"/>
-      <ellipse cx="60" cy="35" rx="22" ry="24" fill="#2A9E6E"/>
-      <ellipse cx="60" cy="29" rx="18" ry="20" fill="#34C47A"/>
-      <ellipse cx="60" cy="23" rx="14" ry="16" fill="#4ADE9F"/>
-      <ellipse cx="60" cy="17" rx="10" ry="11" fill="#5EE8A8"/>
-      <circle cx="60" cy="13" r="6" fill="#7EFFC0"/>
-      <circle cx="60" cy="12" r="3" fill="rgba(180,255,220,.90)"/>
-      <ellipse cx="48" cy="24" rx="7" ry="5" fill="rgba(126,255,192,.30)"/>
-      <ellipse cx="72" cy="20" rx="7" ry="5" fill="rgba(126,255,192,.30)"/>
+      <ellipse cx="60" cy="112" rx="32" ry="7" fill="rgba(139,106,69,.18)" />
+      <path d="M54 110 Q42 112 36 118" stroke="#6B4E2E" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55" />
+      <path d="M66 110 Q78 112 84 118" stroke="#6B4E2E" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55" />
+      <path d="M52 112 Q50 88 53 70 Q56 58 60 58 Q64 58 67 70 Q70 88 68 112Z" fill="#6B4E2E" />
+      <path d="M53 88 Q38 82 28 70" stroke="#6B4E2E" strokeWidth="8" strokeLinecap="round" fill="none" />
+      <path d="M67 84 Q82 78 92 66" stroke="#6B4E2E" strokeWidth="8" strokeLinecap="round" fill="none" />
+      <path d="M54 76 Q42 70 36 60" stroke="#7A5C3A" strokeWidth="5" strokeLinecap="round" fill="none" />
+      <path d="M66 72 Q78 66 84 56" stroke="#7A5C3A" strokeWidth="5" strokeLinecap="round" fill="none" />
+      <ellipse cx="24" cy="62" rx="16" ry="12" fill="rgba(30,100,60,.45)" />
+      <ellipse cx="24" cy="58" rx="14" ry="11" fill="#1F7A4A" />
+      <ellipse cx="24" cy="54" rx="11" ry="9" fill="#2A9E6E" />
+      <ellipse cx="96" cy="58" rx="16" ry="12" fill="rgba(30,100,60,.45)" />
+      <ellipse cx="96" cy="54" rx="14" ry="11" fill="#1F7A4A" />
+      <ellipse cx="96" cy="50" rx="11" ry="9" fill="#2A9E6E" />
+      <ellipse cx="38" cy="50" rx="18" ry="14" fill="rgba(30,100,60,.40)" />
+      <ellipse cx="38" cy="46" rx="16" ry="12" fill="#2A9E6E" />
+      <ellipse cx="38" cy="42" rx="12" ry="9" fill="#34C47A" />
+      <ellipse cx="82" cy="46" rx="18" ry="14" fill="rgba(30,100,60,.40)" />
+      <ellipse cx="82" cy="42" rx="16" ry="12" fill="#2A9E6E" />
+      <ellipse cx="82" cy="38" rx="12" ry="9" fill="#34C47A" />
+      <ellipse cx="60" cy="44" rx="28" ry="30" fill="rgba(30,100,60,.30)" />
+      <ellipse cx="60" cy="40" rx="25" ry="27" fill="#1F7A4A" />
+      <ellipse cx="60" cy="35" rx="22" ry="24" fill="#2A9E6E" />
+      <ellipse cx="60" cy="29" rx="18" ry="20" fill="#34C47A" />
+      <ellipse cx="60" cy="23" rx="14" ry="16" fill="#4ADE9F" />
+      <ellipse cx="60" cy="17" rx="10" ry="11" fill="#5EE8A8" />
+      <circle cx="60" cy="13" r="6" fill="#7EFFC0" />
+      <circle cx="60" cy="12" r="3" fill="rgba(180,255,220,.90)" />
+      <ellipse cx="48" cy="24" rx="7" ry="5" fill="rgba(126,255,192,.30)" />
+      <ellipse cx="72" cy="20" rx="7" ry="5" fill="rgba(126,255,192,.30)" />
     </svg>
   );
 }
@@ -302,7 +302,7 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
   if (!hasInsight) {
     const ystdSteps = data.steps.yesterday;
     const ystdHabits = habits?.yesterday_completed ?? habits?.completed_count ?? 0;
-    const ystdTotal  = habits?.total_count ?? 0;
+    const ystdTotal = habits?.total_count ?? 0;
     const allDoneYstd = habits?.yesterday_all_done ?? false;
     const hitSteps = ystdSteps >= data.steps.daily_target;
 
@@ -354,8 +354,8 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
 
     const headline = hasMeaningfulData
       ? (headlineParts.length > 0
-          ? headlineParts.map((p, i) => i === 0 ? p.charAt(0).toUpperCase() + p.slice(1) : p).join(" and ") + " yesterday."
-          : "You showed up yesterday.")
+        ? headlineParts.map((p, i) => i === 0 ? p.charAt(0).toUpperCase() + p.slice(1) : p).join(" and ") + " yesterday."
+        : "You showed up yesterday.")
       : coachMsg.headline;
 
     // Build detail line
@@ -418,7 +418,7 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
 
           {/* Hook */}
           {hook && (
-            <p style={{ fontSize: 11, fontWeight: 500, color: isCoachMode ? T.orange : T.t4, marginTop: 8, lineHeight: 1.5, marginBottom: 0 }}>
+            <p style={{ fontSize: 11, fontWeight: 500, color: isCoachMode ? T.orange : T.teal, marginTop: 8, lineHeight: 1.5, marginBottom: 0 }}>
               {hook}
             </p>
           )}
@@ -460,7 +460,7 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
         </p>
         {/* Hook line */}
         {insight?.hook && (
-          <p style={{ fontSize: 11, fontWeight: 500, color: T.t4, marginTop: 8, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 11, fontWeight: 500, color: T.purpleL, marginTop: 8, lineHeight: 1.5 }}>
             {toStr(insight.hook)}
           </p>
         )}
@@ -617,9 +617,9 @@ function HabitsCard({ data, fd, onNavigate }: { data: HomeData; fd: (d: number) 
         <p style={{ fontSize: 13, fontWeight: 400, color: T.t3, lineHeight: 1.6, marginBottom: 16 }}>Pick your daily habits. Every habit you log grows your tree — one branch at a time.</p>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 4, padding: "8px 0 4px", background: "rgba(0,0,0,.12)", borderRadius: 16 }}>
           {([{
-            s: 0 as const, size: 34, label: "Day 1",  bright: true,
+            s: 0 as const, size: 34, label: "Day 1", bright: true,
           }, {
-            s: 1 as const, size: 50, label: "Day 7",  bright: false,
+            s: 1 as const, size: 50, label: "Day 7", bright: false,
           }, {
             s: 2 as const, size: 64, label: "Day 14", bright: false,
           }, {
@@ -895,102 +895,102 @@ export default function HomePage() {
 
     return (
       <div style={{ minHeight: "100vh", width: "100%", backgroundColor: T.bg }}>
-      <div style={{ maxWidth: 430, margin: "0 auto", paddingBottom: 56 }}>
-        <style>{`
+        <div style={{ maxWidth: 430, margin: "0 auto", paddingBottom: 56 }}>
+          <style>{`
           @keyframes skshimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
           @keyframes skfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
         `}</style>
 
-        {/* ── header ── */}
-        <div style={{ padding: "20px 20px 19px", borderBottom: ".5px solid rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <SR w={52} h={18} r={6} delay={0} />
-          <div style={{ display: "flex", gap: 8 }}>
-            <SR w={36} h={36} r={11} delay={40} />
-            <SR w={36} h={36} r={11} delay={60} />
+          {/* ── header ── */}
+          <div style={{ padding: "20px 20px 19px", borderBottom: ".5px solid rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <SR w={52} h={18} r={6} delay={0} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <SR w={36} h={36} r={11} delay={40} />
+              <SR w={36} h={36} r={11} delay={60} />
+            </div>
           </div>
-        </div>
 
-        {/* ── greeting ── */}
-        <div style={{ padding: "18px 20px 6px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <SR w={80} h={10} r={5} delay={60} />
-          <SR w={160} h={26} r={8} delay={80} />
-        </div>
+          {/* ── greeting ── */}
+          <div style={{ padding: "18px 20px 6px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <SR w={80} h={10} r={5} delay={60} />
+            <SR w={160} h={26} r={8} delay={80} />
+          </div>
 
-        <div style={{ padding: "8px 0 0", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ padding: "8px 0 0", display: "flex", flexDirection: "column", gap: 8 }}>
 
-          {/* ── insight card ── */}
-          <Shell mt={6} delay={60}>
-            <div style={{ padding: "18px 20px 16px" }}>
-              {/* mood tag pill */}
-              <SR w={96} h={22} r={99} delay={80} />
-              {/* headline – 2 lines */}
-              <SR w="76%" h={16} r={6} mt={14} delay={100} />
-              <SR w="52%" h={16} r={6} mt={7} delay={110} />
-              {/* divider */}
-              <div style={{ height: .5, background: "rgba(155,127,232,.10)", margin: "12px 0" }} />
-              {/* detail – 2 lines */}
-              <SR w="92%" h={13} r={5} delay={120} />
-              <SR w="64%" h={13} r={5} mt={6} delay={130} />
-            </div>
-          </Shell>
-
-          {/* ── habits card ── */}
-          <Shell delay={140}>
-            <div style={{ padding: "16px 18px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-              <div style={{ flex: 1, paddingRight: 14 }}>
-                {/* label pill */}
-                <SR w={114} h={22} r={99} delay={160} />
-                {/* day number */}
-                <SR w={90} h={30} r={7} mt={12} delay={170} />
-                {/* progress bar */}
-                <SR w={110} h={4} r={99} mt={12} delay={180} />
-                {/* status line */}
-                <SR w={140} h={13} r={5} mt={10} delay={190} />
-              </div>
-              {/* tree silhouette */}
-              <SR w={72} h={72} r={16} delay={200} />
-            </div>
-            {/* habit dots strip */}
-            <div style={{ height: .5, background: "rgba(255,255,255,.06)", margin: "0 18px" }} />
-            <div style={{ padding: "11px 18px 13px", display: "flex", gap: 4 }}>
-              {[1,2,3,4].map(i => <SR key={i} w="25%" h={4} r={99} delay={210 + i * 10} />)}
-            </div>
-          </Shell>
-
-          {/* ── steps card ── */}
-          <Shell delay={220}>
-            <div style={{ padding: "20px 18px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
-              {/* icon circle */}
-              <SR w={50} h={50} r={15} delay={240} />
-              {/* title */}
-              <SR w="55%" h={17} r={6} mt={14} delay={250} />
-              {/* subtitle */}
-              <SR w="72%" h={13} r={5} mt={8} delay={260} />
-              {/* button */}
-              <SR w="100%" h={48} r={14} mt={20} delay={270} />
-            </div>
-          </Shell>
-
-          {/* ── wellbeing buttons ── */}
-          {[280, 320].map((delay, i) => (
-            <Shell key={i} delay={delay}>
-              <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
-                {/* icon box */}
-                <SR w={38} h={38} r={11} delay={delay} />
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
-                  <SR w="45%" h={15} r={6} delay={delay + 10} />
-                  <SR w="65%" h={12} r={5} delay={delay + 20} />
-                </div>
-                {/* value */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
-                  <SR w={32} h={20} r={5} delay={delay + 30} />
-                  <SR w={24} h={9} r={4} delay={delay + 40} />
-                </div>
+            {/* ── insight card ── */}
+            <Shell mt={6} delay={60}>
+              <div style={{ padding: "18px 20px 16px" }}>
+                {/* mood tag pill */}
+                <SR w={96} h={22} r={99} delay={80} />
+                {/* headline – 2 lines */}
+                <SR w="76%" h={16} r={6} mt={14} delay={100} />
+                <SR w="52%" h={16} r={6} mt={7} delay={110} />
+                {/* divider */}
+                <div style={{ height: .5, background: "rgba(155,127,232,.10)", margin: "12px 0" }} />
+                {/* detail – 2 lines */}
+                <SR w="92%" h={13} r={5} delay={120} />
+                <SR w="64%" h={13} r={5} mt={6} delay={130} />
               </div>
             </Shell>
-          ))}
+
+            {/* ── habits card ── */}
+            <Shell delay={140}>
+              <div style={{ padding: "16px 18px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                <div style={{ flex: 1, paddingRight: 14 }}>
+                  {/* label pill */}
+                  <SR w={114} h={22} r={99} delay={160} />
+                  {/* day number */}
+                  <SR w={90} h={30} r={7} mt={12} delay={170} />
+                  {/* progress bar */}
+                  <SR w={110} h={4} r={99} mt={12} delay={180} />
+                  {/* status line */}
+                  <SR w={140} h={13} r={5} mt={10} delay={190} />
+                </div>
+                {/* tree silhouette */}
+                <SR w={72} h={72} r={16} delay={200} />
+              </div>
+              {/* habit dots strip */}
+              <div style={{ height: .5, background: "rgba(255,255,255,.06)", margin: "0 18px" }} />
+              <div style={{ padding: "11px 18px 13px", display: "flex", gap: 4 }}>
+                {[1, 2, 3, 4].map(i => <SR key={i} w="25%" h={4} r={99} delay={210 + i * 10} />)}
+              </div>
+            </Shell>
+
+            {/* ── steps card ── */}
+            <Shell delay={220}>
+              <div style={{ padding: "20px 18px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+                {/* icon circle */}
+                <SR w={50} h={50} r={15} delay={240} />
+                {/* title */}
+                <SR w="55%" h={17} r={6} mt={14} delay={250} />
+                {/* subtitle */}
+                <SR w="72%" h={13} r={5} mt={8} delay={260} />
+                {/* button */}
+                <SR w="100%" h={48} r={14} mt={20} delay={270} />
+              </div>
+            </Shell>
+
+            {/* ── wellbeing buttons ── */}
+            {[280, 320].map((delay, i) => (
+              <Shell key={i} delay={delay}>
+                <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+                  {/* icon box */}
+                  <SR w={38} h={38} r={11} delay={delay} />
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
+                    <SR w="45%" h={15} r={6} delay={delay + 10} />
+                    <SR w="65%" h={12} r={5} delay={delay + 20} />
+                  </div>
+                  {/* value */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
+                    <SR w={32} h={20} r={5} delay={delay + 30} />
+                    <SR w={24} h={9} r={4} delay={delay + 40} />
+                  </div>
+                </div>
+              </Shell>
+            ))}
+          </div>
         </div>
-      </div>
       </div>
     );
   }
