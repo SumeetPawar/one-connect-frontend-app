@@ -1300,16 +1300,6 @@ function Day1Screen({ selected, onRestart }: { selected: string[]; onRestart: ()
         <p style={{ fontSize:14, color:"rgba(255,255,255,0.35)", margin:"0 0 48px" }}>
           {selected.length} {selected.length === 1 ? "habit" : "habits"} locked in
         </p>
-        <button onClick={onRestart} style={{
-          background:"rgba(255,255,255,0.06)",
-          border:"1px solid rgba(255,255,255,0.1)",
-          borderRadius:99, cursor:"pointer",
-          padding:"10px 24px",
-          fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.5)",
-          letterSpacing:"-0.01em",
-        }}>
-          ← Back to setup
-        </button>
       </div>
     );
   }
@@ -1362,17 +1352,7 @@ function Day1Screen({ selected, onRestart }: { selected: string[]; onRestart: ()
       </p>
 
       {/* back to setup */}
-      <button onClick={onRestart} style={{
-        marginTop:48, background:"rgba(255,255,255,0.06)",
-        border:"1px solid rgba(255,255,255,0.1)",
-        borderRadius:99, cursor:"pointer",
-        padding:"8px 20px",
-        fontSize:12, fontWeight:600, color:"rgba(255,255,255,0.45)",
-        letterSpacing:"-0.01em",
-        opacity, transition:"opacity 0.5s ease 0.6s",
-      }}>
-        ← Back to setup
-      </button>
+       
     </div>
   );
 }
