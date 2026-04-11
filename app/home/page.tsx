@@ -233,6 +233,7 @@ type RichSegment = { text: string; color: string | null; style: string };
 type HomeData = {
   steps: { yesterday: number; today: number; daily_target: number; pct: number; step_streak: number };
   challenge: { id: string; rank: number; rank_change: number } | null;
+  step_challenge: { id: string; rank: number; rank_change: number } | null;
   habits: { challenge_id: number; day_number: number; total_days: number; completed_count: number; total_count: number; all_done: boolean; yesterday_completed: number; yesterday_all_done: boolean } | null;
   habit_streak: { current: number; effective: number; longest: number; perfect_days: number };
   ai_insight: {
@@ -574,11 +575,14 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
 
 // ─── steps card ───────────────────────────────────────────────────────────────
 function StepsCard({
-  data, showLog, setShowLog, animSteps, animPct, fd, onNavigate,
+  data, latestChallenge, showLog, setShowLog, animSteps, animPct, fd, onNavigate, onJoin,
 }: {
-  data: HomeData; showLog: boolean; setShowLog: (b: boolean) => void;
+  data: HomeData;
+  latestChallenge: { id: string; title: string; description: string; participant_count?: number } | null;
+  showLog: boolean; setShowLog: (b: boolean) => void;
   animSteps: number; animPct: number; fd: (d: number) => React.CSSProperties;
   onNavigate: () => void;
+  onJoin: () => void;
 }) {
   const { steps, challenge } = data;
   const isLogged = steps.today > 0;
@@ -598,14 +602,115 @@ function StepsCard({
       }}>{children}</div>
   );
 
-  if (!hasChallenge) return wrap(T.purple, (
-    <div style={{ padding: "22px 20px 18px", position: "relative" as const, overflow: "hidden" }}>
-      <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle,rgba(167,139,245,.14) 0%,transparent 70%)", pointerEvents: "none" as const }} />
-      <p style={{ fontSize: 10, fontWeight: 700, color: T.purpleL, letterSpacing: ".12em", textTransform: "uppercase" as const, marginBottom: 10 }}>Monthly Team Challenge</p>
-      <p style={{ fontSize: 22, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", lineHeight: 1.2, marginBottom: 8 }}>Walk together.<br />Rise together.</p>
-      <p style={{ fontSize: 13, fontWeight: 400, color: T.t3, lineHeight: 1.65 }}>Log your daily steps and compete with colleagues.</p>
+  if (!hasChallenge) return (
+    <div
+      className="hp-card-tap"
+      onClick={onJoin}
+      style={{
+        ...fd(250), margin: "0 16px 8px", borderRadius: 22, overflow: "hidden",
+        position: "relative" as const, cursor: "pointer",
+        background: "linear-gradient(145deg,#1A0F2E 0%,#100E1A 60%,#0D0B18 100%)",
+        border: ".5px solid rgba(155,127,232,.28)",
+        boxShadow: "0 12px 48px rgba(0,0,0,.70),0 1px 0 rgba(167,139,245,.08) inset",
+      }}
+    >
+      {/* Ambient glow blobs */}
+      <div style={{ position: "absolute", top: -60, right: -40, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle,rgba(124,92,232,.28) 0%,transparent 70%)", pointerEvents: "none" as const }} />
+      <div style={{ position: "absolute", bottom: -40, left: -20, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle,rgba(167,139,245,.12) 0%,transparent 70%)", pointerEvents: "none" as const }} />
+
+      <div style={{ padding: "22px 20px 20px", position: "relative" as const }}>
+
+        {/* Top row — badge + participant count */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            background: "rgba(167,139,245,.12)", border: ".5px solid rgba(167,139,245,.30)",
+            borderRadius: 99, padding: "4px 11px",
+          }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: T.purple, boxShadow: `0 0 5px ${T.purple}` }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: T.purpleL, letterSpacing: ".09em", textTransform: "uppercase" as const }}>
+              Team Challenge
+            </span>
+          </div>
+          {(latestChallenge?.participant_count ?? 0) > 0 && (
+            <span style={{ fontSize: 11, fontWeight: 500, color: T.t3 }}>
+              <span style={{ color: T.purpleL, fontWeight: 700 }}>{latestChallenge!.participant_count}</span> joined
+            </span>
+          )}
+        </div>
+
+        {/* Headline */}
+        <p style={{
+          fontSize: 23, fontWeight: 800, color: T.t1,
+          letterSpacing: "-.5px", lineHeight: 1.2, marginBottom: 8,
+        }}>
+          {latestChallenge?.title ?? "Walk together.\nRise together."}
+        </p>
+
+        {/* Description */}
+        <p style={{ fontSize: 13, fontWeight: 400, color: T.t3, lineHeight: 1.65, marginBottom: 20 }}>
+          {latestChallenge?.description ?? "Log your daily steps and compete with colleagues."}
+        </p>
+
+        {/* Stat pills row */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          {[
+            {
+              icon: (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,245,.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="4" r="1.5"/><path d="M9 8.5l-2 5 3 1-1 5"/><path d="M12 8.5l1.5 4-3.5 1"/><path d="M14 8l2 2-2 3"/>
+                </svg>
+              ),
+              label: "Daily steps",
+            },
+            {
+              icon: (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,245,.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+              ),
+              label: "Team rank",
+            },
+            {
+              icon: (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,245,.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+                </svg>
+              ),
+              label: "Leaderboard",
+            },
+          ].map(({ icon, label }) => (
+            <div key={label} style={{
+              flex: 1, display: "flex", flexDirection: "column" as const,
+              alignItems: "center", gap: 6,
+              background: "rgba(255,255,255,0.04)", border: ".5px solid rgba(255,255,255,0.08)",
+              borderRadius: 14, padding: "12px 6px",
+            }}>
+              {icon}
+              <span style={{ fontSize: 9.5, fontWeight: 600, color: T.t4, textAlign: "center" as const, letterSpacing: ".03em", lineHeight: 1.3 }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA button */}
+        <button
+          onClick={e => { e.stopPropagation(); onJoin(); }}
+          style={{
+            width: "100%", padding: "15px 0", borderRadius: 15, border: "none",
+            cursor: "pointer",
+            background: "linear-gradient(135deg,#A78BF5 0%,#7C5CE8 100%)",
+            color: "#fff", fontSize: 14, fontWeight: 700,
+            letterSpacing: "-.1px", fontFamily: "'Plus Jakarta Sans',sans-serif",
+            boxShadow: "0 8px 32px rgba(124,92,232,.45),0 1px 0 rgba(255,255,255,.18) inset",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          <Ic.Walk c="#fff" s={16} />
+          Join the Challenge
+        </button>
+      </div>
     </div>
-  ), true);
+  );
 
   if (!isLogged && !isEvening) return wrap(T.purple, (
     <div style={{ padding: "20px 18px 18px", position: "relative" as const, overflow: "hidden" }}>
@@ -838,6 +943,7 @@ export default function HomePage() {
   const router = useRouter();
 
   const [homeData, setHomeData] = useState<HomeData | null>(null);
+  const [latestChallenge, setLatestChallenge] = useState<{ id: string; title: string; description: string; participant_count?: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [vis, setVis] = useState(false);
   const [showLog, setShowLog] = useState(false);
@@ -847,10 +953,30 @@ export default function HomePage() {
   const [stepsRefreshing, setStepsRefreshing] = useState(false);
   const [mindWeekly, setMindWeekly] = useState(0);
   const [navigating, setNavigating] = useState(false);
+  const [showJoinSheet, setShowJoinSheet] = useState(false);
+  const [joinTarget, setJoinTarget] = useState(8000);
+  const [joining, setJoining] = useState(false);
+  const [joinDone, setJoinDone] = useState(false);
 
   const navigate = (path: string) => {
     setNavigating(true);
     router.push(path);
+  };
+
+  const handleJoin = async () => {
+    if (!latestChallenge || joining) return;
+    setJoining(true);
+    try {
+      await api(`/api/challenges/${latestChallenge.id}/join`, {
+        method: "POST",
+        body: JSON.stringify({ selected_daily_target: joinTarget }),
+      });
+      setJoinDone(true);
+      setTimeout(() => {
+        router.push(`/challanges/${latestChallenge.id}/steps`);
+      }, 1600);
+    } catch { /* ignore — user can retry */ }
+    finally { setJoining(false); }
   };
 
   // Read mindfulness weekly sessions from localStorage
@@ -889,7 +1015,37 @@ export default function HomePage() {
             user: { name: me.name, profile_pic_url: null },
           };
         }
+        // Normalise: API returns step_challenge, code reads challenge
+        if (!data.challenge && (data as any).step_challenge) {
+          data = { ...data, challenge: (data as any).step_challenge };
+        }
         setHomeData(data);
+        // /api/home may return challenge:null even when the user is joined.
+        // Always fetch /api/challenges/available to reconcile.
+        if (!data.challenge) {
+          api<any[]>("/api/challenges/available").then(all => {
+            if (!Array.isArray(all)) return;
+            const today = new Date().toISOString().slice(0, 10);
+            const active = [...all]
+              .filter(c => c.status === "active" && c.start_date <= today && (!c.end_date || c.end_date >= today))
+              .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+
+            // If already joined, patch homeData so the joined card renders
+            const joined = active.find(c => c.user_joined);
+            if (joined) {
+              setHomeData(prev => prev && !prev.challenge ? {
+                ...prev,
+                challenge: { id: joined.id, rank: 0, rank_change: 0 },
+                steps: { ...prev.steps, daily_target: joined.user_daily_target ?? prev.steps.daily_target },
+              } : prev);
+              return;
+            }
+
+            // Not joined — show the latest active challenge as a join prompt
+            const unjoinedLatest = active[0];
+            if (unjoinedLatest) setLatestChallenge({ id: unjoinedLatest.id, title: unjoinedLatest.title, description: unjoinedLatest.description, participant_count: unjoinedLatest.participant_count });
+          }).catch(() => {});
+        }
       } catch {
         router.replace("/home");
       } finally {
@@ -945,7 +1101,8 @@ export default function HomePage() {
       setStepsRefreshing(true);
       // Re-fetch home data so the StepsCard renders the logged state
       try {
-        const fresh = await api<HomeData>("/api/home", { method: "GET" });
+        let fresh = await api<HomeData>("/api/home", { method: "GET" });
+        if (!fresh.challenge && fresh.step_challenge) fresh = { ...fresh, challenge: fresh.step_challenge };
         setHomeData(fresh);
       } catch {
         // Optimistic fallback — update today's count locally
@@ -993,7 +1150,7 @@ export default function HomePage() {
 
     return (
       <div style={{ minHeight: "100vh", width: "100%", backgroundColor: T.bg }}>
-        <div style={{ maxWidth: 430, margin: "0 auto", paddingBottom: 56 }}>
+        <div style={{ maxWidth: 430, margin: "0 auto", paddingBottom: 90 }}>
           <style>{`
           @keyframes skshimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
           @keyframes skfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -1112,6 +1269,7 @@ export default function HomePage() {
         .hp-card-tap:active{transform:scale(.975);opacity:.85;}
         .hp-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(242,238,255,.25);border-top-color:rgba(242,238,255,.75);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:7px;}
         @keyframes slideUp{from{transform:translateX(-50%) translateY(100%)}to{transform:translateX(-50%) translateY(0)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         .hp-page{min-height:100vh;max-width:430px;margin:0 auto;background:${T.bg};font-family:'Plus Jakarta Sans',-apple-system,sans-serif;color:${T.t1};-webkit-font-smoothing:antialiased;padding-bottom:56px;}
         .hp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:40;backdrop-filter:blur(10px);}
         .hp-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#0E0C18;border-radius:26px 26px 0 0;border-top:.5px solid rgba(155,127,232,.22);box-shadow:0 -16px 60px rgba(0,0,0,.80);z-index:50;animation:slideUp .3s cubic-bezier(.22,1,.36,1);}
@@ -1225,12 +1383,14 @@ export default function HomePage() {
         ) : (
           <StepsCard
             data={homeData}
+            latestChallenge={latestChallenge}
             showLog={showLog}
             setShowLog={setShowLog}
             animSteps={animSteps}
             animPct={animPct}
             fd={fd}
             onNavigate={() => navigate(homeData.challenge ? `/challanges/${homeData.challenge.id}/steps` : "/challanges")}
+            onJoin={() => { setJoinTarget(8000); setJoinDone(false); setShowJoinSheet(true); }}
           />
         )}
 
@@ -1286,6 +1446,168 @@ export default function HomePage() {
       </div>
 
       <BottomNav active="home" />
+
+      {/* ── JOIN CHALLENGE BOTTOM SHEET ── */}
+      {showJoinSheet && latestChallenge && (
+        <>
+          {/* Scrim */}
+          <div
+            onClick={() => !joining && setShowJoinSheet(false)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 400,
+              background: "rgba(0,0,0,0.72)",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              animation: "fadeIn 0.22s ease",
+            }}
+          />
+          {/* Sheet */}
+          <div style={{
+            position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+            width: "100%", maxWidth: 480, zIndex: 401,
+            background: "linear-gradient(180deg,#1C1728 0%,#12101C 100%)",
+            borderRadius: "28px 28px 0 0",
+            border: "1px solid rgba(167,139,245,.16)",
+            borderBottom: "none",
+            boxShadow: "0 -16px 64px rgba(0,0,0,.80)",
+            animation: "slideUp 0.32s cubic-bezier(.32,0,.16,1)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}>
+            {/* Handle */}
+            <div style={{ display: "flex", justifyContent: "center", padding: "14px 0 0" }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.15)" }} />
+            </div>
+
+            <div style={{ padding: "20px 24px 28px" }}>
+
+              {joinDone ? (
+                /* ── Success state ── */
+                <div style={{ textAlign: "center" as const, padding: "16px 0 8px" }}>
+                  <div style={{
+                    width: 64, height: 64, borderRadius: "50%", margin: "0 auto 16px",
+                    background: "rgba(45,212,191,.12)", border: "1px solid rgba(45,212,191,.25)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 28,
+                  }}>✓</div>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", marginBottom: 8 }}>You're in!</p>
+                  <p style={{ fontSize: 14, color: T.t3, lineHeight: 1.55 }}>
+                    Goal set to <span style={{ color: T.green, fontWeight: 700 }}>{joinTarget.toLocaleString()} steps/day</span>.<br />Taking you to your dashboard…
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Challenge name */}
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+                    <div>
+                      <div style={{
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        background: "rgba(167,139,245,.10)", border: ".5px solid rgba(167,139,245,.25)",
+                        borderRadius: 99, padding: "3px 10px", marginBottom: 10,
+                      }}>
+                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: T.purple, boxShadow: `0 0 5px ${T.purple}` }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: T.purpleL, letterSpacing: ".09em", textTransform: "uppercase" as const }}>Team Challenge</span>
+                      </div>
+                      <p style={{ fontSize: 20, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", lineHeight: 1.2 }}>
+                        {latestChallenge.title}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowJoinSheet(false)}
+                      style={{ background: "rgba(255,255,255,0.07)", border: ".5px solid rgba(255,255,255,0.10)", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", color: T.t3, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 12, marginTop: 2 }}
+                    >×</button>
+                  </div>
+
+                  {/* Step target label */}
+                  <p style={{ fontSize: 12, fontWeight: 600, color: T.t3, letterSpacing: ".06em", textTransform: "uppercase" as const, marginBottom: 12 }}>
+                    Pick your daily step goal
+                  </p>
+
+                  {/* Target options */}
+                  <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+                    {[
+                      { val: 5000, label: "5,000", sub: "steps / day", desc: "Moderate" },
+                      { val: 8000, label: "8,000", sub: "steps / day", desc: "Active" },
+                    ].map(({ val, label, sub, desc }) => {
+                      const active = joinTarget === val;
+                      return (
+                        <button
+                          key={val}
+                          onClick={() => setJoinTarget(val)}
+                          style={{
+                            flex: 1, padding: "18px 14px", borderRadius: 18, cursor: "pointer",
+                            background: active
+                              ? "linear-gradient(145deg,rgba(167,139,245,.18) 0%,rgba(124,92,232,.10) 100%)"
+                              : "rgba(255,255,255,0.04)",
+                            border: active ? "1.5px solid rgba(167,139,245,.50)" : "1px solid rgba(255,255,255,0.08)",
+                            boxShadow: active ? "0 0 20px rgba(124,92,232,.18)" : "none",
+                            display: "flex", flexDirection: "column" as const, alignItems: "flex-start", gap: 2,
+                            transition: "all 0.18s cubic-bezier(.4,0,.2,1)",
+                            fontFamily: "'Plus Jakarta Sans',sans-serif",
+                            position: "relative" as const,
+                          }}
+                        >
+                          {active && (
+                            <div style={{
+                              position: "absolute", top: 10, right: 10,
+                              width: 16, height: 16, borderRadius: "50%",
+                              background: T.purple,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>
+                              <svg width="8" height="8" viewBox="0 0 10 8" fill="none">
+                                <path d="M1 4l2.5 2.5L9 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                          )}
+                          <span style={{ fontSize: 22, fontWeight: 800, color: active ? T.purpleL : T.t1, letterSpacing: "-.5px", lineHeight: 1 }}>{label}</span>
+                          <span style={{ fontSize: 10, fontWeight: 500, color: active ? "rgba(167,139,245,.6)" : T.t4, letterSpacing: ".01em" }}>{sub}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: active ? T.purple : T.t3, marginTop: 6 }}>{desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 20 }} />
+
+                  {/* Commitment line */}
+                  <p style={{ fontSize: 13, color: T.t3, lineHeight: 1.6, marginBottom: 20, textAlign: "center" as const }}>
+                    Walk <span style={{ color: T.t1, fontWeight: 700 }}>{joinTarget.toLocaleString()} steps every day</span> and climb<br />the leaderboard with your team.
+                  </p>
+
+                  {/* CTA */}
+                  <button
+                    onClick={handleJoin}
+                    disabled={joining}
+                    style={{
+                      width: "100%", padding: "17px 0", borderRadius: 17, border: "none",
+                      cursor: joining ? "not-allowed" : "pointer",
+                      background: joining ? "rgba(124,92,232,.5)" : "linear-gradient(135deg,#A78BF5 0%,#7C5CE8 100%)",
+                      color: "#fff", fontSize: 15, fontWeight: 700,
+                      letterSpacing: "-.2px", fontFamily: "'Plus Jakarta Sans',sans-serif",
+                      boxShadow: joining ? "none" : "0 8px 32px rgba(124,92,232,.45),0 1px 0 rgba(255,255,255,.16) inset",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      transition: "opacity 0.2s",
+                      opacity: joining ? 0.7 : 1,
+                    }}
+                  >
+                    {joining ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", borderTop: "2px solid #fff", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                        Joining…
+                      </span>
+                    ) : (
+                      <>
+                        <Ic.Walk c="#fff" s={16} />
+                        Join · {joinTarget.toLocaleString()} steps/day
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

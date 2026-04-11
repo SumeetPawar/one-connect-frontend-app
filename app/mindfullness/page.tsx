@@ -1063,6 +1063,7 @@ export default function MeditationPage() {
       fontFamily: "-apple-system,'SF Pro Display','SF Pro Text',BlinkMacSystemFont,'Helvetica Neue',sans-serif",
       WebkitFontSmoothing: "antialiased",
       overflowX: "hidden",
+      paddingBottom: 90,
     }}>
       <style>{`
         * { margin: 0; padding: 0; box-sizing: border-box; }

@@ -547,112 +547,139 @@ function MiniRangeBar({ m }: { m: Metric }) {
   );
 }
 
-/* ─── Metric Row (Samsung Health card style) ───────────────── */
+/* ─── Metric Icons ──────────────────────────────────────────── */
+const METRIC_ICON: Record<string, JSX.Element> = {
+  weight: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M6 20v-2a6 6 0 0 1 12 0v2"/>
+    </svg>
+  ),
+  bmi: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <circle cx="12" cy="12" r="4"/>
+    </svg>
+  ),
+  fat: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2c-4 4-6 8-6 11a6 6 0 0 0 12 0c0-3-2-7-6-11z"/>
+    </svg>
+  ),
+  subcutaneous_fat: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="3" rx="1.5"/>
+      <rect x="3" y="10.5" width="18" height="3" rx="1.5"/>
+      <rect x="3" y="16" width="18" height="3" rx="1.5"/>
+    </svg>
+  ),
+  visceral: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  ),
+  skeletal: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+  ),
+  bmr: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2c0 0-5 5.5-5 10a5 5 0 0 0 10 0C17 7.5 12 2 12 2z"/>
+      <path d="M12 17v-5"/>
+    </svg>
+  ),
+  metage: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>
+  ),
+};
+
+/* ─── Metric Row ───────────────────────────────────────────── */
 function MetricRow({ m, last, trendData }: { m: Metric; last: boolean; trendData: { all: TrendPt[]; y1: TrendPt[]; m6: TrendPt[]; m3: TrendPt[] } }) {
   const [open, setOpen] = useState(false);
   const inRange = m.value >= m.ideal[0] && m.value <= m.ideal[1];
   const sc = STATUS_COLOR[m.status];
-  const isAlert = m.statusLabel === "High" || m.statusLabel === "Low";
-  const unitDisplay = m.unit === "kg/m²" ? "BMI" : m.unit;
+  const unitDisplay = m.unit === "kg/m²" ? "" : m.unit;
 
   return (
     <div style={{
-      background: "rgba(255,255,255,0.08)",
-      border: `1px solid ${isAlert && !inRange ? `${sc}30` : "rgba(255,255,255,0.12)"}`,
-      borderRadius: 18,
+      background: "rgba(255,255,255,0.05)",
+      border: `1px solid ${inRange ? "rgba(255,255,255,0.08)" : `${sc}28`}`,
+      borderRadius: 20,
       overflow: "hidden",
-      transition: "box-shadow 0.2s",
+      transition: "border-color 0.2s",
     }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{
           width: "100%", background: "transparent", border: "none",
           cursor: "pointer", fontFamily: "Figtree, sans-serif",
-          padding: "16px 18px 15px", textAlign: "left", display: "block",
+          padding: "16px 16px 0", textAlign: "left", display: "block",
           WebkitTapHighlightColor: "transparent",
-          transition: "opacity 0.12s",
         }}
-        onMouseDown={e => { (e.currentTarget as HTMLElement).style.opacity = "0.75"; }}
-        onMouseUp={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
         onTouchStart={e => { (e.currentTarget as HTMLElement).style.opacity = "0.75"; }}
         onTouchEnd={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
       >
-        {/* ── Samsung widget layout: label col left, hero number col right ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 15 }}>
-          {/* LEFT — label and status text */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+
+          {/* Label + sublabel + status dot */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{
-                fontSize: 13, fontWeight: 600, letterSpacing: "-0.01em",
-                color: "rgba(255,255,255,0.88)", lineHeight: 1.2,
-              }}>{m.label}</span>
-              {['High', 'Low', 'Good'].includes(m.statusLabel) ? (
-                <span style={{
-                  display: 'inline-block',
-                  minWidth: 36,
-                  padding: '1.5px 10px',
-                  borderRadius: 10,
-                  background: `${sc}18`,
-                  color: sc,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: '0.01em',
-                  border: `1px solid ${sc}33`,
-                  boxShadow: 'none',
-                  opacity: 0.92,
-                  textAlign: 'center',
-                  marginLeft: 2,
-                  lineHeight: 1.2,
-                  transition: 'background 0.18s, color 0.18s, border 0.18s',
-                }}>{m.statusLabel}</span>
-              ) : (
-                <span style={{
-                  fontSize: 12, fontWeight: 700, letterSpacing: '0.01em',
-                  color: inRange ? sc : sc,
-                  opacity: 0.92,
-                }}>{m.statusLabel}</span>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.92)", letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: 5 }}>
+              {m.label}
+              {m.sublabel && (
+                <span style={{ fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.35)", marginLeft: 6 }}>
+                  {m.sublabel}
+                </span>
               )}
             </div>
-            {m.sublabel && (
-              <div style={{
-                fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.26)",
-                marginTop: 3, letterSpacing: "0em", lineHeight: 1.3,
-              }}>{m.sublabel}</div>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: sc, flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: sc, fontWeight: 500, letterSpacing: "-0.01em" }}>
+                {m.statusLabel}
+              </span>
+            </div>
           </div>
-          {/* RIGHT — hero number and chevron inline */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            <div style={{ textAlign: "right", display: "flex", alignItems: "baseline", gap: 2, lineHeight: 1 }}>
-              <span style={{
-                fontSize: 28, fontWeight: 700, letterSpacing: "-0.045em",
-                lineHeight: 1, color: inRange ? "rgba(255,255,255,0.96)" : sc,
-                fontVariantNumeric: "tabular-nums" as any,
-              }}>{m.value}</span>
-              {unitDisplay && (
+
+          {/* Value + unit + chevron */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <div style={{ textAlign: "right" as const }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 2, justifyContent: "flex-end" }}>
                 <span style={{
-                  fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.32)",
-                  letterSpacing: "0em", paddingBottom: 2,
-                }}>{unitDisplay}</span>
-              )}
+                  fontSize: 28, fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1,
+                  color: inRange ? "rgba(255,255,255,0.94)" : sc,
+                  fontVariantNumeric: "tabular-nums" as any,
+                }}>{m.value}</span>
+                {unitDisplay && (
+                  <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.28)" }}>
+                    {unitDisplay}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", marginTop: 2, letterSpacing: "-0.01em" }}>
+                {m.ideal[0]}–{m.ideal[1]}{unitDisplay ? ` ${unitDisplay}` : ""}
+              </div>
             </div>
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"
+            <svg width="11" height="11" viewBox="0 0 14 14" fill="none"
               style={{
-                flexShrink: 0, opacity: 0.28,
+                flexShrink: 0, opacity: 0.25,
                 transition: "transform 0.22s cubic-bezier(0.4,0,0.2,1)",
                 transform: open ? "rotate(180deg)" : "rotate(0deg)",
               }}>
-              <path d="M3 5L7 9L11 5" stroke="white"
-                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 5L7 9L11 5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
         </div>
 
-        {/* ── Range bar ── */}
-        <MiniRangeBar m={m} />
+        {/* Range bar */}
+        <div style={{ padding: "12px 0 14px" }}>
+          <MiniRangeBar m={m} />
+        </div>
       </button>
 
-      {/* ── Expanded detail ── */}
+      {/* Expanded — trend chart */}
       {open && (
         <div style={{ padding: "0 16px 18px" }}>
           <div style={{ height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 16 }} />
@@ -1446,7 +1473,7 @@ export default function ScanReport() {
     <>
       <div style={{
         minHeight: "100vh", background: C.bg, color: C.text,
-        fontFamily: "Figtree, sans-serif", width: "100%", paddingBottom: 60
+        fontFamily: "Figtree, sans-serif", width: "100%", paddingBottom: 90
       }}>
         <style>{`
         * { box-sizing:border-box }
@@ -1497,35 +1524,25 @@ export default function ScanReport() {
 
               {/* Right — Health Guide icon only */}
               <button onClick={() => router.push("/bgmi/guide")} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: "linear-gradient(90deg, #f5f6fa 0%, #e7e9f3 100%)",
-                border: "none", cursor: "pointer",
-                padding: "4px 12px 4px 10px", borderRadius: 12, minHeight: 32, flexShrink: 0,
-                boxShadow: "0 1px 6px 0 rgba(90,200,250,0.07)",
-                transition: "transform 0.13s cubic-bezier(.4,1,.4,1), box-shadow 0.13s cubic-bezier(.4,1,.4,1)",
-                fontWeight: 600,
-                fontSize: 13.5,
-                color: "#3a3a44",
-                letterSpacing: "-0.01em",
+                display: "flex", alignItems: "center", gap: 5,
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                cursor: "pointer",
+                padding: "4px 11px 4px 9px", borderRadius: 10, minHeight: 30, flexShrink: 0,
+                transition: "opacity 0.15s",
                 outline: "none",
-                borderColor: "transparent",
-                position: "relative",
-                overflow: "hidden",
-                opacity: 0.92,
               }}
-              onMouseDown={e => { e.currentTarget.style.transform = "scale(0.97)"; }}
-              onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+              onTouchStart={e => { e.currentTarget.style.opacity = "0.6"; }}
+              onTouchEnd={e => { e.currentTarget.style.opacity = "1"; }}
             >
-                <svg width="15" height="15" viewBox="0 0 18 18" fill="none" style={{ marginRight: 4 }}>
-                  <circle cx="9" cy="9" r="7.2" stroke="#bfc3d1" strokeWidth="1.2" />
-                  <path d="M9 8v4" stroke="#7B5CF5" strokeWidth="1.3" strokeLinecap="round" />
-                  <circle cx="9" cy="6" r="0.9" fill="#7B5CF5" />
+                <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+                  <circle cx="9" cy="9" r="7.2" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2" />
+                  <path d="M9 8v4" stroke="rgba(255,255,255,0.55)" strokeWidth="1.3" strokeLinecap="round" />
+                  <circle cx="9" cy="6" r="0.9" fill="rgba(255,255,255,0.55)" />
                 </svg>
                 <span style={{
-                  fontSize: 13.5, fontWeight: 600,
-                  color: "#3a3a44", letterSpacing: "-0.01em",
-                  textShadow: "0 1px 4px #e7e9f3"
+                  fontSize: 12.5, fontWeight: 500,
+                  color: "rgba(255,255,255,0.50)", letterSpacing: "-0.01em",
                 }}>Health Guide</span>
             </button>
 
@@ -1675,7 +1692,7 @@ export default function ScanReport() {
           })()}
 
           {/* ── ALL METRICS (Grouped by Category) ── */}
-          <div style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 28, ...fade(1) }}>
+          <div style={{ padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 32, ...fade(1) }}>
             {[
               { label: "Body Measurements", keys: ["weight", "bmi"] },
               { label: "Composition", keys: ["fat", "visceral", "subcutaneous_fat", "skeletal", "muscle", "bone"] },
@@ -1686,18 +1703,18 @@ export default function ScanReport() {
               return (
                 <div key={group.label}>
                   {/* Section header */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 11, paddingLeft: 2 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                     <span style={{
-                      fontSize: 11, fontWeight: 700,
-                      color: "rgba(255,255,255,0.36)",
-                      letterSpacing: "0.09em",
-                      textTransform: "uppercase",
+                      fontSize: 10, fontWeight: 700,
+                      color: "rgba(255,255,255,0.28)",
+                      letterSpacing: "0.10em",
+                      textTransform: "uppercase" as const,
                       fontFamily: "Figtree, sans-serif",
+                      flexShrink: 0,
                     }}>{group.label}</span>
-                    <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.05)" }} />
+                    <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
                   </div>
-                  {/* Individual cards — each is its own elevated card */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
                     {groupMetrics.map((m) => (
                       <MetricRow key={m.key} m={m} last={true} trendData={trendData} />
                     ))}

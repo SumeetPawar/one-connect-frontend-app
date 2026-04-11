@@ -495,7 +495,7 @@ function StreakBadge({ streak, shields, perfectStreak, bestStreak, habitCount, o
                 </div>
 
                 {/* How shields work */}
-                <div style={{ marginBottom:shields===0&&perfectStreak>=2&&perfectStreak<4?12:0 }}>
+                <div style={{ marginBottom:streak>=1&&streak<4?12:0 }}>
                   <p style={{ fontSize:10,fontWeight:600,color:T3,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10 }}>How Shields Work</p>
                   <div style={{ display:"flex",alignItems:"flex-start",gap:10,marginBottom:8 }}>
                     <div style={{ width:24,height:24,borderRadius:8,background:"rgba(91,155,213,0.12)",border:"1px solid rgba(91,155,213,0.2)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1 }}>
@@ -517,9 +517,9 @@ function StreakBadge({ streak, shields, perfectStreak, bestStreak, habitCount, o
                   </div>
                 </div>
 
-                {shields===0&&perfectStreak>=2&&perfectStreak<4&&(
+                {streak>=1&&streak<4&&(
                   <div style={{ marginTop:12,padding:"7px 9px",background:"rgba(91,155,213,0.08)",borderRadius:8,border:"1px solid rgba(91,155,213,0.18)" }}>
-                    <p style={{ fontSize:10,fontWeight:600,color:"#5B9BD5",lineHeight:1.4 }}>{4-perfectStreak} more perfect day{(4-perfectStreak)!==1?"s":""} — shield incoming</p>
+                    <p style={{ fontSize:10,fontWeight:600,color:"#5B9BD5",lineHeight:1.4 }}>{4-streak} more day{(4-streak)!==1?"s":""} — shield incoming</p>
                   </div>
                 )}
               </div>
@@ -878,7 +878,8 @@ export default function HabitTree() {
   // Streak: consecutive days where at least 1 habit was logged (fallback if API not yet loaded)
   const streak       = apiStreak       ?? (()=>{ let s=0; for(let i=selDay;i>=1;i--){ if(dayAny(i))s++; else break; } return s; })();
   // Perfect streak: perfect days from API or computed locally
-  const perfectStreak= apiPerfectDays  ?? (()=>{ let s=0; for(let i=selDay;i>=1;i--){ if(dayDone(i)===(habits as typeof DEFAULT_HABITS).length)s++; else break; } return s; })();
+  const minForShield  = Math.ceil((habits as typeof DEFAULT_HABITS).length * 0.5);
+  const perfectStreak= apiPerfectDays  ?? (()=>{ let s=0; for(let i=selDay;i>=1;i--){ if(dayDone(i)>=minForShield)s++; else break; } return s; })();
   const bestStreak   = apiLongestStreak ?? streak;
 
   const THRESHOLDS = STAGE_THRESHOLDS;
@@ -992,14 +993,14 @@ export default function HabitTree() {
 
       {/* [DEV] Hard delete button */}
       <div style={{ position:"fixed", top:12, right:12, zIndex:999 }}>
-        {/* <button onClick={handleHardDelete} style={{
+        <button onClick={handleHardDelete} style={{
           background:"rgba(255,59,48,0.15)", border:"1px solid rgba(255,59,48,0.35)",
           borderRadius:10, padding:"6px 12px", color:"rgba(255,59,48,0.9)",
           fontSize:11, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer",
           backdropFilter:"blur(8px)", WebkitBackdropFilter:"blur(8px)",
         }}>
           ✕ Reset challenge
-        </button> */}
+        </button>
       </div>
 
 

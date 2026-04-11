@@ -262,7 +262,7 @@ export default function Dashboard() {
             width: '100%',
             backgroundColor: '#0f172a',
             padding: '0',
-            paddingBottom: '24px'
+            paddingBottom: '90px'
         }}>
 
             {/* USE HEADER COMPONENT */}
