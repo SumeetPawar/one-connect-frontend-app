@@ -65,6 +65,7 @@ function IconCheck() {
 
 export default function PWAInstallLanding() {
   const router = useRouter();
+  const handleBack = () => router.back();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
@@ -164,6 +165,38 @@ export default function PWAInstallLanding() {
       position: 'relative',
       overflow: 'hidden',
     }}>
+      {/* Back Button */}
+      <div style={{ position: 'fixed', top: 16, left: 16, zIndex: 50 }}>
+        <button
+          onClick={handleBack}
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '8px',
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: 'rgba(255, 255, 255, 0.7)',
+            transition: 'all 0.2s',
+            padding: 0
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+            e.currentTarget.style.color = '#ffffff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
       {/* Aurora background layers */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{

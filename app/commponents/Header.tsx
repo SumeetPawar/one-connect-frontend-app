@@ -16,12 +16,16 @@ type HeaderProps = {
     title?: string;
     subtitle?: string;
     showAnimatedWord?: boolean;
+    showBackButton?: boolean;
+    onBack?: () => void;
 };
 
 export default function Header({
     title = "GES",
     subtitle,
-    showAnimatedWord = true
+    showAnimatedWord = true,
+    showBackButton = false,
+    onBack
 }: HeaderProps) {
     const [currentWord, setCurrentWord] = useState<string>('Fitness');
     const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
@@ -173,15 +177,47 @@ export default function Header({
                 padding: '16px 20px'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    {/* Title Section */}
-                    <div
-                        onClick={() => router.push("/home")}
-                        style={{
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                            WebkitTapHighlightColor: 'transparent'
-                        }}
-                    >
+                    {/* Title Section with optional Back Button */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {showBackButton && onBack && (
+                            <button
+                                onClick={onBack}
+                                style={{
+                                    width: '36px',
+                                    height: '36px',
+                                    borderRadius: '8px',
+                                    background: 'rgba(255, 255, 255, 0.08)',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    transition: 'all 0.2s',
+                                    padding: 0
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                                    e.currentTarget.style.color = '#ffffff';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+                                }}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                        )}
+                        <div
+                            onClick={() => !showBackButton && router.push("/home")}
+                            style={{
+                                cursor: showBackButton ? 'default' : 'pointer',
+                                userSelect: 'none',
+                                WebkitTapHighlightColor: 'transparent'
+                            }}
+                        >
                         <h1 style={{
                             fontSize: '24px',
                             fontWeight: '700',
@@ -215,6 +251,7 @@ export default function Header({
                                 {subtitle}
                             </p>
                         )}
+                        </div>
                     </div>
 
 

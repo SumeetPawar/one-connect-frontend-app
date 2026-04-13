@@ -393,10 +393,11 @@ const PACK_META = {
   performance: { benefit:"VO2 max + sleep + focus",     pill:"Advanced",        pillColor:C_ENERGY   },
   clean:       { benefit:"Maximum transformation",      pill:"High discipline", pillColor:C_ALERT    },
 };
-function PackPickerScreen({ onSelectPack, onStartDirect, onCustom }: {
+function PackPickerScreen({ onSelectPack, onStartDirect, onCustom, onBack }: {
   onSelectPack: (ids: string[]) => void;
   onStartDirect: (ids: string[], packId?: string) => void;
   onCustom: () => void;
+  onBack?: () => void;
 }) {
   const ah = useHabits();
   const [pressed, setPressed]       = useState<string | null>(null);
@@ -441,6 +442,18 @@ function PackPickerScreen({ onSelectPack, onStartDirect, onCustom }: {
 
         {/* ── Header ── */}
         <div style={{ paddingTop:60, paddingBottom:24 }}>
+          {onBack && (
+            <button onClick={onBack} style={{
+              display:"flex", alignItems:"center", gap:6, marginBottom:16,
+              background:"none", border:"none", cursor:"pointer", padding:0,
+              color:"rgba(255,255,255,0.6)", fontSize:14, fontWeight:500,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 5l-7 7 7 7"/>
+              </svg>
+              Back
+            </button>
+          )}
           <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase",
             color:"rgba(255,255,255,0.3)", margin:"0 0 10px" }}>
             21-Day Challenge
@@ -1256,6 +1269,7 @@ export default function HabitFlow() {
             onSelectPack={(ids: string[]) => { setSelected(ids); setPackId(null); setFlow("setup"); }}
             onStartDirect={(ids: string[], pid?: string) => { setSelected(ids); setPackId(pid ?? null); setFlow("commit"); }}
             onCustom={() => { setSelected([]); setPackId(null); setFlow("setup"); }}
+            onBack={() => router.back()}
           />
         : <Day1Screen selected={selected} onRestart={() => setFlow("packs")} />
       }

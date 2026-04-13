@@ -993,14 +993,14 @@ export default function HabitTree() {
 
       {/* [DEV] Hard delete button */}
       <div style={{ position:"fixed", top:12, right:12, zIndex:999 }}>
-        <button onClick={handleHardDelete} style={{
+        {/* <button onClick={handleHardDelete} style={{
           background:"rgba(255,59,48,0.15)", border:"1px solid rgba(255,59,48,0.35)",
           borderRadius:10, padding:"6px 12px", color:"rgba(255,59,48,0.9)",
           fontSize:11, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer",
           backdropFilter:"blur(8px)", WebkitBackdropFilter:"blur(8px)",
         }}>
           ✕ Reset challenge
-        </button>
+        </button> */}
       </div>
 
 
@@ -1403,11 +1403,13 @@ export default function HabitTree() {
               const habit = def || { id: hAny.id, label: hAny.label, sub: hAny.label, Icon: FallbackIcon, color: "#4A9B5F" };
               // Always use the numeric backend id (hAny.id) as the key so that
               // it matches what the API stored in `days` and `habitCommitmentIds`.
+              // Only allow editing for today and yesterday
+              const canEdit = selDay === currentDay || selDay === currentDay - 1;
               return (
                 <HabitRow key={hAny.id} habit={habit}
                   checked={!!(days[selDay]&&days[selDay][hAny.id])}
-                  onToggle={()=>toggle(hAny.id)}
-                  dimmed={false}/>
+                  onToggle={canEdit ? ()=>toggle(hAny.id) : ()=>{}}
+                  dimmed={!canEdit}/>
               );
             })}
           </div>

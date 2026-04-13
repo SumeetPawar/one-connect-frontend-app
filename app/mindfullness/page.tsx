@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { BottomNav } from "../components/BottomNav";
 // ─── Icons — inline SVGs (lucide style, strokeWidth 1.5) ─────────────────────
 // In your Next.js app swap these for the lucide-react package imports
@@ -869,6 +870,8 @@ const COMPLETION_MSGS = [
 ] as const;
 
 export default function MeditationPage() {
+  const router = useRouter();
+  const handleBack = () => router.back();
   const [tech, setTech] = useState<Technique>(TECHNIQUES[0]);
   const [active, setActive]       = useState<boolean>(false);
   const [phaseIdx, setPhaseIdx]   = useState<number>(0);
@@ -1065,6 +1068,38 @@ export default function MeditationPage() {
       overflowX: "hidden",
       paddingBottom: 90,
     }}>
+      {/* Back Button */}
+      <div style={{ position: 'fixed', top: 16, left: 16, zIndex: 50 }}>
+        <button
+          onClick={handleBack}
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '8px',
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: 'rgba(255, 255, 255, 0.7)',
+            transition: 'all 0.2s',
+            padding: 0
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+            e.currentTarget.style.color = '#ffffff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
       <style>{`
         * { margin: 0; padding: 0; box-sizing: border-box; }
         @keyframes fadeUp {

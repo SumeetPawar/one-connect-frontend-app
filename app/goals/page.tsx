@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 export default function WeeklyChallenge() {
     // Centralized login/API check
     useAuthRedirect({ apiCheck: true });
+    const navRouter = useRouter();
     const [selectedGoal, setSelectedGoal] = useState<string | null>('easy');
     const [showSteps, setShowSteps] = useState(false);
     const [saving, setSaving] = useState(false);

@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isIOS } from "../register-sw";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -82,6 +83,7 @@ export default function AndroidInstallPrompt() {
   // Always show on explicit icon tap — only on non-iOS
   useEffect(() => {
     const showHandler = () => {
+      if (isIOS()) return; // iOS has its own prompt
       if (!window.matchMedia("(display-mode: standalone)").matches) setVisible(true);
     };
     window.addEventListener("show-install-prompt", showHandler);

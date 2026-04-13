@@ -55,7 +55,8 @@ const ACCENT = "#A78BF5";
 
 export function BottomNav({ active }: { active: NavTabId }) {
   const router = useRouter();
-  const [stepsHref, setStepsHref] = useState<string | null>(null); // null = not enrolled
+  const [stepsHref, setStepsHref] = useState<string | null>(null); // null = loading
+  const [habitsActive, setHabitsActive] = useState<boolean | null>(null); // null = loading
 
   useEffect(() => {
     api<{ id?: string; status?: string; user_joined?: boolean; start_date?: string }[]>("/api/challenges/available")
@@ -69,21 +70,31 @@ export function BottomNav({ active }: { active: NavTabId }) {
         setStepsHref(enrolled ? `/challanges/${(enrolled as any).id}/steps` : "");
       })
       .catch(() => setStepsHref(""));
+
+    api("/api/habit-challenges/active")
+      .then(() => setHabitsActive(true))
+      .catch(() => setHabitsActive(false));
   }, []);
 
   function handleTap(tab: typeof TABS[number]) {
     if (tab.id === active) return;
     if (tab.id === "steps") {
       if (stepsHref === null) return; // still loading
-      if (!stepsHref) return;         // not enrolled — do nothing
-      router.push(stepsHref);
+      // if enrolled → go to challenge steps; if not enrolled → go to challenges list to join
+      router.push(stepsHref || "/challanges");
       return;
+    }
+    if (tab.id === "habits") {
+      if (habitsActive === null) return; // still loading
+      if (!habitsActive) return;         // no active challenge — do nothing
     }
     router.push(tab.href);
   }
 
   const stepsLoading = stepsHref === null;
   const stepsDisabled = stepsHref === "";
+  const habitsLoading = habitsActive === null;
+  const habitsDisabled = habitsActive === false;
 
   return (
     <nav style={{
@@ -98,8 +109,11 @@ export function BottomNav({ active }: { active: NavTabId }) {
     }}>
       {TABS.map(tab => {
         const isActive = tab.id === active;
-        const isDisabled = tab.id === "steps" && (stepsDisabled || stepsLoading);
-        const color = isActive ? ACCENT : isDisabled ? "rgba(240,237,232,0.15)" : "rgba(240,237,232,0.35)";
+        const isDisabled =
+          (tab.id === "steps" && stepsLoading) ||
+          (tab.id === "habits" && (habitsDisabled || habitsLoading));
+        // Use a higher-contrast gray for disabled tabs for accessibility
+        const color = isActive ? ACCENT : isDisabled ? "rgba(180,180,200,0.38)" : "rgba(240,237,232,0.35)";
 
         return (
           <motion.button
@@ -113,7 +127,7 @@ export function BottomNav({ active }: { active: NavTabId }) {
               padding: "6px 20px 2px", minWidth: 60, height: 58,
               justifyContent: "center", position: "relative",
               WebkitTapHighlightColor: "transparent",
-              opacity: isDisabled ? 0.35 : 1,
+              opacity: isDisabled ? 0.55 : 1,
               transition: "opacity 0.2s",
             }}
           >

@@ -56,10 +56,10 @@ const T = {
   rose: "#E87A8A",
   teal: "#38BDF8",
   t1: "#F2EEFF",
-  t2: "rgba(242,238,255,0.65)",
-  t3: "rgba(242,238,255,0.38)",
-  t4: "rgba(242,238,255,0.20)",
-  t5: "rgba(242,238,255,0.09)",
+  t2: "rgba(242,238,255,0.82)", // was 0.65
+  t3: "rgba(242,238,255,0.60)", // was 0.38
+  t4: "rgba(242,238,255,0.36)", // was 0.20
+  t5: "rgba(242,238,255,0.18)", // was 0.09
   s1: "rgba(255,255,255,0.06)",
   b1: "rgba(255,255,255,0.09)",
   b2: "rgba(255,255,255,0.06)",
@@ -232,8 +232,8 @@ function Spark({ color, pts }: { color: string; pts: number[] }) {
 type RichSegment = { text: string; color: string | null; style: string };
 type HomeData = {
   steps: { yesterday: number; today: number; daily_target: number; pct: number; step_streak: number };
-  challenge: { id: string; rank: number; rank_change: number } | null;
-  step_challenge: { id: string; rank: number; rank_change: number } | null;
+  challenge: { id: string; rank: number; previous_rank?: number; rank_change: number; total_participants?: number } | null;
+  step_challenge: { id: string; rank: number; previous_rank?: number; rank_change: number; total_participants?: number } | null;
   habits: { challenge_id: number; day_number: number; total_days: number; completed_count: number; total_count: number; all_done: boolean; yesterday_completed: number; yesterday_all_done: boolean } | null;
   habit_streak: { current: number; effective: number; longest: number; perfect_days: number };
   ai_insight: {
@@ -564,7 +564,7 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
         </p>
         {/* Hook line */}
         {insight?.hook && (
-          <p style={{ fontSize: 11, fontWeight: 500, color: T.purpleL, marginTop: 8, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 11, fontWeight: 500, color: T.green, marginTop: 8, lineHeight: 1.5 }}>
             {toStr(insight.hook)}
           </p>
         )}
@@ -586,7 +586,8 @@ function StepsCard({
 }) {
   const { steps, challenge } = data;
   const isLogged = steps.today > 0;
-  const hasChallenge = !!challenge;
+  // Only treat as enrolled if challenge object exists and has a non-null id
+  const hasChallenge = !!(challenge && challenge.id);
   const isEvening = new Date().getHours() >= 17;
 
   const wrap = (accent: string, children: React.ReactNode, tappable = false) => (
@@ -725,10 +726,10 @@ function StepsCard({
         Target: {steps.daily_target.toLocaleString()} steps
       </p>
       <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, lineHeight: 1.6 }}>
-        Rank #{challenge.rank} · Log your steps in the evening to track today's progress.
+        Rank #{challenge.rank}{challenge.total_participants ? ` of ${challenge.total_participants}` : ""} · Log your steps in the evening to track today's progress.
       </p>
     </div>
-  ), true);
+  ), hasChallenge);
 
   if (!isLogged) return wrap(T.purple, (
     <div style={{ padding: "20px 18px 18px", textAlign: "center" as const }}>
@@ -742,7 +743,7 @@ function StepsCard({
       </div>
       <p style={{ fontSize: 16, fontWeight: 700, color: T.t1, letterSpacing: "-.2px", lineHeight: 1.35, marginBottom: 6 }}>How many steps today?</p>
       <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, marginBottom: 18, lineHeight: 1.55 }}>
-        Currently rank #{challenge.rank} · target {steps.daily_target.toLocaleString()} steps
+        Currently rank #{challenge.rank}{challenge.total_participants ? ` of ${challenge.total_participants}` : ""} · target {steps.daily_target.toLocaleString()} steps
       </p>
       <button onClick={e => { e.stopPropagation(); setShowLog(true); }} style={{
         width: "100%", padding: "15px 0", borderRadius: 14, border: "none",
@@ -751,7 +752,7 @@ function StepsCard({
         boxShadow: "0 8px 28px rgba(124,92,232,.40),0 1px 0 rgba(255,255,255,.14) inset",
       }}>Log Today's Steps</button>
     </div>
-  ), true);
+  ), hasChallenge);
 
   // logged state
   return wrap(T.green, (
@@ -784,7 +785,7 @@ function StepsCard({
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 0 2px" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: T.green }}>Rank #{challenge.rank}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.green }}>Rank #{challenge.rank}{challenge.total_participants ? ` of ${challenge.total_participants}` : ""}</span>
           {challenge.rank_change > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               <Ic.Up c={T.green} s={8} />
@@ -799,7 +800,7 @@ function StepsCard({
         <span style={{ fontSize: 12, fontWeight: 400, color: T.t3 }}>{steps.step_streak} day streak · <span style={{ color: T.purple, fontWeight: 600 }}>View →</span></span>
       </div>
     </>
-  ), true);
+  ), hasChallenge);
 }
 
 // ─── habits card ──────────────────────────────────────────────────────────────
@@ -1009,6 +1010,7 @@ export default function HomePage() {
           data = {
             steps: { yesterday: 0, today: 0, daily_target: 8000, pct: 0, step_streak: 0 },
             challenge: null,
+            step_challenge: null,
             habits: null,
             habit_streak: { current: 0, effective: 0, longest: 0, perfect_days: 0 },
             ai_insight: null,
@@ -1016,13 +1018,13 @@ export default function HomePage() {
           };
         }
         // Normalise: API returns step_challenge, code reads challenge
-        if (!data.challenge && (data as any).step_challenge) {
-          data = { ...data, challenge: (data as any).step_challenge };
+        // Only promote step_challenge to challenge when it has a real id (enrolled user)
+        if (!data.challenge && data.step_challenge?.id) {
+          data = { ...data, challenge: data.step_challenge };
         }
         setHomeData(data);
-        // /api/home may return challenge:null even when the user is joined.
-        // Always fetch /api/challenges/available to reconcile.
-        if (!data.challenge) {
+        // Always fetch /api/challenges/available when not enrolled (no real challenge id)
+        if (!data.challenge?.id) {
           api<any[]>("/api/challenges/available").then(all => {
             if (!Array.isArray(all)) return;
             const today = new Date().toISOString().slice(0, 10);
@@ -1035,7 +1037,7 @@ export default function HomePage() {
             if (joined) {
               setHomeData(prev => prev && !prev.challenge ? {
                 ...prev,
-                challenge: { id: joined.id, rank: 0, rank_change: 0 },
+                challenge: { id: joined.id, rank: 0, rank_change: 0, total_participants: joined.participant_count },
                 steps: { ...prev.steps, daily_target: joined.user_daily_target ?? prev.steps.daily_target },
               } : prev);
               return;
@@ -1102,7 +1104,7 @@ export default function HomePage() {
       // Re-fetch home data so the StepsCard renders the logged state
       try {
         let fresh = await api<HomeData>("/api/home", { method: "GET" });
-        if (!fresh.challenge && fresh.step_challenge) fresh = { ...fresh, challenge: fresh.step_challenge };
+        if (!fresh.challenge?.id && fresh.step_challenge?.id) fresh = { ...fresh, challenge: fresh.step_challenge };
         setHomeData(fresh);
       } catch {
         // Optimistic fallback — update today's count locally

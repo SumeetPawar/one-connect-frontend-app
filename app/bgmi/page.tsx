@@ -1,4 +1,5 @@
 "use client";
+import React, { JSX } from "react";
 import { useState, useEffect, useCallback, CSSProperties } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ReferenceArea, ResponsiveContainer } from "recharts";
 import { useRouter } from "next/navigation";
@@ -1554,7 +1555,7 @@ export default function ScanReport() {
             const SEG_COLORS: Record<string, string> = { green: C.good, rose: C.bad, teal: "#2DD4BF", orange: C.warn, purple: C.purple };
             const renderSegs = (segs: { text: string; style: string; color: string | null }[]) =>
               segs.map((s, i) => {
-                const base = "rgba(255,255,255,0.72)";
+                const base = "rgba(255,255,255,0.82)";
                 const c = s.color ? (SEG_COLORS[s.color] ?? s.color) : base;
                 return (
                   <span key={i} style={{
@@ -1569,15 +1570,125 @@ export default function ScanReport() {
 
             if (aiLoading && !aiInsight) return (
               <div style={{ padding: "12px 16px 0", ...fade(0) }}>
+                <style>{`
+                  @keyframes aiShimmer {
+                    0%   { background-position: -400px 0 }
+                    100% { background-position: 400px 0 }
+                  }
+                  @keyframes aiPulseRing {
+                    0%   { transform: scale(1);   opacity: 0.6 }
+                    50%  { transform: scale(1.15); opacity: 0.2 }
+                    100% { transform: scale(1);   opacity: 0.6 }
+                  }
+                  @keyframes aiBrainPulse {
+                    0%, 100% { opacity: 0.7 }
+                    50%      { opacity: 1   }
+                  }
+                  @keyframes aiDot {
+                    0%, 80%, 100% { transform: scale(0.6); opacity: 0.3 }
+                    40%           { transform: scale(1);   opacity: 1   }
+                  }
+                  @keyframes aiBorderSpin {
+                    0%   { background-position: 0% 50% }
+                    50%  { background-position: 100% 50% }
+                    100% { background-position: 0% 50% }
+                  }
+                `}</style>
                 <div style={{
                   borderRadius: 22,
-                  background: "rgba(191,90,242,0.06)",
-                  border: ".5px solid rgba(191,90,242,.14)",
-                  padding: "18px 20px",
+                  background: "linear-gradient(180deg,rgba(191,90,242,.10) 0%,rgba(124,92,232,.04) 100%)",
+                  border: ".5px solid rgba(191,90,242,.22)",
+                  boxShadow: "0 4px 28px rgba(0,0,0,.55), 0 1px 0 rgba(242,238,255,.04) inset",
+                  padding: "22px 22px 20px",
+                  overflow: "hidden",
+                  position: "relative" as const,
                 }}>
-                  <div style={{ height: 10, borderRadius: 6, background: "rgba(255,255,255,0.07)", marginBottom: 14, width: 88 }} />
-                  <div style={{ height: 16, borderRadius: 6, background: "rgba(255,255,255,0.08)", marginBottom: 8, width: "88%" }} />
-                  <div style={{ height: 16, borderRadius: 6, background: "rgba(255,255,255,0.05)", width: "65%" }} />
+                  {/* Ambient glow blob */}
+                  <div style={{
+                    position: "absolute", top: -40, right: -30, width: 180, height: 180,
+                    borderRadius: "50%",
+                    background: "radial-gradient(circle, rgba(191,90,242,0.14) 0%, transparent 70%)",
+                    pointerEvents: "none" as const,
+                    animation: "aiPulseRing 3s ease-in-out infinite",
+                  }} />
+
+                  {/* Top row: icon + label */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+                    {/* Pulsing brain icon */}
+                    <div style={{ position: "relative", flexShrink: 0, width: 40, height: 40 }}>
+                      {/* outer ring */}
+                      <div style={{
+                        position: "absolute", inset: -3,
+                        borderRadius: "50%",
+                        background: "conic-gradient(from 0deg, rgba(191,90,242,0.6), rgba(124,92,232,0.1), rgba(191,90,242,0.6))",
+                        animation: "aiBorderSpin 2.5s linear infinite",
+                      }} />
+                      <div style={{
+                        position: "absolute", inset: 1, borderRadius: "50%",
+                        background: "rgba(10,8,18,1)",
+                      }} />
+                      <div style={{
+                        position: "absolute", inset: 0, borderRadius: "50%",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        animation: "aiBrainPulse 2s ease-in-out infinite",
+                      }}>
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,0.9)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.88A2.5 2.5 0 0 1 9.5 2Z"/>
+                          <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.88A2.5 2.5 0 0 0 14.5 2Z"/>
+                        </svg>
+                      </div>
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontSize: 12, fontWeight: 700, color: C.purple,
+                        letterSpacing: ".06em", textTransform: "uppercase" as const,
+                        marginBottom: 3,
+                      }}>
+                        Generating AI Insights
+                      </div>
+                      {/* Animated dots */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 400 }}>Analysing your body data</span>
+                        {[0, 1, 2].map(i => (
+                          <span key={i} style={{
+                            display: "inline-block",
+                            width: 4, height: 4, borderRadius: "50%",
+                            background: C.purple,
+                            animation: `aiDot 1.4s ease-in-out ${i * 0.16}s infinite`,
+                          }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shimmer lines */}
+                  {[
+                    { w: "82%", h: 14, mb: 10 },
+                    { w: "68%", h: 14, mb: 18 },
+                    { w: "91%", h: 11, mb: 7  },
+                    { w: "54%", h: 11, mb: 0  },
+                  ].map((l, i) => (
+                    <div key={i} style={{
+                      width: l.w, height: l.h, borderRadius: 8, marginBottom: l.mb,
+                      background: "linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(191,90,242,0.09) 50%, rgba(255,255,255,0.04) 75%)",
+                      backgroundSize: "400px 100%",
+                      animation: `aiShimmer 1.8s ease-in-out ${i * 0.12}s infinite`,
+                    }} />
+                  ))}
+
+                  {/* Bottom fake tag row */}
+                  <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                    {["Body Fat", "Muscle Mass", "Metabolic Age"].map((label, i) => (
+                      <div key={label} style={{
+                        height: 24, borderRadius: 99,
+                        background: "linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(191,90,242,0.07) 50%, rgba(255,255,255,0.04) 75%)",
+                        backgroundSize: "400px 100%",
+                        animation: `aiShimmer 1.8s ease-in-out ${i * 0.18}s infinite`,
+                        width: label === "Metabolic Age" ? 100 : label === "Muscle Mass" ? 88 : 72,
+                      }} />
+                    ))}
+                  </div>
                 </div>
               </div>
             );
@@ -1588,30 +1699,48 @@ export default function ScanReport() {
               <div style={{ padding: "12px 16px 0", ...fade(0) }}>
                 <div style={{
                   borderRadius: 22,
-                  background: "linear-gradient(180deg,rgba(191,90,242,.11) 0%,rgba(124,92,232,.03) 100%)",
-                  border: ".5px solid rgba(191,90,242,.20)",
-                  boxShadow: "0 4px 28px rgba(0,0,0,.55),0 1px 0 rgba(242,238,255,.04) inset",
+                  background: "linear-gradient(160deg,rgba(191,90,242,.13) 0%,rgba(124,92,232,.05) 60%,rgba(10,8,18,0) 100%)",
+                  border: ".5px solid rgba(191,90,242,.22)",
+                  boxShadow: "0 8px 40px rgba(0,0,0,.60), 0 1px 0 rgba(242,238,255,.05) inset",
                   overflow: "hidden",
+                  position: "relative" as const,
                 }}>
-                  <div style={{ padding: "18px 20px 18px" }}>
+                  {/* Subtle top accent line */}
+                  <div style={{ height: 2, background: "linear-gradient(90deg,transparent,rgba(191,90,242,0.55) 40%,rgba(124,92,232,0.35) 70%,transparent)", opacity: 0.8 }} />
+
+                  {/* Ambient blob */}
+                  <div style={{
+                    position: "absolute", top: -50, right: -30, width: 200, height: 200,
+                    borderRadius: "50%",
+                    background: "radial-gradient(circle, rgba(191,90,242,0.10) 0%, transparent 70%)",
+                    pointerEvents: "none" as const,
+                  }} />
+
+                  <div style={{ padding: "18px 20px 20px" }}>
 
                     {/* Top row: badge + scan meta */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                       <div style={{
-                        display: "inline-flex", alignItems: "center", gap: 5,
-                        background: "rgba(191,90,242,.10)",
-                        border: ".5px solid rgba(191,90,242,.28)",
-                        borderRadius: 99, padding: "3px 10px",
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        background: "rgba(191,90,242,.12)",
+                        border: ".5px solid rgba(191,90,242,.30)",
+                        borderRadius: 99, padding: "4px 12px",
                       }}>
-                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: C.purple, boxShadow: `0 0 6px ${C.purple}` }} />
-                        <span style={{ fontSize: 10, fontWeight: 700, color: C.purple, letterSpacing: ".08em", textTransform: "uppercase" as const }}>
-                          Body Insight
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.purple} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.88A2.5 2.5 0 0 1 9.5 2Z"/>
+                          <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.88A2.5 2.5 0 0 0 14.5 2Z"/>
+                        </svg>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: C.purple, letterSpacing: ".09em", textTransform: "uppercase" as const }}>
+                          AI Body Insight
                         </span>
+                        {aiInsight.cached && (
+                          <span style={{ fontSize: 9, fontWeight: 600, color: "rgba(191,90,242,0.5)", letterSpacing: ".05em" }}>· CACHED</span>
+                        )}
                       </div>
                       {lastScanDate && (
                         <div style={{ textAlign: "right" as const }}>
                           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", lineHeight: 1.5 }}>
-                            Updated <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.45)" }}>{lastScanDate}</span>
+                            Updated <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.50)" }}>{lastScanDate}</span>
                           </div>
                           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", lineHeight: 1.5 }}>
                             Next <span style={{ fontWeight: 600, color: scanDueColor, transition: "color 0.2s" }}>{scanDueLabel}</span>
@@ -1621,16 +1750,19 @@ export default function ScanReport() {
                     </div>
 
                     {/* Summary headline */}
-                    <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.4, letterSpacing: "-.3px", margin: 0, color: "rgba(255,255,255,0.92)" }}>
+                    <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.5, letterSpacing: "-.3px", margin: "0 0 4px", color: "rgba(255,255,255,0.95)" }}>
                       {renderSegs(aiInsight.summary)}
                     </p>
 
                     {/* Warning block */}
                     {(aiInsight.warning?.length ?? 0) > 0 && (
                       <div style={{
-                        background: `${C.bad}10`, border: `1px solid ${C.bad}28`,
-                        borderRadius: 14, padding: "11px 14px", marginTop: 12,
+                        background: `${C.bad}0D`, border: `1px solid ${C.bad}30`,
+                        borderLeft: `3px solid ${C.bad}`,
+                        borderRadius: 12, padding: "11px 14px", marginTop: 14,
+                        display: "flex", gap: 10, alignItems: "flex-start",
                       }}>
+                        <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>⚠️</span>
                         <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{renderSegs(aiInsight.warning!)}</p>
                       </div>
                     )}
@@ -1638,9 +1770,12 @@ export default function ScanReport() {
                     {/* Action block */}
                     {(aiInsight.action?.length ?? 0) > 0 && (
                       <div style={{
-                        background: "rgba(45,212,191,0.07)", border: "1px solid rgba(45,212,191,0.20)",
-                        borderRadius: 14, padding: "11px 14px", marginTop: 10,
+                        background: "rgba(45,212,191,0.07)", border: "1px solid rgba(45,212,191,0.22)",
+                        borderLeft: "3px solid rgba(45,212,191,0.7)",
+                        borderRadius: 12, padding: "11px 14px", marginTop: 10,
+                        display: "flex", gap: 10, alignItems: "flex-start",
                       }}>
+                        <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>💡</span>
                         <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{renderSegs(aiInsight.action!)}</p>
                       </div>
                     )}
@@ -1649,25 +1784,31 @@ export default function ScanReport() {
                     {aiInsight.highlights.length > 0 && (
                       <div style={{
                         borderTop: "1px solid rgba(255,255,255,0.07)",
-                        marginTop: 16, paddingTop: 14,
-                        display: "flex", flexDirection: "column" as const, gap: 13,
+                        marginTop: 18, paddingTop: 16,
+                        display: "flex", flexDirection: "column" as const, gap: 12,
                       }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: ".10em", textTransform: "uppercase" as const }}>
+                          Metrics Breakdown
+                        </span>
                         {aiInsight.highlights.map((h, i) => (
                           <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                            {/* Direction icon box */}
                             <div style={{
-                              width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                              background: `${PRIORITY_COLOR[h.priority]}14`,
-                              border: `1px solid ${PRIORITY_COLOR[h.priority]}28`,
+                              width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+                              background: `${PRIORITY_COLOR[h.priority]}12`,
+                              border: `1px solid ${PRIORITY_COLOR[h.priority]}2A`,
                               display: "flex", alignItems: "center", justifyContent: "center",
-                              fontSize: 15, fontWeight: 700, color: PRIORITY_COLOR[h.priority],
+                              fontSize: 16, fontWeight: 800, color: PRIORITY_COLOR[h.priority],
                             }}>
                               {DIR_ICON[h.direction]}
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" as const }}>
+                              <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" as const, marginBottom: 3 }}>
                                 <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.90)" }}>{h.metric}</span>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: PRIORITY_COLOR[h.priority] }}>{h.value}</span>
+                                <span style={{
+                                  fontSize: 13, fontWeight: 800, color: PRIORITY_COLOR[h.priority],
+                                  background: `${PRIORITY_COLOR[h.priority]}14`,
+                                  borderRadius: 6, padding: "1px 6px",
+                                }}>{h.value}</span>
                                 {h.delta && (
                                   <span style={{
                                     fontSize: 11, fontWeight: 500,
@@ -1677,7 +1818,7 @@ export default function ScanReport() {
                                   }}>{h.delta}</span>
                                 )}
                               </div>
-                              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.48)", lineHeight: 1.5, margin: "3px 0 0" }}>
+                              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.55, margin: 0 }}>
                                 {renderSegs(h.note)}
                               </p>
                             </div>
