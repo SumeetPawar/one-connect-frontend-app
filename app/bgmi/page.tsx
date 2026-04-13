@@ -755,16 +755,18 @@ export default function ScanReport() {
 
   // ── AI insight state ──────────────────────────────────────────
   type RichSeg = { text: string; style: "normal"|"bold"|"highlight"|"stat"; color: string|null };
-  type AiHighlight = { metric: string; direction: "up"|"down"|"stable"; value: string; delta: string; priority: "high"|"medium"|"low"; note: RichSeg[] };
-  type AiInsight = { summary: RichSeg[]; highlights: AiHighlight[]; warning?: RichSeg[]; action?: RichSeg[]; generated_at: string; cached: boolean };
+  type AiHighlight = { metric: string; direction: "up"|"down"|"stable"; value: string; delta: string | null; priority: "high"|"medium"|"low"; note: RichSeg[] };
+  type SuggestedHabit = { name: string; slug: string; why: string; first_step: string; category: string; duration: string | null; frequency: string; urgency: string; in_library: boolean };
+  type AiInsight = { headline: string; story: RichSeg[]; highlights: AiHighlight[]; focus?: RichSeg[]; next_milestone?: string; suggested_habits?: SuggestedHabit[]; suggested_habit?: string | null; generated_at: string; cached: boolean };
   const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
   const fetchAiInsight = useCallback(async () => {
     setAiLoading(true);
     try {
-      const d = await api<AiInsight>("/api/body-metrics/insight");
-      setAiInsight(d);
+      const raw = await api<{ scan?: any; ai_insight?: AiInsight } | AiInsight>("/api/body-metrics/insight");
+      const insight = (raw as any).ai_insight ?? raw as AiInsight;
+      setAiInsight(insight);
     } catch { /* insight is optional */ }
     finally { setAiLoading(false); }
   }, []);
@@ -1565,9 +1567,6 @@ export default function ScanReport() {
                 );
               });
 
-            const PRIORITY_COLOR: Record<string, string> = { high: C.bad, medium: C.warn, low: "rgba(255,255,255,0.30)" };
-            const DIR_ICON: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
-
             if (aiLoading && !aiInsight) return (
               <div style={{ padding: "12px 16px 0", ...fade(0) }}>
                 <style>{`
@@ -1695,135 +1694,181 @@ export default function ScanReport() {
 
             if (!aiInsight) return null;
 
+            const DIR_ARROW: Record<string, string> = { up: "↑", down: "↓", stable: "–" };
+
             return (
               <div style={{ padding: "12px 16px 0", ...fade(0) }}>
                 <div style={{
                   borderRadius: 22,
-                  background: "linear-gradient(160deg,rgba(191,90,242,.13) 0%,rgba(124,92,232,.05) 60%,rgba(10,8,18,0) 100%)",
-                  border: ".5px solid rgba(191,90,242,.22)",
-                  boxShadow: "0 8px 40px rgba(0,0,0,.60), 0 1px 0 rgba(242,238,255,.05) inset",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.09)",
                   overflow: "hidden",
                   position: "relative" as const,
                 }}>
-                  {/* Subtle top accent line */}
-                  <div style={{ height: 2, background: "linear-gradient(90deg,transparent,rgba(191,90,242,0.55) 40%,rgba(124,92,232,0.35) 70%,transparent)", opacity: 0.8 }} />
+                  {/* Purple top rule */}
+                  <div style={{ height: 2, background: "linear-gradient(90deg, rgba(191,90,242,0.70) 0%, rgba(124,92,232,0.30) 60%, transparent 100%)" }} />
 
-                  {/* Ambient blob */}
-                  <div style={{
-                    position: "absolute", top: -50, right: -30, width: 200, height: 200,
-                    borderRadius: "50%",
-                    background: "radial-gradient(circle, rgba(191,90,242,0.10) 0%, transparent 70%)",
-                    pointerEvents: "none" as const,
-                  }} />
+                  <div style={{ padding: "18px 20px 22px" }}>
 
-                  <div style={{ padding: "18px 20px 20px" }}>
-
-                    {/* Top row: badge + scan meta */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                      <div style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        background: "rgba(191,90,242,.12)",
-                        border: ".5px solid rgba(191,90,242,.30)",
-                        borderRadius: 99, padding: "4px 12px",
-                      }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.purple} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    {/* Label row */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.purple} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.88A2.5 2.5 0 0 1 9.5 2Z"/>
                           <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.88A2.5 2.5 0 0 0 14.5 2Z"/>
                         </svg>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: C.purple, letterSpacing: ".09em", textTransform: "uppercase" as const }}>
-                          AI Body Insight
+                        <span style={{ fontSize: 11, fontWeight: 600, color: C.purple, letterSpacing: ".04em" }}>
+                          AI Analysis
                         </span>
-                        {aiInsight.cached && (
-                          <span style={{ fontSize: 9, fontWeight: 600, color: "rgba(191,90,242,0.5)", letterSpacing: ".05em" }}>· CACHED</span>
-                        )}
                       </div>
                       {lastScanDate && (
-                        <div style={{ textAlign: "right" as const }}>
-                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", lineHeight: 1.5 }}>
-                            Updated <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.50)" }}>{lastScanDate}</span>
-                          </div>
-                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", lineHeight: 1.5 }}>
-                            Next <span style={{ fontWeight: 600, color: scanDueColor, transition: "color 0.2s" }}>{scanDueLabel}</span>
-                          </div>
-                        </div>
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.30)" }}>
+                          {lastScanDate} · <span style={{ color: scanDueColor }}>{scanDueLabel}</span>
+                        </span>
                       )}
                     </div>
 
-                    {/* Summary headline */}
-                    <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.5, letterSpacing: "-.3px", margin: "0 0 4px", color: "rgba(255,255,255,0.95)" }}>
-                      {renderSegs(aiInsight.summary)}
+                    {/* Headline — split on em dash for two-tone typography */}
+                    {(() => {
+                      const parts = aiInsight.headline.split(/\s*[—–]\s*/);
+                      return (
+                        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.3, marginBottom: 12 }}>
+                          <span style={{ color: "rgba(255,255,255,0.92)" }}>{parts[0]}</span>
+                          {parts[1] && (
+                            <>
+                              <span style={{ color: "rgba(255,255,255,0.22)", fontWeight: 300, margin: "0 6px" }}>—</span>
+                              <span style={{ color: "#2DD4BF", fontWeight: 600 }}>{parts[1]}</span>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Story */}
+                    <p style={{ fontSize: 14, fontWeight: 400, lineHeight: 1.65, letterSpacing: "-0.01em", margin: "0 0 0", color: "rgba(255,255,255,0.72)" }}>
+                      {renderSegs(aiInsight.story)}
                     </p>
-
-                    {/* Warning block */}
-                    {(aiInsight.warning?.length ?? 0) > 0 && (
-                      <div style={{
-                        background: `${C.bad}0D`, border: `1px solid ${C.bad}30`,
-                        borderLeft: `3px solid ${C.bad}`,
-                        borderRadius: 12, padding: "11px 14px", marginTop: 14,
-                        display: "flex", gap: 10, alignItems: "flex-start",
-                      }}>
-                        <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>⚠️</span>
-                        <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{renderSegs(aiInsight.warning!)}</p>
-                      </div>
-                    )}
-
-                    {/* Action block */}
-                    {(aiInsight.action?.length ?? 0) > 0 && (
-                      <div style={{
-                        background: "rgba(45,212,191,0.07)", border: "1px solid rgba(45,212,191,0.22)",
-                        borderLeft: "3px solid rgba(45,212,191,0.7)",
-                        borderRadius: 12, padding: "11px 14px", marginTop: 10,
-                        display: "flex", gap: 10, alignItems: "flex-start",
-                      }}>
-                        <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>💡</span>
-                        <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{renderSegs(aiInsight.action!)}</p>
-                      </div>
-                    )}
 
                     {/* Highlights */}
                     {aiInsight.highlights.length > 0 && (
-                      <div style={{
-                        borderTop: "1px solid rgba(255,255,255,0.07)",
-                        marginTop: 18, paddingTop: 16,
-                        display: "flex", flexDirection: "column" as const, gap: 12,
-                      }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: ".10em", textTransform: "uppercase" as const }}>
-                          Metrics Breakdown
-                        </span>
-                        {aiInsight.highlights.map((h, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                            <div style={{
-                              width: 36, height: 36, borderRadius: 11, flexShrink: 0,
-                              background: `${PRIORITY_COLOR[h.priority]}12`,
-                              border: `1px solid ${PRIORITY_COLOR[h.priority]}2A`,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              fontSize: 16, fontWeight: 800, color: PRIORITY_COLOR[h.priority],
+                      <div style={{ marginTop: 20, display: "flex", flexDirection: "column" as const, gap: 0 }}>
+                        <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 16 }} />
+                        {aiInsight.highlights.map((h, i) => {
+                          const dotColor = h.priority === "high" ? C.bad : h.priority === "medium" ? C.warn : "rgba(255,255,255,0.30)";
+                          const arrowColor = h.direction === "up" && h.priority === "high" ? C.bad
+                            : h.direction === "down" && h.priority !== "high" ? C.good
+                            : "rgba(255,255,255,0.35)";
+                          return (
+                            <div key={i} style={{
+                              display: "flex", alignItems: "flex-start", gap: 14,
+                              paddingBottom: i < aiInsight.highlights.length - 1 ? 14 : 0,
+                              marginBottom: i < aiInsight.highlights.length - 1 ? 14 : 0,
+                              borderBottom: i < aiInsight.highlights.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
                             }}>
-                              {DIR_ICON[h.direction]}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" as const, marginBottom: 3 }}>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.90)" }}>{h.metric}</span>
-                                <span style={{
-                                  fontSize: 13, fontWeight: 800, color: PRIORITY_COLOR[h.priority],
-                                  background: `${PRIORITY_COLOR[h.priority]}14`,
-                                  borderRadius: 6, padding: "1px 6px",
-                                }}>{h.value}</span>
-                                {h.delta && (
-                                  <span style={{
-                                    fontSize: 11, fontWeight: 500,
-                                    color: h.direction === "down" && h.priority !== "high" ? C.good
-                                      : h.direction === "up" && h.priority === "high" ? C.bad
-                                      : "rgba(255,255,255,0.35)",
-                                  }}>{h.delta}</span>
-                                )}
+                              {/* Priority dot */}
+                              <div style={{ width: 7, height: 7, borderRadius: "50%", background: dotColor, flexShrink: 0, marginTop: 5 }} />
+
+                              {/* Content */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.88)", letterSpacing: "-0.01em" }}>{h.metric}</span>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                                    {h.delta && (
+                                      <span style={{ fontSize: 12, fontWeight: 600, color: arrowColor }}>
+                                        {DIR_ARROW[h.direction]} {h.delta}
+                                      </span>
+                                    )}
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.92)", letterSpacing: "-0.02em" }}>{h.value}</span>
+                                  </div>
+                                </div>
+                                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.44)", lineHeight: 1.55, margin: 0 }}>
+                                  {renderSegs(h.note)}
+                                </p>
                               </div>
-                              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.55, margin: 0 }}>
-                                {renderSegs(h.note)}
-                              </p>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Focus */}
+                    {(aiInsight.focus?.length ?? 0) > 0 && (
+                      <div style={{
+                        marginTop: 18,
+                        background: "rgba(45,212,191,0.06)",
+                        border: "1px solid rgba(45,212,191,0.15)",
+                        borderLeft: "3px solid rgba(45,212,191,0.55)",
+                        borderRadius: 12, padding: "12px 14px",
+                      }}>
+                        <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: "rgba(255,255,255,0.75)" }}>
+                          {renderSegs(aiInsight.focus!)}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Suggested habits */}
+                    {(aiInsight.suggested_habits?.length ?? 0) > 0 && (
+                      <div style={{ marginTop: 22 }}>
+                        <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 16 }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: ".10em", textTransform: "uppercase" as const }}>
+                          Habits to add
+                        </span>
+                        <div style={{ display: "flex", flexDirection: "column" as const, gap: 10, marginTop: 12 }}>
+                          {aiInsight.suggested_habits!.map((h, i) => (
+                            <div key={i} style={{
+                              background: "rgba(255,255,255,0.04)",
+                              border: "1px solid rgba(255,255,255,0.08)",
+                              borderRadius: 14, padding: "13px 14px",
+                              display: "flex", alignItems: "flex-start", gap: 12,
+                            }}>
+                              {/* Category dot */}
+                              <div style={{
+                                width: 8, height: 8, borderRadius: "50%", flexShrink: 0, marginTop: 4,
+                                background: h.category === "fitness" ? C.good : h.category === "nutrition" ? C.warn : C.blue,
+                              }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                {/* Name + time pill */}
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" as const }}>
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.90)", letterSpacing: "-0.01em" }}>
+                                    {h.name}
+                                  </span>
+                                  <span style={{
+                                    fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.38)",
+                                    background: "rgba(255,255,255,0.07)", borderRadius: 6,
+                                    padding: "2px 7px", letterSpacing: "0.01em",
+                                  }}>
+                                    {[h.duration, h.frequency].filter(Boolean).join(" · ")}
+                                  </span>
+                                </div>
+                                {/* Why */}
+                                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", lineHeight: 1.55, margin: "0 0 7px" }}>
+                                  {h.why}
+                                </p>
+                                {/* First step */}
+                                <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(45,212,191,0.60)" strokeWidth="2.2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                                    <polyline points="9 18 15 12 9 6"/>
+                                  </svg>
+                                  <span style={{ fontSize: 12, color: "rgba(45,212,191,0.72)", lineHeight: 1.5 }}>
+                                    {h.first_step}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Next milestone */}
+                    {aiInsight.next_milestone && (
+                      <div style={{ marginTop: 16, display: "flex", alignItems: "flex-start", gap: 8 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 2 }}>
+                          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", lineHeight: 1.5, margin: 0, fontStyle: "italic" }}>
+                          {aiInsight.next_milestone}
+                        </p>
                       </div>
                     )}
                   </div>
