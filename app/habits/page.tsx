@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -90,6 +90,8 @@ const ALL_HABITS = [
   { id:"proteintarget",      label:"Hit daily protein target",      desc:"1.6g per kg bodyweight — track it once",                  why:"1.6g/kg is the evidence threshold for muscle protein synthesis. Below this, resistance training produces minimal muscle gain regardless of effort.", impact:"Muscle",      category:"Body",      color:C_PHYSICAL, icon: svgI(<><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></>) },
   { id:"zone2cardio",        label:"Zone 2 cardio 30 min",          desc:"Conversational pace — bike, walk, swim, jog",             why:"Zone 2 (conversational pace) is the strongest single predictor of longevity and VO2 max. 150 min/week reduces all-cause mortality by 35%.", impact:"Longevity",   category:"Body",      color:C_PHYSICAL, icon: svgI(<><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></>) },
   { id:"visualisation",      label:"Visualisation 5 min",           desc:"Mental rehearsal of your day or a key goal",              why:"Mental practice activates the same motor cortex regions as physical practice. Pascual-Leone (Harvard) showed it produces measurable neural changes.", impact:"Performance", category:"Mind",      color:C_MENTAL,   icon: svgI(<><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></>) },
+  { id:"strengthtraining",           label:"Strength train 3×/week",        desc:"Weights, bands or bodyweight — 3 sessions a week",        why:"Resistance training builds skeletal muscle, raises BMR by up to 15% and reduces visceral fat more effectively than cardio alone.",            impact:"Muscle",      category:"Body",      color:C_PHYSICAL, icon: svgI(<><path d="M6 4v16M18 4v16M3 8h4M17 8h4M3 16h4M17 16h4"/></>) },
+  { id:"hiit",               label:"HIIT session 20 min",           desc:"4–8 rounds: 20–40 sec max effort, 60 sec rest",           why:"HIIT reduces visceral fat 3× faster than steady-state cardio and elevates metabolic rate for up to 24 hrs post-session.",                 impact:"Fat loss",    category:"Body",      color:C_PHYSICAL, icon: svgI(<><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></>) },
 ];
 
 const HABIT_TIERS = {
@@ -103,6 +105,7 @@ const HABIT_TIERS = {
   timeblock:"growth", daily5goals:"growth", discomfortchallenge:"growth",
   proactivelanguage:"growth", trackspending:"growth", visualisation:"growth",
   stretch:"growth", callsomeone:"growth", coldshower:"growth", proteintarget:"growth",
+  strength:"growth", hiit:"growth",
   // Avoid — eliminating something harmful
   noprocessed:"avoid", noalcohol:"avoid", nosmoking:"avoid",
   noscreens:"avoid", nosugar:"avoid", nosocialmedia:"avoid",
@@ -123,7 +126,7 @@ const TIER_META = {
 };
 
 // ─── HABIT CARD ───────────────────────────────────────────────────────────────
-function HabitSelectCard({ habit, selected, disabled, onToggle }: { habit: Habit; selected: boolean; disabled: boolean; onToggle: () => void }) {
+function HabitSelectCard({ habit, selected, disabled, onToggle, aiSuggested }: { habit: Habit; selected: boolean; disabled: boolean; onToggle: () => void; aiSuggested?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const tier = HABIT_TIERS[habit.id as keyof typeof HABIT_TIERS];
   const barColor = tier ? TIER_META[tier as keyof typeof TIER_META].color : habit.color;
@@ -133,8 +136,8 @@ function HabitSelectCard({ habit, selected, disabled, onToggle }: { habit: Habit
   return (
     <div style={{
       borderRadius:14, overflow:"hidden", display:"flex",
-      background: selected ? (habit.color+"0e") : "#111116",
-      border:"1px solid " + (selected ? (habit.color+"30") : "#1e1e28"),
+      background: selected ? (habit.color+"0e") : aiSuggested ? "rgba(100,50,220,0.07)" : "#111116",
+      border:"1px solid " + (selected ? (habit.color+"30") : aiSuggested ? "rgba(130,80,255,0.22)" : "#1e1e28"),
       opacity: (disabled && !selected) ? 0.38 : 1,
       transition:"all 0.2s",
     }}>
@@ -158,10 +161,19 @@ function HabitSelectCard({ habit, selected, disabled, onToggle }: { habit: Habit
           {/* name + desc */}
           <div style={{ flex:1, minWidth:0 }}
             onClick={e => { e.stopPropagation(); if (!disabled || selected) onToggle(); }}>
-            <p style={{ fontSize:14, fontWeight:700, letterSpacing:"-0.025em", margin:"0 0 2px",
-              color: selected ? "#fff" : "rgba(255,255,255,0.88)" }}>
-              {habit.label}
-            </p>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
+              <p style={{ fontSize:14, fontWeight:700, letterSpacing:"-0.025em", margin:0,
+                color: selected ? "#fff" : "rgba(255,255,255,0.88)" }}>
+                {habit.label}
+              </p>
+              {aiSuggested && !selected && (
+                <span style={{
+                  fontSize:9, fontWeight:700, letterSpacing:"0.06em", textTransform:"uppercase",
+                  color:"#a78bfa", background:"rgba(130,80,255,0.15)", border:"1px solid rgba(130,80,255,0.28)",
+                  borderRadius:4, padding:"1px 5px", flexShrink:0,
+                }}>AI</span>
+              )}
+            </div>
             <p style={{ fontSize:11, color: selected ? "rgba(235,235,245,0.60)" : "rgba(255,255,255,0.45)",
               margin:0, lineHeight:1.4 }}>
               {habit.desc}
@@ -393,17 +405,103 @@ const PACK_META = {
   performance: { benefit:"VO2 max + sleep + focus",     pill:"Advanced",        pillColor:C_ENERGY   },
   clean:       { benefit:"Maximum transformation",      pill:"High discipline", pillColor:C_ALERT    },
 };
-function PackPickerScreen({ onSelectPack, onStartDirect, onCustom, onBack }: {
+interface AiSuggestedHabit { name: string; slug: string; why: string; first_step: string; category: string; }
+
+/** Resolve an API slug + habit name to a known ALL_HABITS id.
+ *  Tries: exact slug → alias map → normalised slug → label word match → original slug. */
+const SLUG_ALIASES: Record<string, string> = {
+  // protein
+  protein_first: "proteintarget", proteinfirst: "proteintarget",
+  eat_protein_first: "proteintarget", eatproteinfirst: "proteintarget",
+  // walking
+  walk_after_dinner: "walkaftermeals", walkafterdinner: "walkaftermeals",
+  walk_after_meal: "walkaftermeals", walkaftermeal: "walkaftermeals",
+  post_meal_walk: "walkaftermeals", postmealwalk: "walkaftermeals",
+  // strength
+  strength_train: "strength", strengthtrain: "strength",
+  strength_training: "strength", strengthtraining: "strength",
+  resistance_training: "strength", resistancetraining: "strength",
+  // hiit
+  hiit_session: "hiit", hiitsession: "hiit",
+  // zone2
+  zone_2: "zone2cardio", zone2: "zone2cardio",
+  zone_2_cardio: "zone2cardio", zone2_cardio: "zone2cardio",
+};
+const NAME_ALIASES: Record<string, string> = {
+  "eat protein": "proteintarget",
+  "protein first": "proteintarget",
+  "walk after dinner": "walkaftermeals",
+  "walk after meal": "walkaftermeals",
+  "strength train": "strength",
+  "strength training": "strength",
+  "resistance training": "strength",
+  "hiit session": "hiit",
+  "hiit workout": "hiit",
+};
+function resolveHabitId(slug: string | null | undefined, name?: string): string {
+  if (!slug) return name ?? "";
+  // 1. exact slug match
+  const direct = ALL_HABITS.find(h => h.id === slug);
+  if (direct) return direct.id;
+  // 2. alias override
+  const norm = slug.replace(/[_\-\s]+/g, "").toLowerCase();
+  const alias = SLUG_ALIASES[slug] ?? SLUG_ALIASES[norm];
+  if (alias) return alias;
+  // 3. strip underscores/hyphens/spaces (snake_case → camelcase)
+  const byNorm = ALL_HABITS.find(h => h.id.toLowerCase() === norm);
+  if (byNorm) return byNorm.id;
+  // 4. match by habit name — alias map first, then label prefix
+  if (name) {
+    const nameLow = name.toLowerCase().trim();
+    const nameAlias = NAME_ALIASES[nameLow] ?? NAME_ALIASES[nameLow.split(/\s+/).slice(0, 2).join(" ")];
+    if (nameAlias) return nameAlias;
+    const w = nameLow.split(/\s+/).slice(0, 2).join(" ");
+    const byLabel = ALL_HABITS.find(h => h.label.toLowerCase().startsWith(w) || h.label.toLowerCase().includes(w));
+    if (byLabel) return byLabel.id;
+  }
+  // 5. fall back to original slug
+  return slug;
+}
+
+function PackPickerScreen({ onSelectPack, onStartDirect, onSelectAiPack, onCustom, onBack }: {
   onSelectPack: (ids: string[]) => void;
   onStartDirect: (ids: string[], packId?: string) => void;
+  onSelectAiPack: (ids: string[]) => void;
   onCustom: () => void;
   onBack?: () => void;
 }) {
   const ah = useHabits();
+  const router = useRouter();
+  const packsRef = useRef<HTMLDivElement>(null);
   const [pressed, setPressed]       = useState<string | null>(null);
   const [showAll, setShowAll]       = useState(false);
   const [filterCat, setFilterCat]   = useState<string | null>(null);
   const [preview, setPreview]       = useState<Pack | null>(null);
+
+  const [aiHabits, setAiHabits]         = useState<AiSuggestedHabit[] | null>(null);
+  const [aiLoading, setAiLoading]       = useState(true);
+  const [aiPressed, setAiPressed]       = useState(false);
+  const [showAiPreview, setShowAiPreview] = useState(false);
+  const [scanOverdueDays, setScanOverdueDays] = useState<number | null>(null); // null = loading, 0 = never scanned, >0 = days overdue
+
+  useEffect(() => {
+    api<{ scan?: any; ai_insight?: any } | any>("/api/body-metrics/insight", { method: "GET", auth: true })
+      .then((raw: any) => {
+        const insight = raw?.ai_insight ?? raw;
+        const habits: AiSuggestedHabit[] = (insight?.suggested_habits ?? []).slice(0, 4);
+        setAiHabits(habits.length > 0 ? habits : null);
+        // Check scan recency
+        const scanDate = raw?.scan?.recorded_date ?? insight?.generated_at ?? null;
+        if (!scanDate) {
+          setScanOverdueDays(0); // never scanned
+        } else {
+          const daysSince = Math.floor((Date.now() - new Date(scanDate).getTime()) / 86400000);
+          setScanOverdueDays(daysSince > 22 ? daysSince : -1); // -1 = not overdue
+        }
+      })
+      .catch(() => { setAiHabits(null); setScanOverdueDays(0); })
+      .finally(() => setAiLoading(false));
+  }, []);
 
   const [scrolled, setScrolled] = useState(false);
 
@@ -467,15 +565,131 @@ function PackPickerScreen({ onSelectPack, onStartDirect, onCustom, onBack }: {
           </p>
         </div>
 
+        {/* ── Scan nudge — shown when no scan or overdue 22+ days ── */}
+        {!aiLoading && (scanOverdueDays === 0 || (scanOverdueDays !== null && scanOverdueDays > 0)) && !aiHabits && (() => {
+          const isNever = scanOverdueDays === 0;
+          const overdueDays = scanOverdueDays ?? 0;
+          return (
+          <div style={{
+            borderRadius:16, overflow:"hidden", marginBottom:20,
+            background:"#080B14",
+            border:"1px solid rgba(56,189,248,0.16)",
+          }}>
+            <div style={{ height:1, background:"linear-gradient(90deg,transparent,#0ea5e9 30%,#38bdf8 50%,#0ea5e9 70%,transparent)", opacity:0.55 }}/>
+            <div style={{ padding:"14px 16px 16px" }}>
+              {/* eyebrow */}
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(56,189,248,0.65)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/>
+                </svg>
+                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.09em", textTransform:"uppercase" as const, color:"rgba(56,189,248,0.55)" }}>
+                  {isNever ? "No body scan yet" : `Scan overdue · ${overdueDays}d`}
+                </span>
+              </div>
+              {/* headline */}
+              <p style={{ fontSize:16, fontWeight:700, letterSpacing:"-0.03em", lineHeight:1.3, color:"rgba(255,255,255,0.90)", margin:"0 0 8px" }}>
+                {isNever
+                  ? "A body scan unlocks your personalised habits."
+                  : "Your scan is due — habits work best with fresh data."}
+              </p>
+              {/* body */}
+              <p style={{ fontSize:13, fontWeight:400, lineHeight:1.65, color:"rgba(255,255,255,0.44)", margin:"0 0 14px", letterSpacing:"-0.01em" }}>
+                {isNever
+                  ? "Log your body composition once and we'll build a Smart Plan around your actual metrics — visceral fat, muscle, BMR and more."
+                  : "After 21 days your body changes. Log a new scan and your next habit set will be built around what's actually changed."}
+              </p>
+              {/* actions */}
+              <div style={{ display:"flex", gap:8 }}>
+                <button
+                  onClick={() => router.push("/bgmi")}
+                  style={{
+                    flex:1, height:40, borderRadius:11, border:"none", cursor:"pointer",
+                    background:"rgba(14,165,233,0.18)", color:"rgba(56,189,248,0.90)",
+                    fontSize:13, fontWeight:700, letterSpacing:"-0.02em",
+                  }}>
+                  Log scan first
+                </button>
+                <button
+                  onClick={() => packsRef.current?.scrollIntoView({ behavior:"smooth", block:"start" })}
+                  style={{
+                    flex:1, height:40, borderRadius:11, cursor:"pointer",
+                    background:"transparent", border:"1px solid rgba(255,255,255,0.08)",
+                    color:"rgba(255,255,255,0.35)", fontSize:12, fontWeight:500, letterSpacing:"-0.01em",
+                  }}>
+                  Pick habits anyway
+                </button>
+              </div>
+            </div>
+          </div>
+          );
+        })()}
+
+        {/* ── AI Coach Card ── */}
+        {(aiLoading || aiHabits) && (
+          <div style={{ marginBottom:20 }}>
+            {aiLoading ? (
+              <div style={{ borderRadius:16, overflow:"hidden", border:"1px solid rgba(130,80,255,0.18)", background:"rgba(14,10,28,0.97)" }}>
+                <div style={{ height:2, background:"linear-gradient(90deg,#7c3aed,#a78bfa,#7c3aed)", opacity:0.6 }}/>
+                <div style={{ padding:"12px 14px 14px" }}>
+                  <div style={{ height:9, width:70, borderRadius:4, background:"rgba(130,80,255,0.2)", marginBottom:10 }}/>
+                  {[1,2,3].map(i => (
+                    <div key={i} style={{ height:10, borderRadius:4, background:"rgba(255,255,255,0.05)", marginBottom:6, width:i===1?"100%":i===2?"82%":"65%" }}/>
+                  ))}
+                </div>
+              </div>
+            ) : aiHabits && aiHabits.length > 0 && (
+              <button
+                onMouseDown={() => setAiPressed(true)}
+                onMouseUp={() => setAiPressed(false)}
+                onMouseLeave={() => setAiPressed(false)}
+                onClick={() => setShowAiPreview(true)}
+                style={{
+                  width:"100%", textAlign:"left", cursor:"pointer", display:"block", padding:0,
+                  borderRadius:16, overflow:"hidden",
+                  border:"1px solid rgba(130,80,255," + (aiPressed ? "0.38" : "0.22") + ")",
+                  background: aiPressed ? "rgba(20,12,40,1)" : "rgba(14,10,28,0.97)",
+                  transform: aiPressed ? "scale(0.985)" : "scale(1)",
+                  transition:"all 0.14s cubic-bezier(0.4,0,0.2,1)",
+                }}>
+                <div style={{ height:2, background:"linear-gradient(90deg,#7c3aed,#a78bfa,#7c3aed)", opacity:0.75 }}/>
+                {/* header */}
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px 9px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                    </svg>
+                    <span style={{ fontSize:10, fontWeight:700, color:"#a78bfa", letterSpacing:"0.07em", textTransform:"uppercase" as const }}>Smart Plan</span>
+                  </div>
+                  <span style={{ fontSize:10, color:"rgba(167,139,250,0.45)", letterSpacing:"-0.01em" }}>{aiHabits.length} habits · View →</span>
+                </div>
+                {/* habit rows */}
+                {aiHabits.map((h, i) => {
+                  const catColor = h.category === "fitness" ? "#30D158" : h.category === "nutrition" ? "#FF9F0A" : "#a78bfa";
+                  const why = h.why ? h.why.split(".")[0] + "." : "";
+                  return (
+                    <div key={i} style={{ display:"flex", alignItems:"stretch", borderBottom: i < aiHabits.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                      <div style={{ width:3, flexShrink:0, background:catColor, opacity:0.7 }}/>
+                      <div style={{ flex:1, padding:"9px 14px" }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.90)", letterSpacing:"-0.02em", marginBottom:2 }}>{h.name}</div>
+                        {why && <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", lineHeight:1.4 }}>{why}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* ── Single list ── */}
-        <div style={{ marginBottom:24 }}>
+        <div ref={packsRef} style={{ marginBottom:24 }}>
 
           <p style={{ fontSize:12, color:T3, margin:"0 0 12px", letterSpacing:"-0.01em" }}>
             Tap any pack to preview
           </p>
 
           {/* goal filter */}
-          <div style={{ display:"flex", gap:5, marginBottom:14, overflowX:"auto" }}>
+          <div style={{ display:"flex", gap:5, marginBottom:14, flexWrap:"wrap" }}>
             {[
               { key:null,       label:"All"       },
               { key:"beginner", label:"Beginner"  },
@@ -721,13 +935,82 @@ function PackPickerScreen({ onSelectPack, onStartDirect, onCustom, onBack }: {
         </div>
       </div>
     )}
+
+    {/* ── AI Coach preview modal ── */}
+    {showAiPreview && aiHabits && (
+      <div onClick={() => setShowAiPreview(false)} style={{
+        position:"fixed", inset:0, zIndex:200,
+        background:"rgba(0,0,0,0.72)",
+        backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)",
+        display:"flex", alignItems:"flex-end",
+      }}>
+        <div onClick={e => e.stopPropagation()} style={{
+          width:"100%", maxWidth:390, margin:"0 auto",
+          background:"rgba(14,10,28,0.99)", borderRadius:"20px 20px 0 0",
+          border:"1px solid rgba(130,80,255,0.2)", borderBottom:"none", overflow:"hidden",
+        }}>
+          {/* top rule */}
+          <div style={{ height:2, background:"linear-gradient(90deg,#7c3aed,#a78bfa,#7c3aed)", opacity:0.75 }}/>
+
+          {/* header */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 16px 12px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+              <span style={{ fontSize:10, fontWeight:700, color:"#a78bfa", letterSpacing:"0.07em", textTransform:"uppercase" as const }}>Smart Plan</span>
+              <span style={{ fontSize:10, color:"rgba(255,255,255,0.2)", marginLeft:2 }}>· {aiHabits.length} habits</span>
+            </div>
+            <button onClick={() => setShowAiPreview(false)} style={{
+              width:26, height:26, borderRadius:"50%", border:"none", cursor:"pointer",
+              background:"rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"center", padding:0,
+            }}>
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path d="M1 1l10 10M11 1L1 11" stroke="rgba(255,255,255,0.5)" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* habit rows */}
+          {aiHabits.map((ah, i) => {
+            const catColor = ah.category === "fitness" ? "#30D158" : ah.category === "nutrition" ? "#FF9F0A" : "#a78bfa";
+            const why = ah.why ? ah.why.split(".")[0] + "." : "";
+            return (
+              <div key={i} style={{ display:"flex", alignItems:"stretch", borderBottom: i < aiHabits.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                <div style={{ width:3, flexShrink:0, background:catColor, opacity:0.7 }}/>
+                <div style={{ flex:1, padding:"11px 16px" }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:"rgba(255,255,255,0.90)", letterSpacing:"-0.02em", marginBottom:3 }}>{ah.name}</div>
+                  {why && <div style={{ fontSize:11, color:"rgba(255,255,255,0.38)", lineHeight:1.45 }}>{why}</div>}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* actions */}
+          <div style={{ display:"flex", gap:0, borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+            <button
+              onClick={() => { const slugs = [...new Set(aiHabits.map(h => resolveHabitId(h.slug, h.name)).filter(Boolean))]; onSelectAiPack(slugs); setShowAiPreview(false); }}
+              style={{ flex:1, height:52, border:"none", borderRight:"1px solid rgba(255,255,255,0.06)", cursor:"pointer", background:"transparent", fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.50)", letterSpacing:"-0.01em" }}>
+              Customise
+            </button>
+            <button
+              onClick={() => { const slugs = [...new Set(aiHabits.map(h => resolveHabitId(h.slug, h.name)).filter(Boolean))]; onStartDirect(slugs); setShowAiPreview(false); }}
+              style={{ flex:1, height:52, border:"none", cursor:"pointer", background:"transparent", fontSize:14, fontWeight:700, color:"#c4b5fd", letterSpacing:"-0.02em" }}>
+              Start now
+            </button>
+          </div>
+          <div style={{ height:34 }}/>
+        </div>
+      </div>
+    )}
   </>
   );
 }
 
 
-function HabitSetupPage({ initialSelected, isReview, onComplete, onBack }: {
+function HabitSetupPage({ initialSelected, aiSuggestedIds, isReview, onComplete, onBack }: {
   initialSelected?: string[];
+  aiSuggestedIds?: string[];
   isReview?: boolean;
   onComplete: (ids: string[]) => void;
   onBack?: () => void;
@@ -768,58 +1051,63 @@ function HabitSetupPage({ initialSelected, isReview, onComplete, onBack }: {
           background:"rgba(0,0,0,0.94)",
           backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)",
           borderBottom:"1px solid rgba(255,255,255,0.07)",
-          padding:"14px 20px 12px",
+          padding:"10px 20px 8px",
           animation:"fabIn 0.2s cubic-bezier(0.4,0,0.2,1) forwards",
         }}>
           <div style={{ maxWidth:390, margin:"0 auto" }}>
 
-            {/* row: title + count */}
+            {/* row: back + title + count */}
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-              <span style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"-0.02em" }}>
-                Your habits
-              </span>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                {onBack && (
+                  <button onClick={onBack} style={{
+                    width:28, height:28, borderRadius:"50%", flexShrink:0,
+                    background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)",
+                    cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0,
+                  }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 12H5M12 5l-7 7 7 7"/>
+                    </svg>
+                  </button>
+                )}
+                <span style={{ fontSize:13, fontWeight:700, color:"#fff", letterSpacing:"-0.02em" }}>
+                  Your habits
+                </span>
+              </div>
               <span style={{ fontSize:12, fontWeight:600, color:T3, letterSpacing:"-0.01em", fontVariantNumeric:"tabular-nums" }}>
                 {selected.length}/{MAX_HABITS}
               </span>
             </div>
 
-            {/* load sentence */}
-            <p style={{ fontSize:11, margin:"0 0 8px",
-              color: selected.length <= 2 ? C_PHYSICAL
-                : selected.length <= 4 ? C_ENERGY
-                : C_ALERT,
-              letterSpacing:"-0.01em" }}>
-              {selected.length <= 2 ? "Light load — great for beginners"
-                : selected.length <= 4 ? "Moderate — solid for most people"
-                : "Challenging — only if you have existing routines"}
-            </p>
-
-            {/* balance hint */}
+            {/* load + balance — single compact row */}
             {(() => {
-              const hasBody      = selected.some((id: string) => { const h = useHabits().find(x => x.id===id); return h && h.category==="Body"; });
-              const hasMind      = selected.some((id: string) => { const h = useHabits().find(x => x.id===id); return h && h.category==="Mind"; });
-              const hasLifestyle = selected.some((id: string) => { const h = useHabits().find(x => x.id===id); return h && h.category==="Lifestyle"; });
+              const hasBody      = selected.some((id: string) => { const h = ALL_HABITS.find(x => x.id===id); return h && h.category==="Body"; });
+              const hasMind      = selected.some((id: string) => { const h = ALL_HABITS.find(x => x.id===id); return h && h.category==="Mind"; });
+              const hasLifestyle = selected.some((id: string) => { const h = ALL_HABITS.find(x => x.id===id); return h && h.category==="Lifestyle"; });
               const catCount     = [hasBody,hasMind,hasLifestyle].filter(Boolean).length;
-              let hint, hintColor;
-              if (!hasBody)               { hint = "Add at least 1 Body habit";             hintColor = T4; }
-              else if (catCount === 1)    { hint = "Add a Mind habit for balance";           hintColor = C_MENTAL; }
-              else if (catCount === 2)    { hint = "One more category = full balance";       hintColor = C_ENERGY; }
-              else                        { hint = "Balanced across all categories";         hintColor = C_PHYSICAL; }
+              const loadLabel = selected.length <= 2 ? "Light" : selected.length <= 4 ? "Moderate" : "Challenging";
+              const loadColor = selected.length <= 2 ? C_PHYSICAL : selected.length <= 4 ? C_ENERGY : C_ALERT;
+              let hint: string | null = null, hintColor = T4;
+              if (!hasBody)            { hint = "Add a Body habit";              hintColor = T4; }
+              else if (catCount === 1) { hint = "Add a Mind habit for balance";  hintColor = C_MENTAL; }
+              else if (catCount === 2) { hint = "Add Lifestyle for full balance"; hintColor = C_ENERGY; }
               return (
-                <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:10 }}>
-                  <div style={{ width:4, height:4, borderRadius:"50%", background:hintColor, flexShrink:0 }}/>
-                  <span style={{ fontSize:11, color:hintColor, letterSpacing:"-0.01em", fontWeight:500 }}>
-                    {hint}
-                  </span>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+                  <span style={{ fontSize:11, fontWeight:600, color:loadColor, letterSpacing:"-0.01em", flexShrink:0 }}>{loadLabel}</span>
+                  {hint && <>
+                    <span style={{ fontSize:11, color:"rgba(255,255,255,0.15)" }}>·</span>
+                    <div style={{ width:4, height:4, borderRadius:"50%", background:hintColor, flexShrink:0 }}/>
+                    <span style={{ fontSize:11, color:hintColor, letterSpacing:"-0.01em", fontWeight:500 }}>{hint}</span>
+                  </>}
                 </div>
               );
             })()}
 
             {/* progress track */}
-            <div style={{ display:"flex", gap:4, marginBottom: selected.length > 0 ? 10 : 0 }}>
+            <div style={{ display:"flex", gap:4, marginBottom:8 }}>
               {Array.from({ length: MAX_HABITS }).map((_, i) => (
                 <div key={i} style={{
-                  flex:1, height:3, borderRadius:99,
+                  flex:1, height:2, borderRadius:99,
                   background: i < selected.length ? C_BRAND : "rgba(255,255,255,0.1)",
                   boxShadow: i < selected.length ? "0 0 6px rgba(10,132,255,0.5)" : "none",
                   transition:"all 0.25s",
@@ -839,6 +1127,7 @@ function HabitSetupPage({ initialSelected, isReview, onComplete, onBack }: {
                 learn:25, callsomeone:26, preparetomorrow:27, presleepbath:28,
                 timeblock:29, daily5goals:30, nosmoking:31, discomfortchallenge:32,
                 trackspending:33, nearfareye:34, proactivelanguage:35,
+                strength:36, hiit:37,
               };
               const sorted = [...selected].sort((a: string, b: string) => (RANK[a as keyof typeof RANK]||99) - (RANK[b as keyof typeof RANK]||99));
               return (
@@ -944,6 +1233,48 @@ function HabitSetupPage({ initialSelected, isReview, onComplete, onBack }: {
           </p>
         </div>
 
+        {/* AI Coach banner — shown when habits were AI-suggested */}
+        {aiSuggestedIds && aiSuggestedIds.length > 0 && (
+          <div style={{
+            borderRadius:14, overflow:"hidden", marginBottom:20,
+            border:"1px solid rgba(130,80,255,0.22)",
+            background:"rgba(100,50,220,0.08)",
+          }}>
+            <div style={{ height:2, background:"linear-gradient(90deg,#7c3aed,#a78bfa,#7c3aed)", opacity:0.7 }}/>
+            <div style={{ padding:"12px 14px 14px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                </svg>
+                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#a78bfa" }}>
+                  Tailored for you
+                </span>
+              </div>
+              <p style={{ fontSize:12, color:"rgba(255,255,255,0.55)", margin:"0 0 10px", lineHeight:1.5 }}>
+                Pre-selected based on your body metrics. Swap any habit below — these are suggestions, not requirements.
+              </p>
+              <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                {aiSuggestedIds.map(slug => {
+                  const h = ALL_HABITS.find(x => x.id === slug);
+                  if (!h) return null;
+                  const isKept = selected.includes(slug);
+                  return (
+                    <span key={slug} style={{
+                      fontSize:11, fontWeight:600, letterSpacing:"-0.01em",
+                      padding:"3px 9px", borderRadius:99,
+                      background: isKept ? "rgba(130,80,255,0.2)" : "rgba(255,255,255,0.05)",
+                      border:"1px solid " + (isKept ? "rgba(130,80,255,0.4)" : "rgba(255,255,255,0.1)"),
+                      color: isKept ? "#c4b5fd" : "rgba(255,255,255,0.35)",
+                      textDecoration: isKept ? "none" : "line-through",
+                      transition:"all 0.2s",
+                    }}>{h.label.split(" ").slice(0,3).join(" ")}</span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Category filter chips — hidden when sticky bar showing */}
         {!(selected.length > 0) && (
         <div style={{ display:"flex", gap:7, marginBottom:24, marginTop:20, overflowX:"auto" }}>
@@ -993,6 +1324,7 @@ function HabitSetupPage({ initialSelected, isReview, onComplete, onBack }: {
                       selected={selected.includes(h.id)}
                       disabled={selected.length >= MAX_HABITS}
                       onToggle={() => toggle(h.id)}
+                      aiSuggested={aiSuggestedIds?.includes(h.id)}
                     />
                   ))}
                 </div>
@@ -1229,8 +1561,25 @@ export default function HabitFlow() {
   const [flow, setFlow] = useState("packs");
   const [selected, setSelected] = useState<string[]>([]);
   const [packId, setPackId] = useState<string | null>(null);
+  const [aiSuggestedIds, setAiSuggestedIds] = useState<string[]>([]);
   const [availableHabits, setAvailableHabits] = useState<Habit[]>(ALL_HABITS);
   const [habitsLoading, setHabitsLoading] = useState(true);
+
+  // Read ?suggested=slug1,slug2 from URL — pre-select AI-recommended habits
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const suggested = params.get("suggested");
+    if (suggested) {
+      const rawSlugs = suggested.split(",").map(s => s.trim()).filter(Boolean);
+      const resolved = [...new Set(rawSlugs.map(s => resolveHabitId(s)).filter(Boolean))];
+      if (resolved.length > 0) {
+        setSelected(resolved);
+        setAiSuggestedIds(resolved);
+        setFlow("setup");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -1241,10 +1590,12 @@ export default function HabitFlow() {
         router.replace("/habits/tree");
         return;
       }
-      const filtered = (habitsData as { id: string; slug?: string }[])
-        .map(h => ALL_HABITS.find(local => local.id === (h.slug ?? h.id)))
-        .filter(Boolean) as Habit[];
-      if (filtered.length > 0) setAvailableHabits(filtered);
+      // Always show all locally defined habits; API list only used to order/verify
+      const apiIds = new Set((habitsData as { id: string; slug?: string }[]).map(h => h.slug ?? h.id));
+      const merged = apiIds.size > 0
+        ? ALL_HABITS.filter(h => apiIds.has(h.id)).concat(ALL_HABITS.filter(h => !apiIds.has(h.id)))
+        : ALL_HABITS;
+      setAvailableHabits(merged.length > 0 ? merged : ALL_HABITS);
       setHabitsLoading(false);
     });
   }, [router]);
@@ -1259,16 +1610,17 @@ export default function HabitFlow() {
   return (
     <HabitsCtx.Provider value={availableHabits}>
       {flow === "setup"
-        ? <HabitSetupPage initialSelected={selected} onBack={() => setFlow("packs")} onComplete={(ids: string[]) => { setSelected(ids); setFlow("commit"); }}/>
+        ? <HabitSetupPage key={selected.join("|") || "empty"} initialSelected={selected} aiSuggestedIds={aiSuggestedIds.length > 0 ? aiSuggestedIds : undefined} onBack={() => { setAiSuggestedIds([]); setFlow("packs"); }} onComplete={(ids: string[]) => { setSelected(ids); setFlow("commit"); }}/>
         : flow === "commit"
         ? <CommitmentScreen selectedIds={selected} packId={packId} onBack={() => setFlow("setup")} onCommit={() => setFlow("committed")}/>
         : flow === "committed"
         ? <CommittedScreen selectedIds={selected} onDone={() => setFlow("tracking")}/>
         : flow === "packs"
         ? <PackPickerScreen
-            onSelectPack={(ids: string[]) => { setSelected(ids); setPackId(null); setFlow("setup"); }}
+            onSelectPack={(ids: string[]) => { setAiSuggestedIds([]); setSelected(ids); setPackId(null); setFlow("setup"); }}
             onStartDirect={(ids: string[], pid?: string) => { setSelected(ids); setPackId(pid ?? null); setFlow("commit"); }}
-            onCustom={() => { setSelected([]); setPackId(null); setFlow("setup"); }}
+            onSelectAiPack={(ids: string[]) => { setAiSuggestedIds(ids); setSelected(ids); setPackId(null); setFlow("setup"); }}
+            onCustom={() => { setAiSuggestedIds([]); setSelected([]); setPackId(null); setFlow("setup"); }}
             onBack={() => router.back()}
           />
         : <Day1Screen selected={selected} onRestart={() => setFlow("packs")} />

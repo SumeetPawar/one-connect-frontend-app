@@ -239,7 +239,7 @@ export default function IOSInstallPrompt() {
               outline: "none", WebkitTapHighlightColor: "transparent",
             }}
           >
-            Got it — show me how
+            Got it
           </button>
         </div>
       </div>

@@ -993,14 +993,14 @@ export default function HabitTree() {
 
       {/* [DEV] Hard delete button */}
       <div style={{ position:"fixed", top:12, right:12, zIndex:999 }}>
-        {/* <button onClick={handleHardDelete} style={{
+        <button onClick={handleHardDelete} style={{
           background:"rgba(255,59,48,0.15)", border:"1px solid rgba(255,59,48,0.35)",
           borderRadius:10, padding:"6px 12px", color:"rgba(255,59,48,0.9)",
           fontSize:11, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer",
           backdropFilter:"blur(8px)", WebkitBackdropFilter:"blur(8px)",
         }}>
           ✕ Reset challenge
-        </button> */}
+        </button>
       </div>
 
 
@@ -1388,7 +1388,7 @@ export default function HabitTree() {
               )}
             </div>
             <span style={{ fontSize:13,color:T3 }}>
-              {todayN < habits.length ? `${todayN}/${habits.length}` : ""}
+              {dayDone(selDay) < habits.length ? `${dayDone(selDay)}/${habits.length}` : ""}
             </span>
           </div>
 
