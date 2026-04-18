@@ -2158,7 +2158,7 @@ export default function ScanReport() {
         )
       }
 
-      <BottomNav active="wellness" />
+      <BottomNav active="home" />
     </>
   );
 

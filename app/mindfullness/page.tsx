@@ -1739,7 +1739,7 @@ export default function MeditationPage() {
       </div>
     </div>
 
-    <BottomNav active="wellness" />
+    <BottomNav active="home" />
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
 
-export type NavTabId = "home" | "steps" | "habits" | "wellness";
+export type NavTabId = "home" | "steps" | "habits" | "feed";
 
 const TABS = [
   {
@@ -19,13 +19,13 @@ const TABS = [
     ),
   },
   {
-    id: "habits" as NavTabId,
-    label: "Habits",
-    href: "/habits/tree",
+    id: "feed" as NavTabId,
+    label: "Feed",
+    href: "/feeds",
     icon: (color: string) => (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L8 8H10L6 14H9L5 20H19L15 14H18L14 8H16L12 2Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round"/>
-        <line x1="12" y1="21" x2="12" y2="23" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
+        <path d="M4 6h16M4 10h16M4 14h10" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="18" cy="17" r="3" stroke={color} strokeWidth="1.6"/>
       </svg>
     ),
   },
@@ -40,12 +40,13 @@ const TABS = [
     ),
   },
   {
-    id: "wellness" as NavTabId,
-    label: "Wellness",
-    href: "/mindfullness",
+    id: "habits" as NavTabId,
+    label: "Habits",
+    href: "/habits/tree",
     icon: (color: string) => (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z" stroke={color} strokeWidth="1.6" strokeLinejoin="round"/>
+        <path d="M12 2L8 8H10L6 14H9L5 20H19L15 14H18L14 8H16L12 2Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round"/>
+        <line x1="12" y1="21" x2="12" y2="23" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
       </svg>
     ),
   },
