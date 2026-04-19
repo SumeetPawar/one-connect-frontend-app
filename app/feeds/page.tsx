@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BottomNav } from '../components/BottomNav';
 
@@ -765,12 +766,10 @@ const Avatar = ({ initials, color, size = 34 }: { initials: string; color: strin
    ───────────────────────────────────────────── */
 const MediaGrid = ({
   media,
-  onVideoClick,
-  onImageClick,
+  onMediaClick,
 }: {
   media: MediaItem[];
-  onVideoClick?: (url: string) => void;
-  onImageClick?: (idx: number) => void;
+  onMediaClick?: (idx: number) => void;
 }) => {
   const count = media.length;
   // We always show at most 4 tiles; 5th+ are hidden behind the +N badge
@@ -784,8 +783,7 @@ const MediaGrid = ({
       style={{ background: '#2C2C2E', cursor: 'pointer' }}
       onClick={(e) => {
         e.stopPropagation();
-        if (item.type === 'video') { onVideoClick?.(item.videoUrl); }
-        else { onImageClick?.(idx); }
+        onMediaClick?.(idx);
       }}
     >
       <img
@@ -1596,14 +1594,33 @@ const CommentRow = ({
 
             {/* Reaction picker trigger */}
             <div style={{ position: 'relative' }}>
+              {showPicker && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 29 }} onClick={() => setShowPicker(false)} />
+              )}
               <motion.button
                 whileTap={{ scale: 0.85 }}
                 onClick={() => setShowPicker((v) => !v)}
-                style={{ background: 'none', border: 'none', padding: 0, lineHeight: 1, display: 'flex', alignItems: 'center' }}
+                style={{
+                  background: myReaction ? `${COMMENT_REACTIONS[myReaction].color}18` : 'none',
+                  border: myReaction ? `1px solid ${COMMENT_REACTIONS[myReaction].color}40` : 'none',
+                  borderRadius: 999, padding: myReaction ? '2px 7px 2px 4px' : 0,
+                  lineHeight: 1, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer',
+                  filter: myReaction ? `drop-shadow(0 0 4px ${COMMENT_REACTIONS[myReaction].glow})` : 'none',
+                }}
               >
-                <div style={{ filter: myReaction ? `drop-shadow(0 0 4px ${COMMENT_REACTIONS[myReaction].glow})` : 'none' }}>
-                  <CommentReactionIcon type={myReaction || 'haha'} size={18} />
-                </div>
+                {myReaction ? (
+                  <>
+                    <CommentReactionIcon type={myReaction} size={16} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: COMMENT_REACTIONS[myReaction].color }}>{COMMENT_REACTIONS[myReaction].label}</span>
+                  </>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#636366" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                  </svg>
+                )}
               </motion.button>
               <AnimatePresence>
                 {showPicker && (
@@ -1612,14 +1629,14 @@ const CommentRow = ({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.85, y: 6 }}
                     transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute flex items-end gap-1 rounded-2xl"
                     style={{
-                      bottom: 30, left: -8,
+                      position: 'absolute', bottom: 28, left: -8, zIndex: 30,
+                      display: 'flex', alignItems: 'flex-end', gap: 2,
                       padding: '8px 10px',
-                      background: 'linear-gradient(160deg,#232325 0%,#1C1C1E 100%)',
+                      background: 'linear-gradient(160deg,#28282C 0%,#1C1C1E 100%)',
                       border: '1px solid rgba(255,255,255,0.12)',
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.65)',
-                      zIndex: 30,
+                      borderRadius: 999,
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
                     }}
                   >
                     {COMMENT_REACTION_KEYS.map((key, i) => {
@@ -1628,20 +1645,18 @@ const CommentRow = ({
                       return (
                         <motion.button
                           key={key}
-                          initial={{ opacity: 0, y: 8, scale: 0.7 }}
+                          initial={{ opacity: 0, y: 8, scale: 0.5 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          transition={{ delay: i * 0.04, type: 'spring', damping: 14, stiffness: 400 }}
-                          whileHover={{ y: -5, scale: 1.2 }}
-                          whileTap={{ scale: 0.8 }}
+                          transition={{ delay: i * 0.035, type: 'spring', damping: 14, stiffness: 400 }}
+                          whileHover={{ y: -6, scale: 1.28 }}
+                          whileTap={{ scale: 0.82 }}
                           onClick={() => handleReaction(key)}
-                          className="flex flex-col items-center gap-0.5"
                           style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                             background: isSelected ? `${r.color}20` : 'none',
-                            borderRadius: 10, border: 'none',
-                            padding: '3px 5px 4px',
-                            cursor: 'pointer',
+                            border: isSelected ? `1.5px solid ${r.color}55` : '1.5px solid transparent',
+                            borderRadius: 10, padding: '3px 5px 4px', cursor: 'pointer',
                             filter: isSelected ? `drop-shadow(0 0 6px ${r.glow})` : 'none',
-                            outline: isSelected ? `1.5px solid ${r.color}55` : 'none',
                           }}
                         >
                           <CommentReactionIcon type={key} size={26} />
@@ -2090,35 +2105,164 @@ const PostDetailSheet = ({
 };
 
 /* ─────────────────────────────────────────────
-   Video modal
+   Feed Media Viewer — fullscreen swipeable overlay
    ───────────────────────────────────────────── */
-const VideoModal = ({ url, onClose }: { url: string; onClose: () => void }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 z-[100] flex items-center justify-center"
-    style={{ background: 'rgba(0,0,0,0.96)' }}
-    onClick={onClose}
-  >
-    <div className="relative w-full max-w-lg px-4" onClick={(e) => e.stopPropagation()}>
-      <video
-        src={url}
-        controls
-        autoPlay
-        className="w-full rounded-2xl"
-        style={{ maxHeight: '80vh', background: '#000' }}
-      />
-      <button
-        onClick={onClose}
-        className="absolute -top-10 right-4"
-        style={{ fontSize: 13, fontWeight: 600, color: '#AEAEB2', background: 'transparent', border: 'none', letterSpacing: '-0.01em' }}
+const FeedMediaViewer = ({
+  post,
+  startIdx,
+  onClose,
+}: {
+  post: Post;
+  startIdx: number;
+  onClose: () => void;
+}) => {
+  const allMedia = post.media || [];
+  const [idx, setIdx] = useState(startIdx);
+  const swipeDir = useRef<1 | -1>(1);
+  const current = allMedia[idx];
+  const hasPrev = idx > 0;
+  const hasNext = idx < allMedia.length - 1;
+
+  const goPrev = () => { swipeDir.current = -1; setIdx((i) => Math.max(0, i - 1)); };
+  const goNext = () => { swipeDir.current = 1; setIdx((i) => Math.min(allMedia.length - 1, i + 1)); };
+
+  return (
+    <motion.div
+      key="feed-media-viewer"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.97)', display: 'flex', flexDirection: 'column' }}
+    >
+      {/* Top bar */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 16px',
+        background: 'linear-gradient(180deg,rgba(0,0,0,0.7) 0%,transparent 100%)',
+      }}>
+        <button
+          onClick={onClose}
+          style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+        {allMedia.length > 1 && (
+          <div style={{ padding: '5px 12px', borderRadius: 999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#F2F2F7', letterSpacing: '-0.01em' }}>{idx + 1} / {allMedia.length}</span>
+          </div>
+        )}
+        {current?.type === 'video' ? (
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+          </div>
+        ) : (
+          <div style={{ width: 36 }} />
+        )}
+      </div>
+
+      {/* Swipeable content */}
+      <motion.div
+        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '60px 0', touchAction: 'pan-y' }}
+        drag={allMedia.length > 1 ? 'x' : false}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.18}
+        onDragEnd={(_, info) => {
+          if (info.offset.x < -60 && hasNext) { swipeDir.current = 1; goNext(); }
+          else if (info.offset.x > 60 && hasPrev) { swipeDir.current = -1; goPrev(); }
+        }}
       >
-        Close ✕
-      </button>
-    </div>
-  </motion.div>
-);
+        <AnimatePresence mode="wait" custom={swipeDir.current}>
+          <motion.div
+            key={idx}
+            custom={swipeDir.current}
+            variants={{
+              enter: (dir: number) => ({ x: dir > 0 ? '60%' : '-60%', opacity: 0 }),
+              center: { x: 0, opacity: 1 },
+              exit: (dir: number) => ({ x: dir > 0 ? '-60%' : '60%', opacity: 0 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'spring', stiffness: 340, damping: 34 }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            {current?.type === 'image' ? (
+              <img
+                src={current.url} alt=""
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }}
+                draggable={false}
+              />
+            ) : current?.type === 'video' ? (
+              <video
+                src={current.videoUrl}
+                controls autoPlay playsInline
+                style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 8, outline: 'none' }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : null}
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Side nav arrows */}
+      {hasPrev && (
+        <button
+          onClick={goPrev}
+          style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+      )}
+      {hasNext && (
+        <button
+          onClick={goNext}
+          style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      )}
+
+      {/* Bottom thumbnail strip */}
+      {allMedia.length > 1 && (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          background: 'linear-gradient(0deg,rgba(0,0,0,0.8) 0%,transparent 100%)',
+          padding: '20px 16px 32px',
+          display: 'flex', justifyContent: 'center', gap: 6,
+          overflowX: 'auto', scrollbarWidth: 'none',
+        }}>
+          {allMedia.map((m, i) => (
+            <button key={i} onClick={() => { swipeDir.current = i > idx ? 1 : -1; setIdx(i); }}
+              style={{
+                flexShrink: 0, width: i === idx ? 52 : 44, height: i === idx ? 52 : 44,
+                borderRadius: 10, overflow: 'hidden', padding: 0, background: '#2C2C2E', cursor: 'pointer',
+                border: `2px solid ${i === idx ? '#fff' : 'rgba(255,255,255,0.2)'}`,
+                position: 'relative', transition: 'all 0.18s ease',
+                opacity: i === idx ? 1 : 0.55,
+              }}>
+              <img src={m.type === 'image' ? m.url : m.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              {m.type === 'video' && (
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+};
 
 /* ─────────────────────────────────────────────
    Post Card
@@ -2129,16 +2273,14 @@ const PostCard = ({
   onReact,
   onSave,
   onVote,
-  onVideoPlay,
-  onImageOpen,
+  onMediaOpen,
 }: {
   post: Post;
   onOpen: (id: string) => void;
   onReact: (id: string, r: SemanticReaction | null) => void;
   onSave: (id: string) => void;
   onVote: (postId: string, optId: string) => void;
-  onVideoPlay: (url: string) => void;
-  onImageOpen: (images: string[], idx: number) => void;
+  onMediaOpen: (post: Post, mediaIdx: number) => void;
 }) => {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const meta = TYPE_META[post.type];
@@ -2352,77 +2494,57 @@ const PostCard = ({
         <div onClick={(e) => e.stopPropagation()}>
           <MediaGrid
             media={post.media}
-            onVideoClick={(url) => onVideoPlay(url)}
-            onImageClick={(idx) => {
-              const imgs = post.media!.filter((m) => m.type === 'image').map((m) => (m as { type: 'image'; url: string }).url);
-              onImageOpen(imgs, idx);
-            }}
+            onMediaClick={(idx) => onMediaOpen(post, idx)}
           />
         </div>
       )}
 
       {/* Footer */}
-      <div className="px-4 pt-3 pb-2">
+      <div style={{ position: 'relative' }}>
+        {/* Reaction summary */}
         {(totalReactions > 0 || post.comments > 0) && (
-          <div
-            className="flex items-center justify-between mb-2"
-            style={{ fontSize: 12, color: '#636366' }}
-          >
+          <div className="flex items-center justify-between px-4 pt-2.5 pb-1" style={{ fontSize: 12, color: '#636366' }}>
             <div className="flex items-center gap-1.5">
-              <div className="flex">
-                {topReactions.map((t, i) => (
-                  <div
-                    key={t}
-                    style={{
-                      width: 20, height: 20,
-                      background: '#2C2C2E',
-                      marginLeft: i === 0 ? 0 : -6,
-                      boxShadow: '0 0 0 1.5px #1C1C1E',
-                      zIndex: 3 - i,
-                      borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <ReactionIcon type={t} size={16} />
-                  </div>
-                ))}
-              </div>
-              <span>
-                <span style={{ fontWeight: 600, color: '#AEAEB2' }}>{totalReactions}</span>
-                {post.type === 'event' && (post.joinedInLastHour || 0) > 0 && (
-                  <>
-                    {' · '}
-                    <motion.span
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 1.8, repeat: Infinity }}
-                      style={{ color: meta.accent, fontWeight: 600 }}
-                    >
-                      {post.joinedInLastHour} just joined
-                    </motion.span>
-                  </>
-                )}
-              </span>
+              {topReactions.length > 0 && (
+                <div className="flex">
+                  {topReactions.map((t, i) => (
+                    <div key={t} style={{ width: 18, height: 18, background: '#2C2C2E', marginLeft: i === 0 ? 0 : -5, boxShadow: '0 0 0 1.5px #1C1C1E', zIndex: 3 - i, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ReactionIcon type={t} size={13} />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {totalReactions > 0 && (
+                <span style={{ fontWeight: 500, color: '#636366' }}>{totalReactions}</span>
+              )}
             </div>
             {post.comments > 0 && <span>{post.comments} comments</span>}
           </div>
         )}
 
-        {/* Reaction picker tray */}
+        {/* Floating reaction picker — above action bar */}
+        {showReactionPicker && (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 49 }}
+            onClick={(e) => { e.stopPropagation(); setShowReactionPicker(false); }}
+          />
+        )}
         <AnimatePresence>
           {showReactionPicker && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.9 }}
-              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, scale: 0.85, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: 6 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="flex items-end justify-around rounded-2xl mb-2"
               style={{
-                padding: '10px 6px 8px',
-                background: 'linear-gradient(160deg,#232325 0%,#1C1C1E 100%)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                boxShadow: '0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset',
+                position: 'absolute', bottom: 'calc(100% + 6px)', left: 12, zIndex: 50,
+                display: 'flex', alignItems: 'flex-end', gap: 2,
+                padding: '10px 12px',
+                background: 'linear-gradient(160deg,#28282C 0%,#1C1C1E 100%)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 999,
+                boxShadow: '0 16px 48px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04) inset',
               }}
             >
               {(Object.entries(REACTIONS) as [SemanticReaction, typeof REACTIONS[SemanticReaction]][]).map(([key, r], i) => {
@@ -2430,35 +2552,26 @@ const PostCard = ({
                 return (
                   <motion.button
                     key={key}
-                    initial={{ opacity: 0, y: 10, scale: 0.7 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.5 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: i * 0.04, type: 'spring', damping: 14, stiffness: 400 }}
-                    whileHover={{ y: -6, scale: 1.18 }}
-                    whileTap={{ scale: 0.85 }}
+                    transition={{ delay: i * 0.035, type: 'spring', damping: 14, stiffness: 380 }}
+                    whileHover={{ y: -7, scale: 1.3 }}
+                    whileTap={{ scale: 0.82 }}
                     onClick={(e) => handlePickReaction(e, key)}
-                    className="flex flex-col items-center gap-1"
                     style={{
-                      padding: '4px 6px 6px',
-                      background: isSelected ? `${r.color}20` : 'transparent',
-                      borderRadius: 14,
-                      border: 'none',
-                      outline: isSelected ? `2px solid ${r.color}60` : 'none',
-                      transition: 'background 0.15s, outline 0.15s',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                      padding: '4px 6px',
+                      background: isSelected ? `${r.color}22` : 'none',
+                      border: isSelected ? `1.5px solid ${r.color}55` : '1.5px solid transparent',
+                      borderRadius: 12,
+                      cursor: 'pointer',
                       filter: isSelected ? `drop-shadow(0 0 8px ${r.glow})` : 'none',
-                      minWidth: 44,
                     }}
                   >
-                    <ReactionIcon type={key} size={34} />
-                    <span
-                      style={{
-                        fontSize: 9.5,
-                        fontWeight: isSelected ? 800 : 500,
-                        color: isSelected ? r.color : '#636366',
-                        letterSpacing: '-0.01em',
-                        whiteSpace: 'nowrap',
-                        lineHeight: 1,
-                      }}
-                    >
+                    <div style={{ filter: isSelected ? `drop-shadow(0 0 5px ${r.glow})` : 'none' }}>
+                      <ReactionIcon type={key} size={32} />
+                    </div>
+                    <span style={{ fontSize: 9, fontWeight: isSelected ? 800 : 500, color: isSelected ? r.color : '#636366', whiteSpace: 'nowrap' }}>
                       {r.label}
                     </span>
                   </motion.button>
@@ -2469,35 +2582,29 @@ const PostCard = ({
         </AnimatePresence>
 
         {/* Action bar */}
-        <div
-          className="flex items-center"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 6 }}
-        >
+        <div className="flex items-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '0 0 0 0' }}>
           <motion.button
             whileTap={{ scale: 0.92 }}
             onClick={handleReactTap}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2"
+            className="flex flex-1 items-center justify-center gap-1.5 py-2.5"
             style={{
               color: myReactionData ? myReactionData.color : '#636366',
-              fontSize: 12,
-              fontWeight: 600,
-              background: 'transparent',
-              border: 'none',
-              letterSpacing: '-0.01em',
+              fontSize: 12, fontWeight: 600,
+              background: 'transparent', border: 'none', letterSpacing: '-0.01em',
+              borderRight: '1px solid rgba(255,255,255,0.06)',
+              filter: myReactionData ? `drop-shadow(0 0 6px ${myReactionData.glow})` : 'none',
             }}
           >
             {myReactionData ? (
-              <motion.div
-                key={post.myReaction}
-                initial={{ scale: 0.5, rotate: -12 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', damping: 10, stiffness: 320 }}
-                style={{ filter: `drop-shadow(0 0 5px ${myReactionData.glow})` }}
-              >
+              <motion.div key={post.myReaction} initial={{ scale: 0.5, rotate: -12 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', damping: 10, stiffness: 320 }}
+                style={{ filter: `drop-shadow(0 0 4px ${myReactionData.glow})` }}>
                 <ReactionIcon type={post.myReaction!} size={18} />
               </motion.div>
             ) : (
-              <HeartIcon filled={false} size={16} />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
+                <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+              </svg>
             )}
             <span>{myReactionData ? myReactionData.label : 'React'}</span>
           </motion.button>
@@ -2505,28 +2612,21 @@ const PostCard = ({
           <motion.button
             whileTap={{ scale: 0.92 }}
             onClick={(e) => { e.stopPropagation(); onOpen(post.id); }}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2"
-            style={{ color: '#636366', fontSize: 12, fontWeight: 600, background: 'transparent', border: 'none', letterSpacing: '-0.01em' }}
+            className="flex flex-1 items-center justify-center gap-1.5 py-2.5"
+            style={{ color: '#636366', fontSize: 12, fontWeight: 600, background: 'transparent', border: 'none', letterSpacing: '-0.01em', borderRight: '1px solid rgba(255,255,255,0.06)' }}
           >
-            <CommentIcon size={16} />
-            {post.comments > 0 ? `${post.comments}` : 'Comment'}
+            <CommentIcon size={15} />
+            {post.comments > 0 ? post.comments : 'Comment'}
           </motion.button>
 
           <motion.button
             whileTap={{ scale: 0.92 }}
             onClick={(e) => { e.stopPropagation(); onSave(post.id); }}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2"
-            style={{
-              color: post.saved ? meta.accent : '#636366',
-              fontSize: 12,
-              fontWeight: 600,
-              background: 'transparent',
-              border: 'none',
-              letterSpacing: '-0.01em',
-            }}
+            className="flex flex-1 items-center justify-center gap-1.5 py-2.5"
+            style={{ color: post.saved ? meta.accent : '#636366', fontSize: 12, fontWeight: 600, background: 'transparent', border: 'none', letterSpacing: '-0.01em', filter: post.saved ? `drop-shadow(0 0 5px ${meta.accent}80)` : 'none' }}
           >
             <BookmarkIcon filled={post.saved} size={15} color={post.saved ? meta.accent : '#636366'} />
-            Save
+            {post.saved ? 'Saved' : 'Save'}
           </motion.button>
         </div>
       </div>
@@ -2546,13 +2646,10 @@ export default function FeedPage({
   onOpenPost?: (id: string) => void;
   onCompose?: () => void;
 } = {}) {
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
   const [typeFilter, setTypeFilter] = useState<'all' | PostType>('all');
-  const [playingVideo, setPlayingVideo] = useState<string | null>(null);
-  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [hasUnread, setHasUnread] = useState(true);
-  const [openPost, setOpenPost] = useState<Post | null>(null);
+  const [mediaViewer, setMediaViewer] = useState<{ post: Post; idx: number } | null>(null);
 
   const handleReact = (id: string, r: SemanticReaction | null) => {
     setPosts((prev) =>
@@ -2604,27 +2701,8 @@ export default function FeedPage({
         className="px-4 pb-2"
         style={{ paddingTop: 'max(28px, env(safe-area-inset-top))' }}
       >
-        <div className="flex items-center justify-between mb-1">
-          <div style={{ fontSize: 11, fontWeight: 500, color: '#636366', letterSpacing: '0.03em', textTransform: 'uppercase' }}>
-            {today}
-          </div>
-          {/* Notification bell */}
-          <button
-            className="relative"
-            style={{ background: 'none', border: 'none', padding: 4, color: '#AEAEB2' }}
-            onClick={() => setShowNotifications(true)}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            {hasUnread && (
-              <span
-                className="absolute rounded-full"
-                style={{ top: 3, right: 3, width: 8, height: 8, background: '#9D82FF', border: '1.5px solid #111113' }}
-              />
-            )}
-          </button>
+        <div style={{ fontSize: 11, fontWeight: 500, color: '#636366', letterSpacing: '0.03em', textTransform: 'uppercase', marginBottom: 2 }}>
+          {today}
         </div>
         <h1
           style={{
@@ -2700,15 +2778,13 @@ export default function FeedPage({
               key={post.id}
               post={post}
               onOpen={(id) => {
-                const p = posts.find((x) => x.id === id);
-                if (p) setOpenPost(p);
+                router.push(`/feeds/${id}`);
                 onOpenPost?.(id);
               }}
               onReact={handleReact}
               onSave={handleSave}
               onVote={handleVote}
-              onVideoPlay={setPlayingVideo}
-              onImageOpen={(images, idx) => setLightbox({ images, index: idx })}
+              onMediaOpen={(p, idx) => setMediaViewer({ post: p, idx })}
             />
           ))}
         </AnimatePresence>
@@ -2774,43 +2850,11 @@ export default function FeedPage({
 
       {/* Video modal */}
       <AnimatePresence>
-        {playingVideo && (
-          <VideoModal url={playingVideo} onClose={() => setPlayingVideo(null)} />
-        )}
-      </AnimatePresence>
-
-      {/* Image lightbox */}
-      <AnimatePresence>
-        {lightbox && (
-          <ImageLightbox
-            images={lightbox.images}
-            startIndex={lightbox.index}
-            onClose={() => setLightbox(null)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Notifications panel */}
-      <AnimatePresence>
-        {showNotifications && (
-          <NotificationsPanel
-            onClose={() => setShowNotifications(false)}
-            onMarkAllRead={() => setHasUnread(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Post detail bottom sheet */}
-      <AnimatePresence>
-        {openPost && (
-          <PostDetailSheet
-            post={posts.find((p) => p.id === openPost.id) || openPost}
-            onClose={() => setOpenPost(null)}
-            onReact={handleReact}
-            onSave={handleSave}
-            onVote={handleVote}
-            onVideoPlay={setPlayingVideo}
-            onImageOpen={(images, idx) => setLightbox({ images, index: idx })}
+        {mediaViewer && (
+          <FeedMediaViewer
+            post={mediaViewer.post}
+            startIdx={mediaViewer.idx}
+            onClose={() => setMediaViewer(null)}
           />
         )}
       </AnimatePresence>

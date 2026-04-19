@@ -3,388 +3,299 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { registerServiceWorker, isIOS, isIOSStandalone } from "../register-sw";
 
+/* ── Types ── */
+type NotifItem = {
+  id: string;
+  emoji: string;
+  title: string;
+  body: string;
+  time: string;
+  read: boolean;
+  accent: string;
+};
+
+/* ── Mock data (replace with real API) ── */
+const MOCK_NOTIFS: NotifItem[] = [
+  { id: "n1", emoji: "🔥", title: "New Event", body: "Sunrise Step Challenge kick-off is tomorrow at 6am — 42 people going.", time: "10m", read: false, accent: "#FF9070" },
+  { id: "n2", emoji: "💪", title: "Milestone", body: "Priya hit 100,000 lifetime steps. Drop a reaction!", time: "1h", read: false, accent: "#FFD07A" },
+  { id: "n3", emoji: "🗳️", title: "Poll closing soon", body: "Q2 offsite poll closes in 2 hours — only 36 votes so far.", time: "2h", read: false, accent: "#4CD97B" },
+  { id: "n4", emoji: "📣", title: "Office Closed", body: "Reminder: Monday 22 April is a company wellness day.", time: "1d", read: true, accent: "#AEAEB2" },
+  { id: "n5", emoji: "❤️", title: "87 people reacted", body: "Your celebration post is getting lots of love.", time: "2d", read: true, accent: "#FF6B8A" },
+  { id: "n6", emoji: "🏆", title: "You moved up!", body: "You're now #3 on the weekly leaderboard. Keep pushing!", time: "3d", read: true, accent: "#a78bfa" },
+];
+
+/* ── Push permission helpers (kept for settings row) ── */
 type PermState = "granted" | "denied" | "default" | "unsupported";
 
-/* ── SVG Icon Set (no emojis) ── */
-function IconCheck({ size = 12 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-function IconX({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-function IconSpinner({ size = 14, color = "#fff" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round">
-      <path d="M12 2a10 10 0 0 1 10 10" style={{ animation: "spin 0.8s linear infinite", transformOrigin: "center" }} />
-    </svg>
-  );
-}
-
-/* ── Bell SVGs ── */
-function BellIcon({ color, size = 20 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-      <path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6V11c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
-    </svg>
-  );
-}
-function BellOffIcon({ color, size = 20 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-      <path d="M20 18.69L7.84 6.14 6.31 4.6l-.92-.92L4 5.07l2 2V11c0 3.07 1.63 5.64 4.5 6.32V18c0 1.1.9 2 2 2s2-.9 2-2v-.68c.36-.09.7-.23 1.04-.39l1.94 1.94L20 18.69zM12 21a2 2 0 0 1-2-2h4c0 1.1-.9 2-2 2z" />
-      <path d="M18 14.97V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68c-.51.12-.99.31-1.45.56L18 14.97z" opacity=".3" />
-      <path d="M2 3.05 3.05 2 22 20.95 20.95 22 2 3.05z" />
-    </svg>
-  );
-}
-
-/* ── iOS-style Toggle Switch ── */
-function Toggle({ on, loading, onChange }: { on: boolean; loading: boolean; onChange: () => void }) {
-  return (
-    <button
-      onClick={onChange}
-      disabled={loading}
-      aria-label={on ? "Disable notifications" : "Enable notifications"}
-      style={{
-        position: "relative",
-        width: 52,
-        height: 30,
-        borderRadius: 15,
-        background: on ? "#7c3aed" : "rgba(255,255,255,0.15)",
-        border: "none",
-        cursor: loading ? "wait" : "pointer",
-        transition: "background 0.25s ease, box-shadow 0.25s ease",
-        flexShrink: 0,
-        padding: 0,
-        outline: "none",
-        WebkitTapHighlightColor: "transparent",
-        boxShadow: on ? "0 0 12px rgba(124,58,237,0.55)" : "none",
-      }}
-    >
-      <span
-        style={{
-          position: "absolute",
-          top: 3,
-          left: on ? 25 : 3,
-          width: 24,
-          height: 24,
-          borderRadius: "50%",
-          background: "#fff",
-          transition: "left 0.25s cubic-bezier(0.4,0,0.2,1)",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {loading && <IconSpinner size={12} color="#7c3aed" />}
-      </span>
-    </button>
-  );
-}
-
-/* ── Main Component ── */
-export default function NotificationBell() {
+function usePushPermission() {
   const [permState, setPermState] = useState<PermState>("unsupported");
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [statusMsg, setStatusMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
 
-  const checkSubscription = useCallback(async () => {
+  const check = useCallback(async () => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
     try {
-      // Must pass the same scope used during registration so getRegistration()
-      // finds the correct SW regardless of the current page URL.
       const reg = await navigator.serviceWorker.getRegistration("/socialapp/");
-      if (!reg) { setIsSubscribed(false); return; }
-      const sub = await reg.pushManager.getSubscription();
-      setIsSubscribed(!!sub);
-    } catch {
-      setIsSubscribed(false);
-    }
+      setIsSubscribed(!!(reg && await reg.pushManager.getSubscription()));
+    } catch { setIsSubscribed(false); }
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
     setPermState(Notification.permission as PermState);
-    checkSubscription();
-  }, [checkSubscription]);
+    check();
+  }, [check]);
 
-  // Close popup on outside click
-  useEffect(() => {
-    if (!open) return;
-    function handler(e: MouseEvent) {
-      if (
-        popupRef.current && !popupRef.current.contains(e.target as Node) &&
-        btnRef.current && !btnRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-        setStatusMsg(null);
-      }
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  async function handleToggle() {
+  const toggle = async () => {
     if (loading) return;
-
-    if (isIOS() && !isIOSStandalone()) {
-      setStatusMsg({ text: "Install the app to your Home Screen via Safari to enable notifications.", ok: false });
-      return;
-    }
-    if (permState === "denied") {
-      setStatusMsg({ text: "Notifications are blocked. Allow them in your browser settings.", ok: false });
-      return;
-    }
-
     setLoading(true);
-    setStatusMsg(null);
     try {
       if (isSubscribed) {
         const reg = await navigator.serviceWorker.getRegistration("/socialapp/");
         const sub = reg && await reg.pushManager.getSubscription();
         if (sub) await sub.unsubscribe();
-        // ✅ Persist user's choice so registerServiceWorker() won't re-subscribe on refresh
         localStorage.setItem("notifications_user_disabled", "1");
         localStorage.removeItem("sw_subscription_synced");
         setIsSubscribed(false);
-        setStatusMsg({ text: "Notifications turned off.", ok: false });
       } else {
         if (permState !== "granted") {
           const result = await Notification.requestPermission();
           setPermState(result as PermState);
-          if (result !== "granted") {
-            setStatusMsg({ text: "Permission not granted. You can allow it in browser settings.", ok: false });
-            return;
-          }
+          if (result !== "granted") return;
         }
-        // ✅ User is re-enabling — clear the disabled flag first
         localStorage.removeItem("notifications_user_disabled");
         await registerServiceWorker();
-        await checkSubscription();
-        setStatusMsg({ text: "Notifications are now active.", ok: true });
+        await check();
       }
-    } catch (e) {
-      console.error("[NotificationBell]", e);
-      setStatusMsg({ text: "Something went wrong. Try again.", ok: false });
-    } finally {
-      setLoading(false);
+    } catch (e) { console.error("[NotificationBell]", e); }
+    finally { setLoading(false); }
+  };
+
+  return { permState, isSubscribed, loading, toggle };
+}
+
+/* ── Main Component ── */
+export default function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const [notifs, setNotifs] = useState<NotifItem[]>(MOCK_NOTIFS);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const { permState, isSubscribed, loading, toggle } = usePushPermission();
+
+  const unread = notifs.filter((n) => !n.read).length;
+  const isOn = isSubscribed && permState !== "denied";
+
+  /* close on outside click */
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: MouseEvent) {
+      if (
+        panelRef.current && !panelRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) setOpen(false);
     }
-  }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
-  if (permState === "unsupported") return null;
+  /* lock body scroll when open */
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
-  const isDenied = permState === "denied";
-  const isOn = isSubscribed && !isDenied;
-
-  const bellBg = isDenied ? "rgba(239,68,68,0.15)" : isOn ? "rgba(124,58,237,0.25)" : "rgba(255,255,255,0.08)";
-  const bellBorder = isDenied ? "rgba(239,68,68,0.4)" : isOn ? "rgba(124,58,237,0.5)" : "rgba(255,255,255,0.12)";
-  const bellColor = isDenied ? "#f87171" : isOn ? "#a78bfa" : "rgba(255,255,255,0.55)";
+  const markAll = () => setNotifs((n) => n.map((x) => ({ ...x, read: true })));
+  const markOne = (id: string) => setNotifs((n) => n.map((x) => x.id === id ? { ...x, read: true } : x));
 
   return (
     <>
+      {/* Bell button */}
       <div style={{ position: "relative" }}>
-
-        {/* Bell button */}
         <button
           ref={btnRef}
-          onClick={() => { setOpen(o => !o); setStatusMsg(null); }}
-          title="Notification settings"
+          onClick={() => setOpen((v) => !v)}
+          title="Notifications"
           style={{
-            width: 38,
-            height: 38,
-            borderRadius: "50%",
-            background: open ? "rgba(124,58,237,0.35)" : bellBg,
-            border: `1px solid ${open ? "rgba(124,58,237,0.6)" : bellBorder}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
+            width: 38, height: 38, borderRadius: "50%",
+            background: open ? "rgba(124,58,237,0.35)" : unread > 0 ? "rgba(124,58,237,0.18)" : "rgba(255,255,255,0.08)",
+            border: `1px solid ${open ? "rgba(124,58,237,0.6)" : unread > 0 ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.12)"}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", flexShrink: 0, padding: 0, position: "relative",
+            outline: "none", WebkitTapHighlightColor: "transparent",
             transition: "all 0.2s",
-            flexShrink: 0,
-            padding: 0,
-            position: "relative",
-            outline: "none",
-            WebkitTapHighlightColor: "transparent",
           }}
           onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.08)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
         >
-          {isDenied || !isOn
-            ? <BellOffIcon color={bellColor} />
-            : <BellIcon color={bellColor} />
-          }
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke={unread > 0 ? "#a78bfa" : "rgba(255,255,255,0.55)"} strokeWidth="1.8"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          {/* Unread badge */}
+          {unread > 0 && (
+            <span style={{
+              position: "absolute", top: 5, right: 5,
+              width: 8, height: 8, borderRadius: "50%",
+              background: "#a78bfa",
+              border: "1.5px solid rgba(15,23,42,0.95)",
+              boxShadow: "0 0 6px rgba(167,139,250,0.7)",
+              animation: "bellBadgePulse 2s ease-in-out infinite",
+            }} />
+          )}
         </button>
+      </div>
 
-        {/* Popup panel */}
-        {open && (
-          <div
-            ref={popupRef}
-            style={{
-              position: "absolute",
-              top: 48,
-              right: 0,
-              width: 296,
-              background: "rgba(9,11,24,0.98)",
-              backdropFilter: "blur(40px)",
-              WebkitBackdropFilter: "blur(40px)",
-              borderRadius: 20,
-              border: "1px solid rgba(255,255,255,0.07)",
-              boxShadow: "0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(124,58,237,0.1), inset 0 1px 0 rgba(255,255,255,0.05)",
-              zIndex: 10000,
-              overflow: "hidden",
-              animation: "popupIn 0.22s cubic-bezier(0.16,1,0.3,1)",
-              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-            }}
-          >
+      {/* Backdrop */}
+      {open && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setOpen(false)}
+        />
+      )}
 
-            {/* ── OFF state ── */}
-            {!isOn && !isDenied && (
-              <div style={{ padding: "20px 18px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: "50%",
-                  background: "rgba(124,58,237,0.15)",
-                  border: "1px solid rgba(167,139,250,0.3)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 0 24px rgba(124,58,237,0.3)",
-                  animation: "bellWiggle 3s ease-in-out infinite",
-                  position: "relative", flexShrink: 0,
-                }}>
-                  <BellIcon color="#a78bfa" size={22} />
-                  <span style={{
-                    position: "absolute", inset: -6, borderRadius: "50%",
-                    border: "1px solid rgba(124,58,237,0.25)",
-                    animation: "pulseRing 3s ease-out infinite",
-                  }} />
-                </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>Be the first to know</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", marginTop: 4, lineHeight: 1.6 }}>Only the alerts that matter — your habits,<br />challenges &amp; when you move up the ranks.</div>
-                </div>
-                <button
-                  onClick={handleToggle}
-                  disabled={loading}
-                  style={{
-                    width: "100%", padding: "12px 0",
-                    borderRadius: 11, border: "none",
-                    background: loading ? "rgba(124,58,237,0.35)" : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)",
-                    color: "#fff", fontSize: 14, fontWeight: 700,
-                    cursor: loading ? "wait" : "pointer",
-                    letterSpacing: "-0.01em",
-                    boxShadow: loading ? "none" : "0 4px 18px rgba(124,58,237,0.45)",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                  }}
-                >
-                  {loading ? <><IconSpinner size={15} color="#c4b5fd" /> Enabling…</> : <><BellIcon color="#fff" size={15} /> Enable Notifications</>}
-                </button>
-              </div>
+      {/* Slide-in panel */}
+      <div
+        ref={panelRef}
+        style={{
+          position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 9999,
+          width: "min(360px, 100vw)",
+          background: "rgba(14,14,22,0.98)",
+          backdropFilter: "blur(40px)",
+          WebkitBackdropFilter: "blur(40px)",
+          borderLeft: "1px solid rgba(255,255,255,0.07)",
+          display: "flex", flexDirection: "column",
+          transform: open ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1)",
+          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        {/* Panel header */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "max(20px, env(safe-area-inset-top)) 20px 16px",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: "#F2F2F7", letterSpacing: "-0.03em", lineHeight: 1, margin: 0 }}>
+              Notifications
+            </h2>
+            {unread > 0 && (
+              <p style={{ fontSize: 12, color: "#636366", marginTop: 3, marginBottom: 0 }}>{unread} unread</p>
             )}
-
-            {/* ── ON state ── */}
-            {isOn && (
-              <div style={{ padding: "18px 18px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-                  background: "rgba(16,185,129,0.12)",
-                  border: "1px solid rgba(110,231,183,0.3)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 0 16px rgba(16,185,129,0.25)",
-                }}>
-                  <BellIcon color="#6ee7b7" size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: 6 }}>
-                    Notifications on
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 5px rgba(16,185,129,0.8)", display: "inline-block", flexShrink: 0 }} />
-                  </div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>Tap to turn off</div>
-                </div>
-                <Toggle on={isOn} loading={loading} onChange={handleToggle} />
-              </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {unread > 0 && (
+              <button
+                onClick={markAll}
+                style={{ fontSize: 12, fontWeight: 600, color: "#9D82FF", background: "none", border: "none", cursor: "pointer", letterSpacing: "-0.01em", padding: 0 }}
+              >
+                Mark all read
+              </button>
             )}
+            <button
+              onClick={() => setOpen(false)}
+              style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", color: "#AEAEB2", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
 
-            {/* ── DENIED state ── */}
-            {isDenied && (
-              <div style={{ padding: "22px 18px 20px" }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: "50%",
-                  background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  margin: "0 auto 14px",
-                }}>
-                  <BellOffIcon color="#f87171" size={22} />
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#fca5a5", textAlign: "center", marginBottom: 14, letterSpacing: "-0.01em" }}>
-                  Notifications Blocked
-                </div>
-                <div style={{
-                  padding: "11px 14px", borderRadius: 11,
-                  background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.18)",
-                  fontSize: 12, color: "#fcd34d", lineHeight: 1.6,
-                }}>
-                  Go to <b style={{ color: "#fde68a" }}>Settings → Browser → Notifications</b> and allow this site, then reload the page.
-                </div>
-              </div>
-            )}
-
-            {/* Status message */}
-            {statusMsg && (
+        {/* Notification list */}
+        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>
+          {notifs.map((n) => (
+            <button
+              key={n.id}
+              onClick={() => markOne(n.id)}
+              style={{
+                width: "100%", display: "flex", alignItems: "flex-start", gap: 12,
+                padding: "14px 20px", textAlign: "left",
+                background: n.read ? "transparent" : "rgba(157,130,255,0.06)",
+                borderBottom: "1px solid rgba(255,255,255,0.04)",
+                border: "none",
+                borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)", borderBottomStyle: "solid",
+                cursor: "pointer", transition: "background 0.2s",
+              }}
+            >
+              {/* Icon */}
               <div style={{
-                margin: "0 14px 14px",
-                padding: "10px 14px", borderRadius: 11,
-                background: statusMsg.ok ? "rgba(16,185,129,0.09)" : "rgba(239,68,68,0.07)",
-                border: `1px solid ${statusMsg.ok ? "rgba(16,185,129,0.22)" : "rgba(239,68,68,0.18)"}`,
-                display: "flex", alignItems: "flex-start", gap: 8,
+                width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+                background: `${n.accent}20`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 18, marginTop: 1,
               }}>
-                <div style={{
-                  width: 18, height: 18, borderRadius: "50%", flexShrink: 0, marginTop: 1,
-                  background: statusMsg.ok ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
-                  border: `1px solid ${statusMsg.ok ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: statusMsg.ok ? "#6ee7b7" : "#f87171",
-                }}>
-                  {statusMsg.ok ? <IconCheck size={10} /> : <IconX size={10} />}
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 500, color: statusMsg.ok ? "#6ee7b7" : "#fca5a5", lineHeight: 1.5 }}>
-                  {statusMsg.text}
-                </div>
+                {n.emoji}
               </div>
-            )}
+              {/* Text */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
+                  <span style={{ fontSize: 13, fontWeight: n.read ? 500 : 700, color: "#F2F2F7", letterSpacing: "-0.01em" }}>{n.title}</span>
+                  <span style={{ fontSize: 11, color: "#636366", flexShrink: 0 }}>{n.time}</span>
+                </div>
+                <p style={{ fontSize: 12, color: "#AEAEB2", margin: 0, lineHeight: 1.45, letterSpacing: "-0.005em" }}>{n.body}</p>
+              </div>
+              {/* Unread dot */}
+              {!n.read && (
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#9D82FF", flexShrink: 0, marginTop: 6 }} />
+              )}
+            </button>
+          ))}
+
+          {notifs.length === 0 && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
+              <span style={{ fontSize: 40 }}>🔔</span>
+              <p style={{ fontSize: 14, color: "#636366", marginTop: 12, textAlign: "center" }}>You're all caught up!</p>
+            </div>
+          )}
+        </div>
+
+        {/* Push notification settings row — bottom of panel */}
+        {permState !== "unsupported" && (
+          <div style={{
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            padding: "14px 20px",
+            display: "flex", alignItems: "center", gap: 12,
+          }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#F2F2F7", margin: 0 }}>Push notifications</p>
+              <p style={{ fontSize: 11, color: "#636366", margin: "2px 0 0" }}>
+                {permState === "denied" ? "Blocked in browser settings" : isOn ? "Active on this device" : "Tap to enable"}
+              </p>
+            </div>
+            {/* Toggle */}
+            <button
+              onClick={toggle}
+              disabled={loading || permState === "denied"}
+              style={{
+                position: "relative", width: 48, height: 28, borderRadius: 14,
+                background: isOn ? "#7c3aed" : "rgba(255,255,255,0.12)",
+                border: "none", cursor: permState === "denied" ? "not-allowed" : "pointer",
+                transition: "background 0.25s", flexShrink: 0, padding: 0, outline: "none",
+                WebkitTapHighlightColor: "transparent",
+                boxShadow: isOn ? "0 0 10px rgba(124,58,237,0.5)" : "none",
+                opacity: permState === "denied" ? 0.45 : 1,
+              }}
+            >
+              <span style={{
+                position: "absolute", top: 3, left: isOn ? 23 : 3,
+                width: 22, height: 22, borderRadius: "50%",
+                background: "#fff",
+                transition: "left 0.25s cubic-bezier(0.4,0,0.2,1)",
+                boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
+              }} />
+            </button>
           </div>
         )}
       </div>
 
       <style>{`
-        @keyframes popupIn {
-          from { opacity: 0; transform: scale(0.88) translateY(-12px); }
-          to   { opacity: 1; transform: scale(1)   translateY(0); }
+        @keyframes bellBadgePulse {
+          0%, 100% { box-shadow: 0 0 6px rgba(167,139,250,0.7); }
+          50%       { box-shadow: 0 0 12px rgba(167,139,250,1); }
         }
-        @keyframes bellWiggle {
-          0%,100% { transform: rotate(0deg); }
-          10%      { transform: rotate(14deg); }
-          20%      { transform: rotate(-10deg); }
-          30%      { transform: rotate(8deg); }
-          40%      { transform: rotate(-5deg); }
-          50%      { transform: rotate(0deg); }
-        }
-        @keyframes pulseRing {
-          0%   { transform: scale(1);   opacity: 0.7; }
-          70%  { transform: scale(1.5); opacity: 0; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </>
   );
