@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BottomNav } from "../components/BottomNav";
+import Header from "../commponents/Header";
 // ─── Icons — inline SVGs (lucide style, strokeWidth 1.5) ─────────────────────
 // In your Next.js app swap these for the lucide-react package imports
 
@@ -1156,65 +1157,7 @@ export default function MeditationPage() {
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: 390, margin: "0 auto", padding: "0 0 64px" }}>
 
-        {/* ── Header */}
-        <div style={{
-          position: "sticky", top: 0, zIndex: 20,
-          display: "flex", alignItems: "center",
-          padding: "0 16px",
-          height: 56,
-          background: "rgba(9,9,11,0.88)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-        }}>
-          {/* Back — chevron + label like Apple */}
-          <button
-            className="action-btn"
-            onClick={() => window.history.back()}
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              background: "transparent", border: "none",
-             
-              letterSpacing: "-0.01em", padding: "6px 10px 6px 2px",
-              minWidth: 64, flexShrink: 0,
-            }}
-            aria-label="Go back"
-          >
-            <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
-              <path d="M8 1L1 8L8 15" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-           
-          </button>
-
-          {/* Centred title — absolute so it's always truly centred */}
-          <div style={{
-            position: "absolute", left: "50%", transform: "translateX(-50%)",
-            textAlign: "center", pointerEvents: "none",
-          }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", letterSpacing: "-0.01em", lineHeight: 1 }}>
-              Breathe
-            </p>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.32)", marginTop: 2 }}>
-              Mindfulness
-            </p>
-          </div>
-
-          {/* Info — right aligned */}
-          <button
-            className="action-btn"
-            onClick={() => setShowTips(true)}
-            style={{
-              marginLeft: "auto",
-              width: 34, height: 34, borderRadius: "50%",
-              background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "rgba(255,255,255,0.55)", flexShrink: 0,
-            }}
-            aria-label="Practice tips"
-          >
-            <Info size={15} />
-          </button>
-        </div>
+        <Header title="Mindfulness" showAnimatedWord={false} showBackButton={true} onBack={() => router.back()} />
 
         <div style={{ padding: "20px 24px 0" }}>
 

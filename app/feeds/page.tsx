@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BottomNav } from '../components/BottomNav';
+import Header from '../commponents/Header';
 
 /* ─────────────────────────────────────────────
    Dark theme tokens
@@ -2687,7 +2688,6 @@ export default function FeedPage({
 
   const filtered = posts.filter((p) => typeFilter === 'all' || p.type === typeFilter);
 
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   return (
     <div style={{ minHeight: '100vh', background: '#111113', paddingBottom: 120 }}>
@@ -2696,27 +2696,7 @@ export default function FeedPage({
         div::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* Header */}
-      <header
-        className="px-4 pb-2"
-        style={{ paddingTop: 'max(28px, env(safe-area-inset-top))' }}
-      >
-        <div style={{ fontSize: 11, fontWeight: 500, color: '#636366', letterSpacing: '0.03em', textTransform: 'uppercase', marginBottom: 2 }}>
-          {today}
-        </div>
-        <h1
-          style={{
-            fontFamily: 'Syne, -apple-system, sans-serif',
-            fontSize: 34,
-            fontWeight: 700,
-            color: '#F2F2F7',
-            letterSpacing: '-0.035em',
-            lineHeight: 1,
-          }}
-        >
-          Feed
-        </h1>
-      </header>
+      <Header title="Feed" showAnimatedWord={false} />
 
       {/* Sticky filter bar */}
       <div

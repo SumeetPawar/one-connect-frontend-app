@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ReferenceArea, R
 import { useRouter } from "next/navigation";
 import { api, BodyMetricHistory, BodyMetricScan, BodyProfile, getBodyProfile, getCachedUserMe, getLatestScan, getScanHistory, saveScan, updateBodyProfile } from "@/lib/api";
 import { BottomNav } from "../components/BottomNav";
+import Header from "../commponents/Header";
 
 
 const C = {
@@ -1506,64 +1507,7 @@ export default function ScanReport() {
 
         <div style={{ position: "relative", zIndex: 1 }}>
 
-          {/* ── HEADER ── */}
-          <div style={{
-            position: "sticky", top: 0, zIndex: 100,
-            background: `${C.bg}E8`, backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
-          } as CSSProperties}>
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 14px" }}>
-
-              {/* Left — Back button */}
-              <button onClick={() => router.push("/home")} style={{
-                display: "flex", alignItems: "center", gap: 5, background: "transparent",
-                border: "none", cursor: "pointer", fontFamily: "Figtree, sans-serif",
-                color: "rgba(255,255,255,0.60)", fontSize: 15, fontWeight: 400,
-                padding: "6px 12px 6px 4px", borderRadius: 10, minHeight: 40, flexShrink: 0,
-              }}>
-                <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
-                  <path d="M8 1L1.5 8L8 15" stroke="rgba(255,255,255,0.50)" strokeWidth="1.8"
-                    strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Back
-              </button>
-
-              {/* Centre — Title only */}
-              <div style={{ textAlign: "center" }}>
-                <div style={{
-                  fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em",
-                  color: "rgba(255,255,255,0.88)",
-                }}>Body Composition</div>
-              </div>
-
-              {/* Right — Health Guide icon only */}
-              <button onClick={() => router.push("/bgmi/guide")} style={{
-                display: "flex", alignItems: "center", gap: 5,
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.10)",
-                cursor: "pointer",
-                padding: "4px 11px 4px 9px", borderRadius: 10, minHeight: 30, flexShrink: 0,
-                transition: "opacity 0.15s",
-                outline: "none",
-              }}
-              onTouchStart={e => { e.currentTarget.style.opacity = "0.6"; }}
-              onTouchEnd={e => { e.currentTarget.style.opacity = "1"; }}
-            >
-                <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
-                  <circle cx="9" cy="9" r="7.2" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2" />
-                  <path d="M9 8v4" stroke="rgba(255,255,255,0.55)" strokeWidth="1.3" strokeLinecap="round" />
-                  <circle cx="9" cy="6" r="0.9" fill="rgba(255,255,255,0.55)" />
-                </svg>
-                <span style={{
-                  fontSize: 12.5, fontWeight: 500,
-                  color: "rgba(255,255,255,0.50)", letterSpacing: "-0.01em",
-                }}>Health Guide</span>
-            </button>
-
-            </div>
-          </div>
+          <Header title="Body Metrics" showAnimatedWord={false} showBackButton={true} onBack={() => router.push("/home")} />
 
           {/* ── AI BODY INSIGHT ── */}
           {(() => {

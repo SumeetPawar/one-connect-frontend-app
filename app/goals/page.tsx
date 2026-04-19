@@ -4,6 +4,7 @@ import { api, isApiError } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import router from 'next/router';
 import { useEffect, useState } from 'react';
+import Header from '../commponents/Header';
 
 export default function WeeklyChallenge() {
     // Centralized login/API check
@@ -148,18 +149,9 @@ export default function WeeklyChallenge() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 bg-gradient-to-b from-violet-950/15 to-slate-950 p-4">
-            <div className="max-w-md mx-auto pt-8 pb-20">
-
-                {/* Header */}
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight" style={{ letterSpacing: '-0.022em' }}>
-                        Steps Challenge
-                    </h1>
-                    <p className="text-lg text-white/60 font-normal">
-                        Choose your challenge level
-                    </p>
-                </div>
+        <div className="min-h-screen bg-slate-950 bg-gradient-to-b from-violet-950/15 to-slate-950">
+            <Header title="Steps Challenge" showAnimatedWord={false} showBackButton={true} onBack={() => navRouter.back()} />
+            <div className="max-w-md mx-auto px-4 pt-6 pb-20">
 
                 {/* Goal Cards */}
                 <div className="space-y-3 mb-5">

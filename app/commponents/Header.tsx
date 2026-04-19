@@ -170,13 +170,17 @@ export default function Header({
                 position: 'sticky',
                 top: 0,
                 zIndex: 100,
-                background: 'rgba(15, 23, 42, 0.95)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                padding: '16px 20px'
+                background: '#0D0D12',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                borderBottom: '1px solid rgba(255,255,255,0.07)',
+                padding: '0 20px',
+                height: 58,
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
             }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                     {/* Title Section with optional Back Button */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {showBackButton && onBack && (

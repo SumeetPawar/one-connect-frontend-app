@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Header from "../commponents/Header";
 import { api, addSteps, getCachedUserMe } from "@/lib/api";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { BottomNav } from "../components/BottomNav";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ─── animated counters ───────────────────────────────────────────────────────
 function useCount(target: number, delay = 300, dur = 900) {
@@ -383,6 +384,355 @@ function FeedbackButton() {
         </div>
       )}
     </>
+  );
+}
+
+// ─── Daily Carousel ───────────────────────────────────────────────────────────
+const FEATURED_FEEDS = [
+  {
+    id: "p1",
+    accent: "#5DCFFF",
+    emoji: "🏃",
+    tag: "Event",
+    title: "Sunrise Step Challenge — Week 3 Closing Walk",
+    meta: "Tomorrow · 6:00 AM · Riverside Park",
+    reactions: 64, comments: 23,
+    authorInitials: "AR", authorColor: "#5DCFFF", author: "Ananya R.",
+    coverImage: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=900&q=80&fit=crop",
+  },
+  {
+    id: "p2",
+    accent: "#FFD07A",
+    emoji: "🏆",
+    tag: "Milestone",
+    title: "Priya just hit 100,000 lifetime steps!",
+    meta: "Shared by HR · 1h ago",
+    reactions: 87, comments: 24,
+    authorInitials: "PR", authorColor: "#FFD07A", author: "Priya R.",
+    coverImage: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=900&q=80&fit=crop",
+  },
+  {
+    id: "p3",
+    accent: "#4CD97B",
+    emoji: "🗳️",
+    tag: "Poll",
+    title: "Which time works best for the Q2 team offsite?",
+    meta: "Closes in 2h · 36 votes",
+    reactions: 12, comments: 9,
+    authorInitials: "SM", authorColor: "#4CD97B", author: "Sachin M.",
+    coverImage: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=900&q=80&fit=crop",
+  },
+  {
+    id: "p4",
+    accent: "#C4B0F8",
+    emoji: "💡",
+    tag: "Wellness Tip",
+    title: "Two minutes of breathing before 3pm meetings",
+    meta: "Wellness Team · 3h ago",
+    reactions: 55, comments: 7,
+    authorInitials: "WT", authorColor: "#C4B0F8", author: "Wellness Team",
+    coverImage: "https://images.unsplash.com/photo-1544216717-3bbf52512659?w=900&q=80&fit=crop",
+  },
+];
+
+const TOTAL_SLIDES = 1 + FEATURED_FEEDS.length; // summary + feeds
+
+const SLIDE_VARIANTS = {
+  enter: (d: number) => ({ x: d > 0 ? "100%" : "-100%", opacity: 0, scale: 0.96 }),
+  center: { x: 0, opacity: 1, scale: 1 },
+  exit: (d: number) => ({ x: d > 0 ? "-32%" : "32%", opacity: 0, scale: 0.97 }),
+};
+const SLIDE_TRANSITION = { type: "spring" as const, stiffness: 380, damping: 38, mass: 0.75 };
+
+function DailyCarousel({ data, fd, onNavigate, greeting, userName }: {
+  data: HomeData;
+  fd: (d: number) => React.CSSProperties;
+  onNavigate: (path: string) => void;
+  greeting: string;
+  userName: string;
+}) {
+  const [idx, setIdx] = useState(0);
+  const [dir, setDir] = useState(0);
+
+  const goTo = (next: number) => {
+    if (next === idx || next < 0 || next >= TOTAL_SLIDES) return;
+    setDir(next > idx ? 1 : -1);
+    setIdx(next);
+  };
+
+  const handleDragEnd = (_: unknown, info: { offset: { x: number }; velocity: { x: number } }) => {
+    if (Math.abs(info.offset.x) > 48 || Math.abs(info.velocity.x) > 380) {
+      if (info.offset.x < 0) goTo(idx + 1);
+      else goTo(idx - 1);
+    }
+  };
+
+  // ── AI insight for slide 0 ──────────────────────────────────────────────────
+  const insight = data.ai_insight;
+  const habits = data.habits;
+  const hasMeaningfulData = (data.steps?.yesterday ?? 0) > 0 || (habits?.yesterday_completed ?? 0) > 0;
+  const COACH = [
+    { headline: "Today is a perfect day to start fresh.", detail: "Your habits are waiting. All it takes is showing up.", hook: "Small steps build big streaks." },
+    { headline: "Every great streak started with one day.", detail: "Get back into motion quickly — that's the whole game.", hook: "Begin. The rest follows." },
+    { headline: "You're one good day away from momentum.", detail: "Check off a habit and you'll feel that spark again.", hook: "Done beats perfect, every time." },
+    { headline: "Champions have quiet days too.", detail: "What matters is how fast you get back.", hook: "Your streak is waiting." },
+  ];
+  const coach = COACH[0];
+  const isCoachMode = !insight || !hasMeaningfulData;
+  const aiHeadline = insight
+    ? (insight.segments ? insight.segments.map(s => s.text).join("") : insight.headline ?? coach.headline)
+    : coach.headline;
+  const aiDetail = insight
+    ? (typeof insight.detail === "string" ? insight.detail : Array.isArray(insight.detail) ? (insight.detail as { text: string }[]).map(s => s.text).join("") : coach.detail)
+    : coach.detail;
+  const aiHook = insight?.hook ?? coach.hook;
+  const aiBadge = toStr(insight?.badge) || (isCoachMode ? "Your Move" : "AI Insight");
+
+  const feed = idx > 0 ? FEATURED_FEEDS[idx - 1] : null;
+
+  return (
+    <div style={{ ...fd(60), margin: "12px 0 0", padding: "0 16px" }}>
+      {/* Card shell */}
+      <div style={{
+        position: "relative",
+        borderRadius: 24,
+        overflow: "hidden",
+        height: 230,
+        boxShadow: "0 16px 48px rgba(0,0,0,0.60), 0 0 0 1px rgba(255,255,255,0.06) inset",
+        userSelect: "none",
+      }}>
+        {/* Dot indicators — above slides */}
+        <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 5, zIndex: 10, pointerEvents: "none" }}>
+          {Array.from({ length: TOTAL_SLIDES }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                width: i === idx ? 20 : 6, height: 6, borderRadius: 999,
+                background: i === idx ? "#fff" : "rgba(255,255,255,0.32)",
+                transition: "all 0.28s cubic-bezier(0.4,0,0.2,1)",
+                pointerEvents: "auto",
+                cursor: "pointer",
+              }}
+              onClick={() => goTo(i)}
+            />
+          ))}
+        </div>
+
+        <AnimatePresence custom={dir} initial={false}>
+          <motion.div
+            key={idx}
+            custom={dir}
+            variants={SLIDE_VARIANTS}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={SLIDE_TRANSITION}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.07}
+            onDragEnd={handleDragEnd}
+            onClick={() => feed && onNavigate(`/feeds/${feed.id}`)}
+            style={{ position: "absolute", inset: 0, cursor: feed ? "pointer" : "default" }}
+          >
+            {/* ── Background ── */}
+            {feed ? (
+              <>
+                <div style={{
+                  position: "absolute", inset: 0,
+                  backgroundImage: `url(${feed.coverImage})`,
+                  backgroundSize: "cover", backgroundPosition: "center",
+                }} />
+                {/* Deep bottom scrim */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: "linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.42) 48%, rgba(0,0,0,0.08) 100%)",
+                }} />
+                {/* Accent colour tint top-left */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: `linear-gradient(135deg, ${feed.accent}22 0%, transparent 55%)`,
+                }} />
+              </>
+            ) : (
+              <>
+                {/* Motivational background photo */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  backgroundImage: "url(https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=900&q=80&fit=crop)",
+                  backgroundSize: "cover", backgroundPosition: "center 30%",
+                }} />
+                {/* Purple tint overlay to match brand */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: "linear-gradient(160deg, rgba(60,20,120,0.72) 0%, rgba(30,10,70,0.55) 50%, rgba(10,5,30,0.80) 100%)",
+                }} />
+                {/* Bottom scrim for text */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: "linear-gradient(0deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0) 100%)",
+                }} />
+                {/* Subtle purple glow top-right */}
+                <div style={{
+                  position: "absolute", top: -60, right: -60,
+                  width: 260, height: 260, borderRadius: "50%",
+                  background: "radial-gradient(circle, rgba(155,127,232,0.30) 0%, transparent 65%)",
+                  pointerEvents: "none",
+                }} />
+              </>
+            )}
+
+            {/* ── SLIDE 0: Greeting + AI Insight / Coach ── */}
+            {idx === 0 && (
+              <div style={{ position: "absolute", inset: 0, padding: "16px 20px 18px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                {/* Top — greeting */}
+                <div>
+                  <p style={{
+                    fontSize: 11, fontWeight: 500, letterSpacing: "0.06em",
+                    textTransform: "uppercase" as const,
+                    color: "rgba(255,255,255,0.50)",
+                    margin: "0 0 3px",
+                  }}>{greeting}</p>
+                  <h2 style={{
+                    fontSize: 26, fontWeight: 800, color: "#fff",
+                    letterSpacing: "-0.04em", lineHeight: 1.05,
+                    margin: 0,
+                    textShadow: "0 2px 12px rgba(0,0,0,0.55)",
+                  }}>
+                    {userName} <span style={{ fontSize: 22 }}>👋</span>
+                  </h2>
+                </div>
+
+                {/* Bottom — AI insight */}
+                <div>
+                  {/* Badge */}
+                  <div style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    background: isCoachMode ? "rgba(251,146,60,0.18)" : "rgba(155,127,232,0.18)",
+                    border: `1px solid ${isCoachMode ? "rgba(251,146,60,0.40)" : "rgba(155,127,232,0.40)"}`,
+                    borderRadius: 999, padding: "3px 11px", marginBottom: 8,
+                    backdropFilter: "blur(10px)",
+                  }}>
+                    <div style={{
+                      width: 5, height: 5, borderRadius: "50%",
+                      background: isCoachMode ? T.orange : T.purple,
+                      boxShadow: `0 0 6px ${isCoachMode ? T.orange : T.purple}`,
+                    }} />
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, letterSpacing: "0.10em",
+                      textTransform: "uppercase" as const,
+                      color: isCoachMode ? T.orange : T.purpleL,
+                    }}>{aiBadge}</span>
+                  </div>
+
+                  <p style={{
+                    fontSize: 15, fontWeight: 700, color: "#fff",
+                    letterSpacing: "-0.025em", lineHeight: 1.3,
+                    margin: "0 0 6px",
+                    textShadow: "0 1px 8px rgba(0,0,0,0.5)",
+                  }}>{aiHeadline}</p>
+                  <p style={{
+                    fontSize: 12, color: "rgba(255,255,255,0.58)",
+                    lineHeight: 1.5, margin: "0 0 6px",
+                  }}>{aiDetail}</p>
+                  {aiHook && (
+                    <p style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: isCoachMode ? T.orange : T.teal,
+                      margin: 0,
+                    }}>{aiHook}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── SLIDES 1+: Feed Posts ── */}
+            {feed && (
+              <div style={{ position: "absolute", inset: 0, padding: "18px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                {/* Tag pill */}
+                <div style={{ alignSelf: "flex-start" }}>
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const,
+                    color: feed.accent,
+                    background: "rgba(0,0,0,0.50)",
+                    border: `1px solid ${feed.accent}60`,
+                    padding: "4px 11px", borderRadius: 999,
+                    backdropFilter: "blur(10px)",
+                  }}>{feed.emoji} {feed.tag}</span>
+                </div>
+
+                {/* Bottom content */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
+                    <div style={{
+                      width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                      background: `linear-gradient(135deg,${feed.authorColor} 0%,${feed.authorColor}80 100%)`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 9, fontWeight: 700, color: "#fff",
+                      border: "1.5px solid rgba(255,255,255,0.22)",
+                    }}>{feed.authorInitials}</div>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.68)" }}>{feed.author}</span>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: "auto" }}>{feed.meta.split("·").pop()?.trim()}</span>
+                  </div>
+                  <h3 style={{
+                    fontSize: 19, fontWeight: 800, color: "#fff",
+                    letterSpacing: "-0.035em", lineHeight: 1.25,
+                    margin: "0 0 12px",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical" as const,
+                    overflow: "hidden",
+                    textShadow: "0 2px 12px rgba(0,0,0,0.55)",
+                  }}>{feed.title}</h3>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                      </svg>
+                      {feed.reactions}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      {feed.comments}
+                    </span>
+                    <div style={{ flex: 1 }} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: feed.accent, display: "flex", alignItems: "center", gap: 3 }}>
+                      View post
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Progress bar strip */}
+      <div style={{ display: "flex", gap: 4, marginTop: 8, padding: "0 2px" }}>
+        {Array.from({ length: TOTAL_SLIDES }).map((_, i) => {
+          const slotFeed = i > 0 ? FEATURED_FEEDS[i - 1] : null;
+          return (
+            <div
+              key={i}
+              onClick={() => goTo(i)}
+              style={{
+                flex: i === idx ? 2 : 1,
+                height: 3, borderRadius: 999, cursor: "pointer",
+                background: i === idx
+                  ? (slotFeed ? slotFeed.accent : T.purple)
+                  : "rgba(255,255,255,0.12)",
+                transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -1272,7 +1622,8 @@ export default function HomePage() {
         .hp-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(242,238,255,.25);border-top-color:rgba(242,238,255,.75);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:7px;}
         @keyframes slideUp{from{transform:translateX(-50%) translateY(100%)}to{transform:translateX(-50%) translateY(0)}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        .hp-page{min-height:100vh;max-width:430px;margin:0 auto;background:${T.bg};font-family:'Plus Jakarta Sans',-apple-system,sans-serif;color:${T.t1};-webkit-font-smoothing:antialiased;padding-bottom:56px;}
+        html,body{overflow-x:hidden;}
+        .hp-page{min-height:100vh;max-width:430px;margin:0 auto;background:${T.bg};font-family:'Plus Jakarta Sans',-apple-system,sans-serif;color:${T.t1};-webkit-font-smoothing:antialiased;padding-bottom:56px;overflow-x:hidden;}
         .hp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:40;backdrop-filter:blur(10px);}
         .hp-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#0E0C18;border-radius:26px 26px 0 0;border-top:.5px solid rgba(155,127,232,.22);box-shadow:0 -16px 60px rgba(0,0,0,.80);z-index:50;animation:slideUp .3s cubic-bezier(.22,1,.36,1);}
         .hp-kbtn{padding:15px 0;border-radius:13px;border:.5px solid rgba(242,238,255,.07);background:rgba(242,238,255,.05);cursor:pointer;font-size:18px;font-weight:600;color:${T.t1};font-family:'Plus Jakarta Sans',sans-serif;transition:background .12s,transform .1s;}
@@ -1339,14 +1690,8 @@ export default function HomePage() {
         {/* Header — same style as challenge page */}
         <Header title="GES" showAnimatedWord={true} />
 
-        {/* Greeting */}
-        <div style={{ ...fd(0), padding: "18px 20px 6px" }}>
-          <p style={{ fontSize: 12, fontWeight: 500, color: T.t4, letterSpacing: ".04em", textTransform: "uppercase" as const, marginBottom: 4 }}>{greeting}</p>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: T.t1, letterSpacing: "-.6px", lineHeight: 1.05 }}>{userName.split(" ")[0]} <span style={{ color: T.purple }}>👋</span></h1>
-        </div>
-
-        {/* AI insight */}
-        <AiInsightCard data={homeData} fd={fd} />
+        {/* Daily carousel — insight + featured feeds */}
+        <DailyCarousel data={homeData} fd={fd} onNavigate={navigate} greeting={greeting} userName={userName.split(" ")[0]} />
 
         {/* Habits section */}
         <HabitsCard data={homeData} fd={fd} onNavigate={() => navigate(homeData.habits ? "/habits/tree" : "/habits")} />
