@@ -42,3 +42,7 @@ next-env.d.ts
 # local env files — never commit secrets
 .env.local
 .env*.local
+.env
+.env.production
+.env.*
+!.env.example
