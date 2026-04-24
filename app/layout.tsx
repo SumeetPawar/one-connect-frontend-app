@@ -5,6 +5,7 @@ import ServiceWorkerRegister from "./ServiceWorkerRegister";
 import TokenRefreshHandler from "./TokenRefreshHandler";
 import IOSInstallPrompt from "./components/IOSInstallPrompt";
 import AndroidInstallPrompt from "./components/AndroidInstallPrompt";
+import SessionSync from "./components/SessionSync";
 
 // export const metadata: Metadata = {
 //   title: "GES Connect",
@@ -27,6 +28,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/socialapp/web-app-manifest-192x192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/socialapp/web-app-manifest-512x512.png" />
+        <link rel="shortcut icon" href="/socialapp/web-app-manifest-192x192.png" />
         <link rel="manifest" href="/socialapp/manifest.json" />
         <meta name="theme-color" content="#7c3aed" />
 
@@ -52,17 +57,20 @@ export default function RootLayout({
       <body className="antialiased">
         <ServiceWorkerRegister />
         <TokenRefreshHandler />
+        <SessionSync />
         <IOSInstallPrompt />
         <AndroidInstallPrompt />
         <div
           style={{
-            maxWidth: 430,
+            width: '100%',
+            maxWidth: 480,
             margin: '0 auto',
             minHeight: '100vh',
-            boxShadow: '0 0 24px rgba(124,58,237,0.08)',
+            minWidth: 0,
             background: '#08080F',
             display: 'flex',
             flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
           {children}

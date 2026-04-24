@@ -29,7 +29,8 @@ export default function TokenRefreshHandler() {
         signalSessionReady(); // let useAuthRedirect know so it can redirect
         if (typeof window !== "undefined" &&
           !window.location.pathname.includes("/login") &&
-          !window.location.pathname.includes("/signup")) {
+          !window.location.pathname.includes("/signup") &&
+          !window.location.pathname.includes("/privacy")) {
           window.location.href = "/socialapp/login";
         }
         return;
@@ -63,7 +64,8 @@ export default function TokenRefreshHandler() {
           signalSessionReady(); // dead session, let page know
           if (typeof window !== "undefined" &&
             !window.location.pathname.includes("/login") &&
-            !window.location.pathname.includes("/signup")) {
+            !window.location.pathname.includes("/signup") &&
+            !window.location.pathname.includes("/privacy")) {
             window.location.href = "/socialapp/login";
           }
         } else {

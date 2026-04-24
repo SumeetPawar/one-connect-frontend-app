@@ -10,17 +10,27 @@
   box-sizing: border-box;
 } */
 
+html {
+  background: #08080F;
+}
+
 body {
   font-family: var(--font-sans);
   min-height: 100vh;
-  background: #0a0a1a;
-  background-image: 
-    radial-gradient(ellipse 120% 100% at 50% 0%, rgba(124, 58, 237, 0.12), transparent 70%),
-    radial-gradient(ellipse 100% 100% at 100%, rgba(59, 130, 246, 0.08), transparent 60%),
-    radial-gradient(ellipse 100% 100% at 0% 100%, rgba(168, 85, 247, 0.06), transparent 60%),
-    linear-gradient(180deg, #0a0a1a 0%, #131324 50%, #0f0f1e 100%);
+  background: #08080F;
   -webkit-font-smoothing: antialiased;
   color: #f8fafc;
+  /* prevent horizontal scroll on any device */
+  overflow-x: hidden;
+}
+
+/* On true mobile screens, remove the centering gap */
+@media (max-width: 480px) {
+  body > div,
+  body .app-shell {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
 }
 
 @layer utilities {
@@ -46,5 +56,15 @@ body {
 
   .animate-fadeIn {
     animation: fadeIn 180ms ease-out both;
+  }
+
+  @keyframes shimmer {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.65; }
+    100% { opacity: 1; }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 }

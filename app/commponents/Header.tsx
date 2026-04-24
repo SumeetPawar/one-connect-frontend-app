@@ -4,6 +4,7 @@ import router, { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCachedUserMe } from "@/lib/api";
 import NotificationBell from "../components/NotificationBell";
+import { registerServiceWorker, isIOS, isIOSStandalone } from "../register-sw";
 
 type UserProfile = {
     id: string;
@@ -44,12 +45,94 @@ export default function Header({
     const [fbDone, setFbDone] = useState(false);
     const [isStandalone, setIsStandalone] = useState(true); // default true to avoid flash
     const [isMobile, setIsMobile] = useState(false);
+    const [notifEnabled, setNotifEnabled] = useState<boolean | null>(null);
+    const [notifLoading, setNotifLoading] = useState(false);
     const router = useRouter();
+
     // Detect standalone mode (PWA installed) and mobile device
     useEffect(() => {
         setIsStandalone(window.matchMedia('(display-mode: standalone)').matches);
         setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
     }, []);
+
+    // Sync notification toggle state from permission + user-disabled flag
+    useEffect(() => {
+        if (typeof Notification === 'undefined') return;
+        // If user explicitly disabled, show off even if permission is granted
+        const userDisabled = localStorage.getItem('notifications_user_disabled') === '1';
+        setNotifEnabled(Notification.permission === 'granted' && !userDisabled);
+    }, []);
+
+    const handleNotifToggle = async () => {
+        if (typeof Notification === 'undefined' || notifLoading) return;
+
+        // iOS non-standalone: can't subscribe — push requires Home Screen install
+        if (isIOS() && !isIOSStandalone()) {
+            alert('To enable push notifications on iPhone/iPad, first install this app:\nSafari → Share → Add to Home Screen\nThen open the app from your Home Screen and enable notifications.');
+            return;
+        }
+
+        const currentlyEnabled =
+            Notification.permission === 'granted' &&
+            localStorage.getItem('notifications_user_disabled') !== '1';
+
+        if (currentlyEnabled) {
+            // ── DISABLE ──────────────────────────────────────────────────────
+            setNotifLoading(true);
+            try {
+                // 1. Unsubscribe from push manager
+                const reg = await navigator.serviceWorker?.ready;
+                const sub = await reg?.pushManager?.getSubscription();
+                if (sub) {
+                    // 2. Tell backend to remove this subscription
+                    const token = localStorage.getItem('access_token');
+                    const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || 'https://cbiqa.dev.honeywellcloud.com/socialapi').replace(/\/$/, '');
+                    try {
+                        await fetch(`${API_BASE}/api/push/unsubscribe?endpoint=${encodeURIComponent(sub.endpoint)}`, {
+                            method: 'DELETE',
+                            headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                        });
+                    } catch { /* silent — best effort */ }
+                    await sub.unsubscribe();
+                }
+                // 3. Mark user as explicitly disabled so we don't auto-resubscribe
+                localStorage.setItem('notifications_user_disabled', '1');
+                localStorage.removeItem('sw_subscription_synced');
+                setNotifEnabled(false);
+            } catch (err) {
+                console.error('[Notif] Disable failed:', err);
+            } finally {
+                setNotifLoading(false);
+            }
+        } else {
+            // ── ENABLE ───────────────────────────────────────────────────────
+            if (Notification.permission === 'denied') {
+                // Browser hard-blocked — must go to settings
+                alert('Notifications are blocked by your browser.\n\niPhone/iPad: Settings → Safari → Notifications\nAndroid: Site settings → Notifications → Allow\nDesktop: Click the 🔒 icon in the address bar → Notifications → Allow');
+                return;
+            }
+            setNotifLoading(true);
+            try {
+                // Clear the user-disabled flag so registerServiceWorker proceeds
+                localStorage.removeItem('notifications_user_disabled');
+                await registerServiceWorker();
+                // Re-read actual state after the full subscribe+sync flow
+                const reg = await navigator.serviceWorker?.ready;
+                const sub = await reg?.pushManager?.getSubscription();
+                const granted = Notification.permission === 'granted' && !!sub;
+                setNotifEnabled(granted);
+                if (!granted) {
+                    // User denied the browser prompt — re-flag so we don't auto-prompt again
+                    localStorage.setItem('notifications_user_disabled', '1');
+                }
+            } catch (err) {
+                console.error('[Notif] Enable failed:', err);
+                setNotifEnabled(false);
+            } finally {
+                setNotifLoading(false);
+            }
+        }
+    };
 
     // Fetch user profile
     useEffect(() => {
@@ -397,6 +480,52 @@ export default function Header({
                                     >
                                         Manage Users
                                     </button>
+                                )}
+
+                                {/* Notification Toggle */}
+                                {notifEnabled !== null && (
+                                    <div
+                                        onClick={handleNotifToggle}
+                                        style={{
+                                            width: '100%', padding: '10px 12px',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            borderRadius: '6px', cursor: notifLoading ? 'default' : 'pointer', marginBottom: '4px',
+                                            transition: 'background 0.2s',
+                                            opacity: notifLoading ? 0.65 : 1,
+                                        }}
+                                        onMouseEnter={e => { if (!notifLoading) (e.currentTarget as HTMLElement).style.background = 'rgba(167,139,250,0.1)'; }}
+                                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, color: notifEnabled ? '#a78bfa' : 'rgba(255,255,255,0.5)' }}>
+                                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                            </svg>
+                                            <span style={{ fontSize: '14px', fontWeight: 500, color: notifEnabled ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.45)' }}>
+                                                Notifications
+                                            </span>
+                                        </div>
+                                        {/* Toggle pill or spinner */}
+                                        {notifLoading ? (
+                                            <div style={{ width: 36, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(167,139,250,0.4)', borderTopColor: '#a78bfa', animation: 'spin 0.7s linear infinite' }} />
+                                            </div>
+                                        ) : (
+                                            <div style={{
+                                                width: 36, height: 20, borderRadius: 999,
+                                                background: notifEnabled ? 'rgba(124,58,237,0.85)' : 'rgba(255,255,255,0.12)',
+                                                position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                                                boxShadow: notifEnabled ? '0 0 8px rgba(124,58,237,0.55)' : 'none',
+                                            }}>
+                                                <div style={{
+                                                    position: 'absolute', top: 3, left: notifEnabled ? 19 : 3,
+                                                    width: 14, height: 14, borderRadius: '50%',
+                                                    background: '#fff', transition: 'left 0.2s',
+                                                    boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                                                }} />
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
 
                                 {/* Feedback Button */}
@@ -852,14 +981,11 @@ export default function Header({
                     }
                 }
                 @keyframes slideDown {
-                    from {
-                        opacity: 0;
-                        transform: translateY(-8px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
+                    from { opacity: 0; transform: translateY(-8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
                 }
             `}</style>
         </>

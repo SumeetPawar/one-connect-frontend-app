@@ -271,6 +271,23 @@ export default function Dashboard() {
                 showAnimatedWord={true}
             />
 
+            {/* Admin: Create Challenge button */}
+            {isAdmin && (
+                <div style={{ padding: '14px 20px 0', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                        onClick={() => router.push('/challanges/create')}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                            border: 'none', borderRadius: 30, padding: '9px 18px',
+                            color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                            boxShadow: '0 4px 16px rgba(124,58,237,.4)',
+                        }}>
+                        <span style={{ fontSize: 16 }}>＋</span> Create Challenge
+                    </button>
+                </div>
+            )}
+
             {/* Content Section */}
             <div style={{
                 background: 'linear-gradient(180deg, rgba(124, 58, 237, 0.12) 0%, rgba(15, 23, 42, 1) 100%)',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getChallengeWeeklySteps, addSteps } from '../../../../lib/api';
 import Header from '../../../commponents/Header';
@@ -503,6 +503,23 @@ export default function StepsTracker() {
             setViewSteps(selectedSteps);
         }
     }, [selectedLabel, apiWeek, weekDays]);
+
+    // Listen for background sync messages from the service worker
+    useEffect(() => {
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+        const handler = (event: MessageEvent) => {
+            if (event.data?.type === 'GFIT_SYNCED' && weekOffset === 0) {
+                // Service worker synced steps in background — refresh data silently
+                getChallengeWeeklySteps(challengeId, 0)
+                    .then(updated => setApiWeek(updated))
+                    .catch(() => {});
+            }
+        };
+
+        navigator.serviceWorker.addEventListener('message', handler);
+        return () => navigator.serviceWorker.removeEventListener('message', handler);
+    }, [challengeId, weekOffset]);
 
     const streak = useMemo(() => {
         const idx = weekDays.findIndex((d: any) => d.today);
@@ -1295,6 +1312,8 @@ export default function StepsTracker() {
                         </div>
                     </div>
 
+                    {/* Google Fit Status Chip removed — backend handles sync */}
+
                     {/* Add Steps Button */}
                     <button
                         onClick={() => setLogOpen(true)}
@@ -1417,7 +1436,7 @@ export default function StepsTracker() {
                                 <input
                                     type="number"
                                     value={inputSteps}
-                                    onChange={(e) => setInputSteps(e.target.value)}
+                                    onChange={(e) => { setInputSteps(e.target.value); }}
                                     placeholder="Enter steps for the day"
                                     inputMode="numeric"
                                     min="1"
@@ -1435,7 +1454,6 @@ export default function StepsTracker() {
                                         boxSizing: 'border-box',
                                         color: '#0f172a',
                                     }}
-                                // Remove auto-focus
                                 />
 
                                 <div style={{ display: 'flex', gap: '12px' }}>
@@ -1503,6 +1521,13 @@ export default function StepsTracker() {
             @keyframes spin {
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
+            }
+            @keyframes gfit-spin {
+              to { transform: rotate(360deg); }
+            }
+            @keyframes gfit-toast-in {
+              from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+              to { opacity: 1; transform: translateX(-50%) translateY(0); }
             }
           `}</style>
                 </div>

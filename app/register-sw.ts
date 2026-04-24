@@ -101,13 +101,13 @@ export function isIOSStandalone(): boolean {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export async function registerServiceWorker(): Promise<void> {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return null;
 
   // ── User explicitly disabled notifications — respect their choice ─────────
   if (localStorage.getItem("notifications_user_disabled") === "1") {
     console.log("[SW] User disabled notifications — skipping auto-subscribe");
-    return;
+    return null;
   }
 
   // ── iOS guard ────────────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ export async function registerServiceWorker(): Promise<void> {
       "Push notifications require the app to be installed via:\n" +
       "Safari → Share button → 'Add to Home Screen'"
     );
-    return;  // The <IOSInstallPrompt> component will guide the user.
+    return null;  // The <IOSInstallPrompt> component will guide the user.
   }
 
   // 1. Register
@@ -130,7 +130,7 @@ export async function registerServiceWorker(): Promise<void> {
     reg = await navigator.serviceWorker.register("/socialapp/service-worker.js", { scope: "/socialapp/" });
   } catch (err) {
     console.error("[SW] Registration failed:", err);
-    return;
+    return null;
   }
   await navigator.serviceWorker.ready;
 
@@ -138,7 +138,7 @@ export async function registerServiceWorker(): Promise<void> {
   if (Notification.permission === "default") await Notification.requestPermission();
   if (Notification.permission !== "granted") {
     console.warn("[SW] Permission denied — push disabled");
-    return;
+    return reg;
   }
 
   // 3. Check for an existing subscription.
@@ -152,7 +152,7 @@ export async function registerServiceWorker(): Promise<void> {
       if (alreadyAttempted) {
         console.warn("[SW] Legacy endpoint — SW reset already attempted and still legacy. Accepting as-is:", existingSub.endpoint.slice(0, 60));
         // ✅ Already synced before — skip to prevent auto notification on refresh
-        return;
+        return reg;
       }
       console.warn("[SW] Legacy FCM endpoint — attempting one-time SW reset:", existingSub.endpoint.slice(0, 60));
       localStorage.setItem("sw_legacy_reset_attempted", "1");
@@ -163,7 +163,7 @@ export async function registerServiceWorker(): Promise<void> {
         console.log("[SW] Post-reset endpoint:", sub.endpoint.slice(0, 60));
       } catch (err) {
         console.error("[SW] SW reset failed:", err);
-        return;
+        return null;
       }
       if (isLegacyEndpoint(sub.endpoint)) {
         console.warn("[SW] ⚠️ Still legacy after reset — Chrome has a stale GCM association. Will not retry. Clear site data in DevTools to fully fix.");
@@ -173,7 +173,7 @@ export async function registerServiceWorker(): Promise<void> {
         console.log("[SW] ✅ Legacy endpoint replaced with modern endpoint.");
       }
       await syncToBackend(sub);
-      return;
+      return reg;
     } else {
       console.log("[SW] Existing valid subscription:", existingSub.endpoint.slice(0, 60));
     }
@@ -181,10 +181,10 @@ export async function registerServiceWorker(): Promise<void> {
     const alreadySynced = localStorage.getItem("sw_subscription_synced");
     if (alreadySynced === existingSub.endpoint.slice(-20)) {
       console.log("[SW] Already synced — skipping backend sync");
-      return;
+      return reg;
     }
     await syncToBackend(existingSub);
-    return;
+    return reg;
   }
 
   // 4. No subscription exists — create one fresh.
@@ -195,7 +195,7 @@ export async function registerServiceWorker(): Promise<void> {
     console.log("[SW] New subscription endpoint:", sub.endpoint.slice(0, 60));
   } catch (err) {
     console.error("[SW] Subscribe failed:", err);
-    return;
+    return null;
   }
 
   // 5. If Chrome returned a legacy endpoint on the very first subscription attempt,
@@ -209,7 +209,7 @@ export async function registerServiceWorker(): Promise<void> {
       console.log("[SW] After SW reset:", sub.endpoint.slice(0, 60));
     } catch (err) {
       console.error("[SW] Full SW reset failed:", err);
-      return;
+      return null;
     }
   }
 
@@ -224,6 +224,7 @@ export async function registerServiceWorker(): Promise<void> {
 
   // 6. Sync new subscription to backend
   await syncToBackend(sub);
+  return reg;
 }
 
 // ── Extracted backend sync helper ────────────────────────────────────────────

@@ -6,6 +6,7 @@ import { Droplets, Footprints, BookOpen, Moon, Flame, Zap, ChevronRight, Check }
 
 import { api, getCachedUserMe } from "@/lib/api";
 import { NavBar } from "./NavBar";
+import { BottomNav } from "../../components/BottomNav";
 import { ForestHistory } from "../../components/ForestHistory";
 import { Leaderboard } from "../../components/Leaderboard";
 import {TreeSVG}  from "../../components/TreeSVG";
@@ -993,23 +994,20 @@ export default function HabitTree() {
 
       {/* [DEV] Hard delete button */}
       <div style={{ position:"fixed", top:12, right:12, zIndex:999 }}>
-        <button onClick={handleHardDelete} style={{
+        {/* <button onClick={handleHardDelete} style={{
           background:"rgba(255,59,48,0.15)", border:"1px solid rgba(255,59,48,0.35)",
           borderRadius:10, padding:"6px 12px", color:"rgba(255,59,48,0.9)",
           fontSize:11, fontWeight:700, letterSpacing:"0.04em", cursor:"pointer",
           backdropFilter:"blur(8px)", WebkitBackdropFilter:"blur(8px)",
         }}>
           ✕ Reset challenge
-        </button>
+        </button> */}
       </div>
 
 
 
-      {/* Bottom nav */}
-      <NavBar activeTab={activeTab as any} accent={accent} onTabChange={(tab) => {
-        if (tab === "leaderboard") { router.push("/habits/tree/leaderboard"); return; }
-        setActiveTab(tab);
-      }} />
+      {/* Bottom nav — consistent app-wide */}
+      <BottomNav active="habits" />
 
       {/* Forest History overlay */}
       <AnimatePresence>
@@ -1604,6 +1602,41 @@ export default function HabitTree() {
 
       </div>
       )}
+
+      {/* ── History & Rank inline buttons ───────────────────────────── */}
+      <div style={{ display:"flex", gap:10, padding:"16px 16px 100px" }}>
+        <button
+          onClick={() => setActiveTab("forest")}
+          style={{
+            flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+            background:"rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.08)",
+            borderRadius:14, padding:"13px 0", cursor:"pointer", color:T2,
+            fontFamily:"-apple-system,'SF Pro Text','Helvetica Neue',sans-serif",
+          }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="4" width="18" height="17" rx="2" stroke={T3} strokeWidth="1.5"/>
+            <path d="M3 9h18" stroke={T3} strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M8 2v4M16 2v4" stroke={T3} strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2" stroke={T3} strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontSize:13, fontWeight:600, letterSpacing:".01em" }}>History</span>
+        </button>
+        <button
+          onClick={() => router.push("/habits/tree/leaderboard")}
+          style={{
+            flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+            background:"rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.08)",
+            borderRadius:14, padding:"13px 0", cursor:"pointer", color:T2,
+            fontFamily:"-apple-system,'SF Pro Text','Helvetica Neue',sans-serif",
+          }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="9" y="8" width="6" height="13" rx="1" stroke={T3} strokeWidth="1.5"/>
+            <rect x="2" y="13" width="6" height="8" rx="1" stroke={T3} strokeWidth="1.5"/>
+            <rect x="16" y="11" width="6" height="10" rx="1" stroke={T3} strokeWidth="1.5"/>
+          </svg>
+          <span style={{ fontSize:13, fontWeight:600, letterSpacing:".01em" }}>Rank</span>
+        </button>
+      </div>
     </div>
   );
 }

@@ -418,9 +418,10 @@ const SLUG_ALIASES: Record<string, string> = {
   walk_after_meal: "walkaftermeals", walkaftermeal: "walkaftermeals",
   post_meal_walk: "walkaftermeals", postmealwalk: "walkaftermeals",
   // strength
-  strength_train: "strength", strengthtrain: "strength",
-  strength_training: "strength", strengthtraining: "strength",
-  resistance_training: "strength", resistancetraining: "strength",
+  strength: "strengthtraining",
+  strength_train: "strengthtraining", strengthtrain: "strengthtraining",
+  strength_training: "strengthtraining",
+  resistance_training: "strengthtraining", resistancetraining: "strengthtraining",
   // hiit
   hiit_session: "hiit", hiitsession: "hiit",
   // zone2
@@ -432,14 +433,27 @@ const NAME_ALIASES: Record<string, string> = {
   "protein first": "proteintarget",
   "walk after dinner": "walkaftermeals",
   "walk after meal": "walkaftermeals",
-  "strength train": "strength",
-  "strength training": "strength",
-  "resistance training": "strength",
+  "strength train": "strengthtraining",
+  "strength training": "strengthtraining",
+  "resistance training": "strengthtraining",
   "hiit session": "hiit",
   "hiit workout": "hiit",
+  "12-hour eating window": "eatingwindow",
+  "12 hour eating window": "eatingwindow",
+  "cut added sugar": "nosugar",
+  "no added sugar": "nosugar",
+  "sleep 7-9 hours": "sleep",
+  "sleep 7–9 hours": "sleep",
+  "sleep 7-8 hours": "sleep",
 };
 function resolveHabitId(slug: string | null | undefined, name?: string): string {
   if (!slug) return name ?? "";
+  // 0. name-alias wins first when name is provided (handles wrong slugs from API)
+  if (name) {
+    const nameLow = name.toLowerCase().trim();
+    const nameAlias = NAME_ALIASES[nameLow] ?? NAME_ALIASES[nameLow.split(/\s+/).slice(0, 2).join(" ")];
+    if (nameAlias) return nameAlias;
+  }
   // 1. exact slug match
   const direct = ALL_HABITS.find(h => h.id === slug);
   if (direct) return direct.id;
@@ -450,11 +464,9 @@ function resolveHabitId(slug: string | null | undefined, name?: string): string 
   // 3. strip underscores/hyphens/spaces (snake_case → camelcase)
   const byNorm = ALL_HABITS.find(h => h.id.toLowerCase() === norm);
   if (byNorm) return byNorm.id;
-  // 4. match by habit name — alias map first, then label prefix
+  // 4. match by label prefix
   if (name) {
     const nameLow = name.toLowerCase().trim();
-    const nameAlias = NAME_ALIASES[nameLow] ?? NAME_ALIASES[nameLow.split(/\s+/).slice(0, 2).join(" ")];
-    if (nameAlias) return nameAlias;
     const w = nameLow.split(/\s+/).slice(0, 2).join(" ");
     const byLabel = ALL_HABITS.find(h => h.label.toLowerCase().startsWith(w) || h.label.toLowerCase().includes(w));
     if (byLabel) return byLabel.id;
@@ -488,7 +500,7 @@ function PackPickerScreen({ onSelectPack, onStartDirect, onSelectAiPack, onCusto
     api<{ scan?: any; ai_insight?: any } | any>("/api/body-metrics/insight", { method: "GET", auth: true })
       .then((raw: any) => {
         const insight = raw?.ai_insight ?? raw;
-        const habits: AiSuggestedHabit[] = (insight?.suggested_habits ?? []).slice(0, 4);
+        const habits: AiSuggestedHabit[] = insight?.suggested_habits ?? [];
         setAiHabits(habits.length > 0 ? habits : null);
         // Check scan recency
         const scanDate = raw?.scan?.recorded_date ?? insight?.generated_at ?? null;

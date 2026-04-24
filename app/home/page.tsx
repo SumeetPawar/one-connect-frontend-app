@@ -7,6 +7,7 @@ import { api, addSteps, getCachedUserMe } from "@/lib/api";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { BottomNav } from "../components/BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
+import { isGoogleFitConnected, fetchStepsFromServer, setGoogleFitConnected, startGoogleFitAuth } from "@/lib/googleFit";
 
 // ─── animated counters ───────────────────────────────────────────────────────
 function useCount(target: number, delay = 300, dur = 900) {
@@ -401,17 +402,6 @@ const FEATURED_FEEDS = [
     coverImage: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=900&q=80&fit=crop",
   },
   {
-    id: "p2",
-    accent: "#FFD07A",
-    emoji: "🏆",
-    tag: "Milestone",
-    title: "Priya just hit 100,000 lifetime steps!",
-    meta: "Shared by HR · 1h ago",
-    reactions: 87, comments: 24,
-    authorInitials: "PR", authorColor: "#FFD07A", author: "Priya R.",
-    coverImage: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=900&q=80&fit=crop",
-  },
-  {
     id: "p3",
     accent: "#4CD97B",
     emoji: "🗳️",
@@ -433,9 +423,20 @@ const FEATURED_FEEDS = [
     authorInitials: "WT", authorColor: "#C4B0F8", author: "Wellness Team",
     coverImage: "https://images.unsplash.com/photo-1544216717-3bbf52512659?w=900&q=80&fit=crop",
   },
+  {
+    id: "p5",
+    accent: "#4CD97B",
+    emoji: "🚶",
+    tag: "Poll",
+    title: "Should we make walking 1:1s a permanent team ritual?",
+    meta: "Team Wellness · Vote now",
+    reactions: 41, comments: 18,
+    authorInitials: "TW", authorColor: "#4CD97B", author: "Team Wellness",
+    coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=900&q=80&fit=crop",
+  },
 ];
 
-const TOTAL_SLIDES = 1 + FEATURED_FEEDS.length; // summary + feeds
+const TOTAL_SLIDES = 2; // summary + first feed only
 
 const SLIDE_VARIANTS = {
   enter: (d: number) => ({ x: d > 0 ? "100%" : "-100%", opacity: 0, scale: 0.96 }),
@@ -453,14 +454,46 @@ function DailyCarousel({ data, fd, onNavigate, greeting, userName }: {
 }) {
   const [idx, setIdx] = useState(0);
   const [dir, setDir] = useState(0);
+  const pauseRef = useRef(false);
+  const idxRef  = useRef(0);  // mirror of idx for use inside timer without stale closure
+
+  // Keep idxRef in sync
+  useEffect(() => { idxRef.current = idx; }, [idx]);
 
   const goTo = (next: number) => {
     if (next === idx || next < 0 || next >= TOTAL_SLIDES) return;
+    pauseRef.current = true;
+    setTimeout(() => { pauseRef.current = false; }, 8000);
     setDir(next > idx ? 1 : -1);
     setIdx(next);
   };
 
+  // Auto-advance: first slide 7 s, others 4 s; pause on drag/touch
+  useEffect(() => {
+    const FIRST_DELAY = 7000;
+    const REST_DELAY  = 4000;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const advance = () => {
+      if (!pauseRef.current) {
+        const next = (idxRef.current + 1) % TOTAL_SLIDES;
+        setDir(1);
+        setIdx(next);
+        // schedule next tick based on the slide we just moved TO
+        timer = setTimeout(advance, next === 0 ? FIRST_DELAY : REST_DELAY);
+      } else {
+        // paused — check again in 500 ms without advancing
+        timer = setTimeout(advance, 500);
+      }
+    };
+
+    // first tick uses first-slide delay
+    timer = setTimeout(advance, FIRST_DELAY);
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleDragEnd = (_: unknown, info: { offset: { x: number }; velocity: { x: number } }) => {
+    pauseRef.current = false;
     if (Math.abs(info.offset.x) > 48 || Math.abs(info.velocity.x) > 380) {
       if (info.offset.x < 0) goTo(idx + 1);
       else goTo(idx - 1);
@@ -491,7 +524,7 @@ function DailyCarousel({ data, fd, onNavigate, greeting, userName }: {
   const feed = idx > 0 ? FEATURED_FEEDS[idx - 1] : null;
 
   return (
-    <div style={{ ...fd(60), margin: "12px 0 0", padding: "0 16px" }}>
+    <div style={{ ...fd(60), margin: "12px 0 0", padding: "0 8px" }}>
       {/* Card shell */}
       <div style={{
         position: "relative",
@@ -530,9 +563,9 @@ function DailyCarousel({ data, fd, onNavigate, greeting, userName }: {
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.07}
+            onDragStart={() => { pauseRef.current = true; }}
             onDragEnd={handleDragEnd}
-            onClick={() => feed && onNavigate(`/feeds/${feed.id}`)}
-            style={{ position: "absolute", inset: 0, cursor: feed ? "pointer" : "default" }}
+            style={{ position: "absolute", inset: 0, cursor: "default" }}
           >
             {/* ── Background ── */}
             {feed ? (
@@ -558,7 +591,7 @@ function DailyCarousel({ data, fd, onNavigate, greeting, userName }: {
                 {/* Motivational background photo */}
                 <div style={{
                   position: "absolute", inset: 0,
-                  backgroundImage: "url(https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=900&q=80&fit=crop)",
+                  backgroundImage: "url(https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=900&q=80&fit=crop)",
                   backgroundSize: "cover", backgroundPosition: "center 30%",
                 }} />
                 {/* Purple tint overlay to match brand */}
@@ -711,27 +744,6 @@ function DailyCarousel({ data, fd, onNavigate, greeting, userName }: {
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {/* Progress bar strip */}
-      <div style={{ display: "flex", gap: 4, marginTop: 8, padding: "0 2px" }}>
-        {Array.from({ length: TOTAL_SLIDES }).map((_, i) => {
-          const slotFeed = i > 0 ? FEATURED_FEEDS[i - 1] : null;
-          return (
-            <div
-              key={i}
-              onClick={() => goTo(i)}
-              style={{
-                flex: i === idx ? 2 : 1,
-                height: 3, borderRadius: 999, cursor: "pointer",
-                background: i === idx
-                  ? (slotFeed ? slotFeed.accent : T.purple)
-                  : "rgba(255,255,255,0.12)",
-                transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
-              }}
-            />
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -835,7 +847,7 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
 
     return (
       <div style={{
-        ...fd(40), margin: "14px 16px 8px",
+        ...fd(40), margin: "14px 8px 8px",
         background: T.gradSoft,
         border: `.5px solid ${isCoachMode ? "rgba(251,146,60,.18)" : "rgba(155,127,232,.18)"}`, borderRadius: 22,
         boxShadow: "0 4px 28px rgba(0,0,0,.55),0 1px 0 rgba(242,238,255,.04) inset",
@@ -884,7 +896,7 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
   // ── AI insight card ─────────────────────────────────────────────────────────
   return (
     <div style={{
-      ...fd(40), margin: "14px 16px 8px",
+      ...fd(40), margin: "14px 8px 8px",
       background: T.gradSoft,
       border: ".5px solid rgba(155,127,232,.18)", borderRadius: 22,
       boxShadow: "0 4px 28px rgba(0,0,0,.55),0 1px 0 rgba(242,238,255,.04) inset",
@@ -925,7 +937,7 @@ function AiInsightCard({ data, fd }: { data: HomeData; fd: (d: number) => React.
 
 // ─── steps card ───────────────────────────────────────────────────────────────
 function StepsCard({
-  data, latestChallenge, showLog, setShowLog, animSteps, animPct, fd, onNavigate, onJoin,
+  data, latestChallenge, showLog, setShowLog, animSteps, animPct, fd, onNavigate, onJoin, gfitConn,
 }: {
   data: HomeData;
   latestChallenge: { id: string; title: string; description: string; participant_count?: number } | null;
@@ -933,22 +945,152 @@ function StepsCard({
   animSteps: number; animPct: number; fd: (d: number) => React.CSSProperties;
   onNavigate: () => void;
   onJoin: () => void;
+  gfitConn?: { label: string; syncing: boolean; syncFn: () => void } | null;
 }) {
   const { steps, challenge } = data;
   const isLogged = steps.today > 0;
   // Only treat as enrolled if challenge object exists and has a non-null id
   const hasChallenge = !!(challenge && challenge.id);
   const isEvening = new Date().getHours() >= 17;
+  const hitGoal = steps.today >= steps.daily_target;
+
+  // confetti + vibration — fires once, after count animation settles
+  const confettiRef = useRef<HTMLCanvasElement>(null);
+  const confettiFired = useRef(false);
+  useEffect(() => {
+    if (!hitGoal || !isLogged || confettiFired.current) return;
+    const timer = setTimeout(() => {
+      const canvas = confettiRef.current;
+      if (!canvas) return;
+      confettiFired.current = true;
+
+      // vibrate on goal hit
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([80, 40, 120, 40, 60]);
+      }
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const W = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 340;
+      const H = canvas.offsetHeight || canvas.parentElement?.offsetHeight || 180;
+      canvas.width = W;
+      canvas.height = H;
+
+      // Premium palette — golds, teals, soft purples, champagne whites
+      const COLORS = [
+        "#FFD700", "#FFC940", "#FFEFA0",   // golds
+        "#40C8E0", "#64D2FF",               // teals
+        "#C4B0F8", "#A78BF5",               // lavenders
+        "rgba(255,255,255,0.90)",           // bright white
+        "#2DD4BF",                          // accent teal
+      ];
+
+      type P = {
+        x: number; y: number; vx: number; vy: number;
+        color: string; w: number; h: number;
+        rot: number; rv: number; opacity: number;
+        type: "rect" | "circle" | "star";
+      };
+
+      // Premium dual-cannon burst from both bottom corners
+      const types: Array<"rect" | "circle" | "star"> = ["rect", "rect", "rect", "circle", "circle", "star"];
+      const particles: P[] = Array.from({ length: 120 }, (_, i) => {
+        const fromLeft = i < 60;
+        // Left cannon shoots upward-right fan (30°–80° from horizontal)
+        // Right cannon mirrors — upward-left fan (100°–150°)
+        const angleMin = fromLeft ? Math.PI * (1/6)  : Math.PI * (5/12);  // 30° : 75°  (in π units from right)
+        const angleMax = fromLeft ? Math.PI * (5/12) : Math.PI * (2/3);   // 75° : 120°
+        // Remap: we want shooting UPward so negate vy — use standard math angles
+        // Left: angle 30–80° above horizontal → vx +, vy -
+        // Right: angle 100–150° above horizontal → vx -, vy -
+        const spreadL = (30 + Math.random() * 50) * (Math.PI / 180);  // 30°–80°
+        const spreadR = (100 + Math.random() * 50) * (Math.PI / 180); // 100°–150°
+        const angle = fromLeft ? spreadL : spreadR;
+        const spd = 2.2 + Math.random() * 4.2;
+        // Stagger spawn x slightly — not just corners but along bottom edge
+        const xL = W * 0.02 + Math.random() * W * 0.18;
+        const xR = W * 0.80 + Math.random() * W * 0.18;
+        return {
+          x: fromLeft ? xL : xR,
+          y: H * 0.92 + Math.random() * H * 0.06,
+          vx: Math.cos(angle) * spd,
+          vy: -Math.abs(Math.sin(angle) * spd),  // always shoot upward
+          color: COLORS[Math.floor(Math.random() * COLORS.length)],
+          w: 4 + Math.random() * 8,
+          h: 2 + Math.random() * 4,
+          rot: Math.random() * Math.PI * 2,
+          rv: (Math.random() - 0.5) * 0.15,
+          opacity: 0.85 + Math.random() * 0.15,
+          type: types[Math.floor(Math.random() * types.length)],
+        };
+      });
+
+      let frame = 0;
+      const TOTAL = 320;
+      const FADE_START = 210;
+
+      const drawStar = (ctx: CanvasRenderingContext2D, r: number) => {
+        const spikes = 4, outer = r, inner = r * 0.45;
+        ctx.beginPath();
+        for (let s = 0; s < spikes * 2; s++) {
+          const a = (s * Math.PI) / spikes - Math.PI / 2;
+          const rad = s % 2 === 0 ? outer : inner;
+          ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+        }
+        ctx.closePath();
+        ctx.fill();
+      };
+
+      const tick = () => {
+        if (frame >= TOTAL) { ctx.clearRect(0, 0, W, H); return; }
+        ctx.clearRect(0, 0, W, H);
+        const fade = frame < FADE_START ? 1 : 1 - (frame - FADE_START) / (TOTAL - FADE_START);
+        for (const p of particles) {
+          p.x  += p.vx;
+          p.y  += p.vy;
+          p.vy += 0.055;   // gentle gravity
+          p.vx *= 0.993;
+          p.rot += p.rv;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.opacity * fade);
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          if (p.type === "circle") {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (p.type === "star") {
+            drawStar(ctx, p.w / 2);
+          } else {
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          }
+          ctx.restore();
+        }
+        frame++;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, 1400);
+    return () => clearTimeout(timer);
+  }, [hitGoal, isLogged]);
 
   const wrap = (accent: string, children: React.ReactNode, tappable = false) => (
     <div
       className={tappable ? "hp-card-tap" : undefined}
       onClick={tappable ? onNavigate : undefined}
       style={{
-        ...fd(250), margin: "0 16px 8px",
-        background: `linear-gradient(180deg,${accent}1E 0%,${accent}05 100%)`,
-        border: `.5px solid ${accent}28`, borderRadius: 22, overflow: "hidden",
-        boxShadow: "0 8px 40px rgba(0,0,0,.60),0 1px 0 rgba(255,255,255,.05) inset",
+        ...fd(250), margin: "0 8px 8px",
+        position: "relative" as const,
+        background: hitGoal
+          ? "linear-gradient(160deg,rgba(8,26,18,.98) 0%,rgba(6,18,12,.99) 55%,rgba(8,8,15,.99) 100%)"
+          : `linear-gradient(180deg,${accent}1E 0%,${accent}05 100%)`,
+        border: hitGoal ? "1px solid rgba(52,211,153,.45)" : `.5px solid ${accent}28`,
+        borderRadius: 22, overflow: "hidden",
+        boxShadow: hitGoal
+          ? "0 0 0 1px rgba(52,211,153,.12), 0 12px 48px rgba(0,0,0,.75), 0 0 60px rgba(52,211,153,.08)"
+          : "0 8px 40px rgba(0,0,0,.60),0 1px 0 rgba(255,255,255,.05) inset",
+        transition: "all 1.4s cubic-bezier(.4,0,.2,1)",
         cursor: tappable ? "pointer" : undefined,
       }}>{children}</div>
   );
@@ -958,7 +1100,7 @@ function StepsCard({
       className="hp-card-tap"
       onClick={onJoin}
       style={{
-        ...fd(250), margin: "0 16px 8px", borderRadius: 22, overflow: "hidden",
+        ...fd(250), margin: "0 8px 8px", borderRadius: 22, overflow: "hidden",
         position: "relative" as const, cursor: "pointer",
         background: "linear-gradient(145deg,#1A0F2E 0%,#100E1A 60%,#0D0B18 100%)",
         border: ".5px solid rgba(155,127,232,.28)",
@@ -1064,36 +1206,24 @@ function StepsCard({
   );
 
   if (!isLogged && !isEvening) return wrap(T.purple, (
-    <div style={{ padding: "20px 18px 18px", position: "relative" as const, overflow: "hidden" }}>
+    <div style={{ padding: "20px 20px 20px", position: "relative" as const, overflow: "hidden" }}>
       <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle,rgba(167,139,245,.12) 0%,transparent 70%)", pointerEvents: "none" as const }} />
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(155,127,232,.12)", border: ".5px solid rgba(155,127,232,.22)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Ic.Walk c={T.purple} s={17} />
-        </div>
-        <p style={{ fontSize: 10, fontWeight: 700, color: T.purpleL, letterSpacing: ".10em", textTransform: "uppercase" as const }}>Daily Step Goal</p>
-      </div>
-      <p style={{ fontSize: 20, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", lineHeight: 1.25, marginBottom: 6 }}>
-        Target: {steps.daily_target.toLocaleString()} steps
+      <span style={{ fontSize: 10, fontWeight: 700, color: `${T.purple}99`, letterSpacing: ".12em", textTransform: "uppercase" as const, display: "block", marginBottom: 12 }}>Daily Steps</span>
+      <p style={{ fontSize: 34, fontWeight: 800, color: T.t1, letterSpacing: "-.05em", lineHeight: 1, marginBottom: 6 }}>
+        {steps.daily_target.toLocaleString()}
       </p>
-      <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, lineHeight: 1.6 }}>
-        Rank #{challenge.rank}{challenge.total_participants ? ` of ${challenge.total_participants}` : ""} · Log your steps in the evening to track today's progress.
+      <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, lineHeight: 1.6, marginBottom: 0 }}>
+        Today's target · currently rank #{challenge.rank}{challenge.total_participants ? ` of ${challenge.total_participants}` : ""}. Log in the evening to track progress.
       </p>
     </div>
   ), hasChallenge);
 
   if (!isLogged) return wrap(T.purple, (
-    <div style={{ padding: "20px 18px 18px", textAlign: "center" as const }}>
-      <div style={{
-        width: 50, height: 50, borderRadius: 15, margin: "0 auto 14px",
-        background: "rgba(155,127,232,.12)", border: ".5px solid rgba(155,127,232,.22)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: "0 4px 16px rgba(124,92,232,.20)",
-      }}>
-        <Ic.Walk c={T.purple} s={22} />
-      </div>
-      <p style={{ fontSize: 16, fontWeight: 700, color: T.t1, letterSpacing: "-.2px", lineHeight: 1.35, marginBottom: 6 }}>How many steps today?</p>
+    <div style={{ padding: "20px 20px 20px" }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: `${T.purple}99`, letterSpacing: ".12em", textTransform: "uppercase" as const, display: "block", marginBottom: 14 }}>Daily Steps</span>
+      <p style={{ fontSize: 20, fontWeight: 800, color: T.t1, letterSpacing: "-.4px", lineHeight: 1.2, marginBottom: 4 }}>How many steps today?</p>
       <p style={{ fontSize: 12, fontWeight: 400, color: T.t3, marginBottom: 18, lineHeight: 1.55 }}>
-        Currently rank #{challenge.rank}{challenge.total_participants ? ` of ${challenge.total_participants}` : ""} · target {steps.daily_target.toLocaleString()} steps
+        Rank #{challenge.rank}{challenge.total_participants ? ` of ${challenge.total_participants}` : ""} · target {steps.daily_target.toLocaleString()} steps
       </p>
       <button onClick={e => { e.stopPropagation(); setShowLog(true); }} style={{
         width: "100%", padding: "15px 0", borderRadius: 14, border: "none",
@@ -1105,49 +1235,83 @@ function StepsCard({
   ), hasChallenge);
 
   // logged state
-  return wrap(T.green, (
+  const accent = hitGoal ? T.green : T.purple;
+  return wrap(accent, (
     <>
-      <div style={{ padding: "16px 18px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              <div style={{ width: 17, height: 17, borderRadius: "50%", background: T.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 2px 8px ${T.green}55` }}>
-                <Ic.Check c="#08080F" s={8} />
-              </div>
-              <span style={{ fontSize: 10, fontWeight: 700, color: T.green, letterSpacing: ".08em", textTransform: "uppercase" as const }}>Logged today</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 4 }}>
-              <span style={{ fontSize: 30, fontWeight: 800, color: T.t1, letterSpacing: "-.04em", lineHeight: 1 }}>{animSteps.toLocaleString()}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: T.t3 }}>steps</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <Ic.Up c={T.green} s={8} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: T.green }}>
-                {steps.today >= steps.daily_target ? "Above daily goal" : `${(steps.daily_target - steps.today).toLocaleString()} to reach goal`}
-              </span>
-            </div>
-          </div>
-          <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
-            <Arc pct={animPct} size={52} sw={4} color={T.green} bg="rgba(45,212,191,.12)" />
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: T.green }}>{Math.round(animPct)}%</span>
-            </div>
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 0 2px" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: T.green }}>Rank #{challenge.rank}{challenge.total_participants ? ` of ${challenge.total_participants}` : ""}</span>
-          {challenge.rank_change > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Ic.Up c={T.green} s={8} />
-              <span style={{ fontSize: 10, fontWeight: 700, color: T.green }}>+{challenge.rank_change}</span>
-            </div>
+      {/* confetti canvas */}
+      {hitGoal && (
+        <canvas ref={confettiRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", borderRadius: 22, zIndex: 10 }} />
+      )}
+      {/* radial bloom — atmospheric gold light from top */}
+      {hitGoal && (
+        <div style={{
+          position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)",
+          width: 280, height: 180, pointerEvents: "none", zIndex: 0,
+          background: "radial-gradient(ellipse at 50% 0%, rgba(45,138,82,.10) 0%, transparent 70%)",
+        }} />
+      )}
+      {/* ── label + goal badge ─────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: T.t4, letterSpacing: ".12em", textTransform: "uppercase" as const }}>Today</span>
+          {gfitConn && (
+            gfitConn.syncing
+              ? <span style={{ display: "inline-block", width: 6, height: 6, border: "1.5px solid rgba(52,168,83,0.3)", borderTopColor: "#34A853", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+              : <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#34A853", boxShadow: "0 0 5px rgba(52,168,83,0.9)" }} />
           )}
         </div>
+        {hitGoal ? (
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            background: "linear-gradient(90deg,rgba(45,138,82,.14),rgba(45,138,82,.08))",
+            border: "1px solid rgba(45,138,82,.30)",
+            borderRadius: 99, padding: "4px 12px",
+            boxShadow: "none",
+          }}>
+            <span style={{ fontSize: 9, color: "#30D158" }}>✦</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#30D158", letterSpacing: ".08em" }}>GOAL ACHIEVED</span>
+          </div>
+        ) : (
+          <span style={{ fontSize: 11, fontWeight: 500, color: T.t3 }}>
+            Target <span style={{ color: T.t2, fontWeight: 600 }}>{steps.daily_target.toLocaleString()}</span>
+          </span>
+        )}
       </div>
+
+      {/* ── hero: big number ───────────────────────────────────────── */}
+      <div style={{ padding: "10px 20px 6px", position: "relative" as const }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginBottom: 10, position: "relative" as const }}>
+            <span style={{ fontSize: hitGoal ? 42 : 38, fontWeight: 800, letterSpacing: "-.05em", lineHeight: 1, color: "#FFFFFF", transition: "font-size .8s ease" }}>{animSteps.toLocaleString()}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: T.t4 }}>steps</span>
+          </div>
+          {/* progress bar */}
+          <div style={{ height: hitGoal ? 5 : 3, borderRadius: 99, background: hitGoal ? "rgba(45,212,191,.12)" : `${accent}18`, overflow: "hidden" as const, marginBottom: 8, transition: "all 1s ease" }}>
+            <div style={{ height: "100%", width: `${Math.min(animPct, 100)}%`, borderRadius: 99, background: hitGoal ? "linear-gradient(90deg,#2D8A52,#30D158)" : accent, transition: "width .8s cubic-bezier(.4,0,.2,1)" }} />
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 500, color: T.t3 }}>
+            {hitGoal
+              ? `${(steps.today - steps.daily_target).toLocaleString()} above goal`
+              : `${(steps.daily_target - steps.today).toLocaleString()} to go`}
+          </span>
+      </div>
+
       <SEP />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 18px 13px" }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: T.green }}>Steps logged ✓</span>
-        <span style={{ fontSize: 12, fontWeight: 400, color: T.t3 }}>{steps.step_streak} day streak · <span style={{ color: T.purple, fontWeight: 600 }}>View →</span></span>
+
+      {/* ── footer: streak · rank · view ───────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 0, padding: "10px 20px 12px" }}>
+        {/* streak */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Ic.Flame c={T.orange} s={12} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: T.t2 }}>{steps.step_streak}<span style={{ fontWeight: 400, color: T.t3 }}> day</span></span>
+        </div>
+        {/* divider */}
+        <div style={{ width: 1, height: 12, background: "rgba(255,255,255,.10)", margin: "0 10px" }} />
+        {/* rank */}
+        <span style={{ fontSize: 12, fontWeight: 500, color: T.t3 }}>
+          Rank <span style={{ color: T.t2, fontWeight: 700 }}>#{challenge.rank}</span>
+          {challenge.total_participants ? <span style={{ color: T.t4 }}> / {challenge.total_participants}</span> : null}
+          {challenge.rank_change > 0 && <span style={{ color: T.t3, fontWeight: 600 }}> ↑{challenge.rank_change}</span>}
+        </span>
       </div>
     </>
   ), hasChallenge);
@@ -1158,10 +1322,11 @@ function HabitsCard({ data, fd, onNavigate }: { data: HomeData; fd: (d: number) 
   const { habits, habit_streak } = data;
 
   const base: React.CSSProperties = {
-    ...fd(180), margin: "0 16px 8px", borderRadius: 22, overflow: "hidden",
+    ...fd(180), margin: "0 8px 8px", borderRadius: 22, overflow: "hidden",
     boxShadow: "0 8px 40px rgba(0,0,0,.60),0 1px 0 rgba(255,255,255,.05) inset",
   };
 
+  // ── unenrolled state ──────────────────────────────────────────────────────
   if (!habits) return (
     <div className="hp-card-tap" onClick={onNavigate} style={{
       ...base,
@@ -1206,89 +1371,461 @@ function HabitsCard({ data, fd, onNavigate }: { data: HomeData; fd: (d: number) 
   );
 
   const { day_number, total_days, completed_count, total_count, all_done } = habits;
-  const pct = Math.round((day_number / total_days) * 100);
   const stage: 0 | 1 | 2 | 3 = day_number < 7 ? 1 : day_number < 14 ? 2 : day_number < 19 ? 3 : 3;
-  const heroBg = all_done
-    ? "linear-gradient(180deg,rgba(45,212,191,.18) 0%,rgba(124,92,232,.05) 100%)"
-    : "linear-gradient(180deg,rgba(167,139,245,.24) 0%,rgba(124,92,232,.06) 100%)";
+
+  // confetti + vibration — fires once when all habits done
+  const habitsConfettiRef = useRef<HTMLCanvasElement>(null);
+  const habitsConfettiFired = useRef(false);
+  useEffect(() => {
+    if (!all_done || habitsConfettiFired.current) return;
+    const timer = setTimeout(() => {
+      const canvas = habitsConfettiRef.current;
+      if (!canvas) return;
+      habitsConfettiFired.current = true;
+      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate([80, 40, 120, 40, 60]);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const W = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 340;
+      const H = canvas.offsetHeight || canvas.parentElement?.offsetHeight || 200;
+      canvas.width = W; canvas.height = H;
+      const COLORS = ["#FFD700","#FFC940","#FFEFA0","#40C8E0","#64D2FF","#C4B0F8","#A78BF5","rgba(255,255,255,0.90)","#2DD4BF"];
+      type P = { x:number;y:number;vx:number;vy:number;color:string;w:number;h:number;rot:number;rv:number;opacity:number;type:"rect"|"circle"|"star" };
+      const types: Array<"rect"|"circle"|"star"> = ["rect","rect","rect","circle","circle","star"];
+      const particles: P[] = Array.from({ length: 120 }, (_, i) => {
+        const fromLeft = i < 60;
+        const spreadL = (30 + Math.random() * 50) * (Math.PI / 180);
+        const spreadR = (100 + Math.random() * 50) * (Math.PI / 180);
+        const angle = fromLeft ? spreadL : spreadR;
+        const spd = 2.2 + Math.random() * 4.2;
+        const xL = W * 0.02 + Math.random() * W * 0.18;
+        const xR = W * 0.80 + Math.random() * W * 0.18;
+        return { x: fromLeft ? xL : xR, y: H * 0.92 + Math.random() * H * 0.06, vx: Math.cos(angle) * spd, vy: -Math.abs(Math.sin(angle) * spd), color: COLORS[Math.floor(Math.random() * COLORS.length)], w: 4 + Math.random() * 8, h: 2 + Math.random() * 4, rot: Math.random() * Math.PI * 2, rv: (Math.random() - 0.5) * 0.15, opacity: 0.85 + Math.random() * 0.15, type: types[Math.floor(Math.random() * types.length)] };
+      });
+      let frame = 0; const TOTAL = 320; const FADE_START = 210;
+      const drawStar = (cx: CanvasRenderingContext2D, r: number) => { const spikes=4,outer=r,inner=r*0.45; cx.beginPath(); for(let s=0;s<spikes*2;s++){const a=(s*Math.PI)/spikes-Math.PI/2;const rad=s%2===0?outer:inner;cx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad);} cx.closePath(); cx.fill(); };
+      const tick = () => {
+        if (frame >= TOTAL) { ctx.clearRect(0,0,W,H); return; }
+        ctx.clearRect(0,0,W,H);
+        const fade = frame < FADE_START ? 1 : 1-(frame-FADE_START)/(TOTAL-FADE_START);
+        for (const p of particles) {
+          p.x+=p.vx; p.y+=p.vy; p.vy+=0.055; p.vx*=0.993; p.rot+=p.rv;
+          ctx.save(); ctx.globalAlpha=Math.max(0,p.opacity*fade); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.color;
+          if(p.type==="circle"){ctx.beginPath();ctx.arc(0,0,p.w/2,0,Math.PI*2);ctx.fill();}
+          else if(p.type==="star"){drawStar(ctx,p.w/2);}
+          else{ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);}
+          ctx.restore();
+        }
+        frame++; requestAnimationFrame(tick);
+      };
+      tick();
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [all_done]);
+  const noneYet = completed_count === 0;
+
+  // Color story: forest green = all done, purple = in progress
+  const accent      = all_done ? "#30D158" : T.purple;
+  const accentRgb   = all_done ? "48,209,88" : "155,127,232";   // forest green : purple
+  const chipDoneClr = all_done ? "#30D158" : T.purple;
 
   return (
     <div className="hp-card-tap" onClick={onNavigate} style={{
       ...base,
-      background: "linear-gradient(180deg,rgba(155,127,232,.18) 0%,rgba(124,92,232,.04) 100%)",
-      border: ".5px solid rgba(155,127,232,.18)",
+      background: all_done
+        ? "linear-gradient(160deg,rgba(48,209,88,.07) 0%,rgba(8,18,12,.99) 100%)"
+        : `linear-gradient(160deg,rgba(${accentRgb},.11) 0%,rgba(16,14,26,.99) 100%)`,
+      border: all_done ? "1px solid rgba(45,138,82,.28)" : `.5px solid rgba(${accentRgb},.18)`,
       cursor: "pointer",
+      position: "relative" as const,
     }}>
-      <div style={{ background: heroBg, padding: "16px 18px 14px", position: "relative" as const, overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: `radial-gradient(circle,${all_done ? "rgba(45,212,191,.10)" : "rgba(167,139,245,.10)"} 0%,transparent 70%)`, pointerEvents: "none" as const }} />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ flex: 1, paddingRight: 10 }}>
-            {all_done ? (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(45,212,191,.12)", border: ".5px solid rgba(45,212,191,.24)", borderRadius: 99, padding: "3px 10px", marginBottom: 10 }}>
-                <div style={{ width: 5, height: 5, borderRadius: "50%", background: T.green }} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: T.green, letterSpacing: ".06em", textTransform: "uppercase" as const }}>Day {day_number} complete</span>
-              </div>
-            ) : (
-              <p style={{ fontSize: 10, fontWeight: 700, color: T.purpleL, letterSpacing: ".10em", textTransform: "uppercase" as const, marginBottom: 8 }}>My Habits</p>
-            )}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginBottom: 10 }}>
-              <span style={{ fontSize: 30, fontWeight: 800, color: T.t1, letterSpacing: "-.04em", lineHeight: 1 }}>Day {day_number}</span>
-              <span style={{ fontSize: 12, fontWeight: 400, color: T.t3 }}>of {total_days}</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <div style={{ width: 100, height: 3, background: "rgba(155,127,232,.14)", borderRadius: 99, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: T.grad, borderRadius: 99 }} />
-              </div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: T.purple }}>{pct}%</span>
-            </div>
-            {all_done ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
-                <span style={{ fontSize: 12, fontWeight: 600, color: T.green }}>All {total_count} habits kept today</span>
-              </div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <div style={{ width: 5, height: 5, borderRadius: "50%", background: T.orange }} />
-                <span style={{ fontSize: 12, fontWeight: 400, color: T.t3 }}>
-                  <span style={{ color: T.t2, fontWeight: 600 }}>{completed_count} of {total_count}</span> logged today
-                </span>
-              </div>
-            )}
+
+      {/* confetti canvas */}
+      {all_done && (
+        <canvas ref={habitsConfettiRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", borderRadius: 22, zIndex: 10 }} />
+      )}
+
+      {/* Tree watermark removed */}
+
+      {/* ── HEADER: label only ─────────────────────────────────── */}
+      <div style={{ padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{
+          fontSize: 10, fontWeight: 700, letterSpacing: ".12em",
+          textTransform: "uppercase" as const,
+          color: T.t4,
+        }}>21-Day Challenge</span>
+      </div>
+
+      {/* ── HERO: big fraction left + completion ring right ──── */}
+      <div style={{ padding: "10px 20px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* Left: hero number */}
+        <div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 4 }}>
+            <span style={{ fontSize: 42, fontWeight: 800, letterSpacing: "-.06em", lineHeight: 1, color: "#FFFFFF" }}>
+              {completed_count}
+            </span>
+            <span style={{ fontSize: 22, fontWeight: 600, color: T.t4, lineHeight: 1, margin: "0 1px" }}>/</span>
+            <span style={{ fontSize: 28, fontWeight: 700, color: T.t3, letterSpacing: "-.04em", lineHeight: 1 }}>
+              {total_count}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 400, color: T.t4, marginLeft: 4, paddingBottom: 2 }}>
+              habits done
+            </span>
           </div>
-          <div style={{ flexShrink: 0 }}><TreeSvg stage={stage} size={72} /></div>
+          <span style={{ fontSize: 12, fontWeight: 500, color: noneYet ? T.orange : T.t3 }}>
+            {noneYet
+              ? "Tap to log today's habits"
+              : all_done
+                ? `Perfect — all ${total_count} habits kept`
+                : `${total_count - completed_count} remaining today`}
+          </span>
+        </div>
+
+        {/* Right: tree */}
+        <div style={{ flexShrink: 0, opacity: all_done ? 1 : 0.75, transition: "opacity .6s ease" }}>
+          <TreeSvg stage={stage} size={72} />
         </div>
       </div>
 
-      {!all_done && (
-        <>
-          <SEP />
-          <div style={{ padding: "11px 20px 13px" }}>
-            <div style={{ display: "flex", gap: 4 }}>
-              {Array.from({ length: total_count }).map((_, i) => (
-                <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i < completed_count ? "linear-gradient(90deg,#A78BF5,#7C5CE8)" : "rgba(242,238,255,.09)" }} />
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
+      {/* ── FOOTER ─────────────────────────────────────────────── */}
       <SEP />
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px 14px" }}>
-        <Ic.Flame c={T.orange} s={13} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: T.t2 }}>
-          Showing up for <span style={{ color: T.orange, fontWeight: 700 }}>{habit_streak.effective} days</span>{habit_streak.effective > habit_streak.current ? " 🛡️" : ""} in a row
+      <div style={{ display: "flex", alignItems: "center", gap: 0, padding: "10px 20px 12px" }}>
+        {/* streak */}
+        {habit_streak.effective > 0 && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Ic.Flame c={T.orange} s={12} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: T.t2 }}>{habit_streak.effective}<span style={{ fontWeight: 400, color: T.t3 }}> day</span></span>
+            </div>
+            <div style={{ width: 1, height: 12, background: "rgba(255,255,255,.10)", margin: "0 10px" }} />
+          </>
+        )}
+        {/* day / 21 */}
+        <span style={{ fontSize: 12, fontWeight: 500, color: T.t3 }}>
+          Day <span style={{ color: T.t2, fontWeight: 700 }}>{day_number}</span>
+          <span style={{ color: T.t4 }}> / {total_days}</span>
         </span>
-        <button
-          onClick={onNavigate}
-          style={{ marginLeft: "auto", fontSize: 13, fontWeight: 600, color: T.purple, background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", flexShrink: 0 }}>
-          Open →
-        </button>
       </div>
     </div>
   );
 }
 
-// ─── main page ────────────────────────────────────────────────────────────────
+// ─── Google Fit card ─────────────────────────────────────────────────────────
+const GFIT_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
+
+function gfitRelTime(iso: string): string {
+  try {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  } catch { return ""; }
+}
+
+function GFitIcon({ size = 28 }: { size?: number }) {
+  const r = Math.round(size * 0.28);
+  const ic = Math.round(size * 0.55);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: r, flexShrink: 0,
+      background: "linear-gradient(135deg,#4285F4 0%,#34A853 60%,#FBBC04 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      boxShadow: "0 2px 10px rgba(66,133,244,0.38)",
+    }}>
+      <svg width={ic} height={ic} viewBox="0 0 16 16" fill="none">
+        <polyline points="1,12 5,7 8,9.5 11,4 15,6.5"
+          stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="5" cy="7" r="1.3" fill="white" />
+        <circle cx="8" cy="9.5" r="1.3" fill="white" />
+        <circle cx="11" cy="4" r="1.3" fill="white" />
+      </svg>
+    </div>
+  );
+}
+
+function GoogleFitSyncCard({
+  onStepsUpdate, fd, onConnected,
+}: {
+  onStepsUpdate: (steps: number) => void;
+  fd: (d: number) => React.CSSProperties;
+  onConnected?: (info: { label: string; syncing: boolean; syncFn: () => void } | null) => void;
+}) {
+  const [gfState, setGfState] = useState<"checking" | "disconnected" | "connected" | "syncing" | "reconnect">("checking");
+  const [backendSt, setBackendSt] = useState<{ connected: boolean; last_synced?: string } | null>(null);
+  const [liveSteps, setLiveSteps] = useState<number | null>(null);
+  const onConnectedRef = useRef(onConnected);
+  onConnectedRef.current = onConnected;
+  const syncInFlight = useRef(false);
+
+  const checkBackend = async () => {
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+      const res = await fetch(`${GFIT_BASE}/api/googlefit/status`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBackendSt(data);
+        if (data.connected) {
+          // always fetch live steps from Google Fit on page view —
+          // backend cron runs on long intervals so client pulls fresh data itself
+          setTimeout(() => syncNow(), 0);
+          return;
+        }
+      }
+    } catch { /* fall through */ }
+    setGfState(isGoogleFitConnected() ? "connected" : "disconnected");
+  };
+
+  useEffect(() => { checkBackend(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const syncNow = async () => {
+    if (syncInFlight.current) return;  // prevent double-call on StrictMode remount / rapid reload
+    syncInFlight.current = true;
+    setGfState("syncing");
+    try {
+      const result = await fetchStepsFromServer();
+      if (result.needsReconnect) { setGoogleFitConnected(false); setGfState("reconnect"); return; }
+      if (result.connected) {
+        setGoogleFitConnected(true);
+        if (result.steps > 0) {
+          setLiveSteps(result.steps);
+          onStepsUpdate(result.steps);
+          // Push live steps to backend so /steps page and leaderboards stay current.
+          try {
+            const today = new Date().toISOString().slice(0, 10);
+            await addSteps({ steps: result.steps, log_date: today, source: "google_fit", note: "Auto-synced from Google Fit" });
+          } catch { /* non-critical */ }
+        }
+        setGfState("connected");
+      } else {
+        // Clear localStorage flag so next page load doesn't wrongly show "connected"
+        setGoogleFitConnected(false);
+        setGfState("disconnected");
+      }
+    } finally {
+      syncInFlight.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!onConnectedRef.current) return;
+    if (gfState === "connected" || gfState === "syncing") {
+      const label = liveSteps && liveSteps > 0
+        ? "Just now · live from Google Fit"
+        : backendSt?.last_synced
+          ? `Last synced ${gfitRelTime(backendSt.last_synced)}`
+          : "Connected";
+      onConnectedRef.current({ label, syncing: gfState === "syncing", syncFn: syncNow });
+    } else {
+      onConnectedRef.current(null);
+    }
+  }, [gfState, backendSt, liveSteps]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleConnect = () => {
+    if (typeof window !== "undefined") startGoogleFitAuth(window.location.pathname);
+  };
+
+  if (gfState === "checking") return null;
+
+  const syncedToday = !!backendSt?.last_synced &&
+    new Date(backendSt.last_synced).toDateString() === new Date().toDateString();
+
+  // ── disconnected / needs reconnect ─────────────────────────────────────────
+  if (gfState === "disconnected" || gfState === "reconnect") return (
+    <div style={{
+      ...fd(170), margin: "0 8px 8px", borderRadius: 22,
+      position: "relative" as const, overflow: "hidden",
+      background: "linear-gradient(160deg,rgba(14,11,28,0.99) 0%,rgba(9,7,20,1) 100%)",
+      border: ".5px solid rgba(66,133,244,0.22)",
+      boxShadow: "0 8px 40px rgba(0,0,0,.7), inset 0 0.5px 0 rgba(255,255,255,0.06)",
+    }}>
+      {/* ambient glows */}
+      <div style={{ position:"absolute", top:-60, right:-40, width:180, height:180, borderRadius:"50%", background:"radial-gradient(circle,rgba(66,133,244,0.14) 0%,transparent 68%)", pointerEvents:"none" as const }} />
+      <div style={{ position:"absolute", bottom:-50, left:-20, width:140, height:140, borderRadius:"50%", background:"radial-gradient(circle,rgba(52,168,83,0.10) 0%,transparent 68%)", pointerEvents:"none" as const }} />
+
+      <div style={{ padding:"20px 20px 18px", position:"relative" as const }}>
+
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+          {/* Google Fit G-logo colours as 4-dot grid */}
+          <div style={{ width:32, height:32, borderRadius:10, background:"rgba(255,255,255,0.06)", border:"0.5px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="5" cy="5" r="3.5" fill="#4285F4"/>
+              <circle cx="13" cy="5" r="3.5" fill="#EA4335"/>
+              <circle cx="5" cy="13" r="3.5" fill="#34A853"/>
+              <circle cx="13" cy="13" r="3.5" fill="#FBBC05"/>
+            </svg>
+          </div>
+          <div>
+            <p style={{ fontSize:14, fontWeight:700, color:T.t1, letterSpacing:"-.3px", margin:0, lineHeight:1.2 }}>
+              {gfState === "reconnect" ? "Reconnect Google Fit" : "Auto-sync with Google Fit"}
+            </p>
+            <p style={{ fontSize:11.5, color:T.t4, margin:0, marginTop:2 }}>
+              {gfState === "reconnect"
+                ? "Session expired — tap below to re-link your account"
+                : "Steps log themselves every day"}
+            </p>
+          </div>
+        </div>
+
+        {/* 3-step guide */}
+        {(() => {
+          const isIOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+          const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+          const storeLabel = isIOS ? "App Store" : isAndroid ? "Play Store" : "App Store / Play Store";
+          const storeHref = isIOS
+            ? "https://apps.apple.com/us/app/google-fit-activity-tracker/id1433864494"
+            : "https://play.google.com/store/apps/details?id=com.google.android.apps.fitness";
+          const steps = [
+            { step:"1", color:"#4285F4", label:"Download Google Fit", href: storeHref },
+            { step:"2", color:"#34A853", label:"Sign in with the Google account used in Google Fit", href:null },
+            { step:"3", color:"#FBBC05", label:"Tap Connect below", href:null },
+          ];
+          return (
+            <div style={{ display:"flex", flexDirection:"column", gap:0, marginBottom:16, background:"rgba(255,255,255,0.03)", borderRadius:14, border:"0.5px solid rgba(255,255,255,0.07)", overflow:"hidden" }}>
+              {steps.map((s, i, arr) => (
+                <div key={s.step} style={{ display:"flex", alignItems:"center", gap:12, padding:"9px 14px", borderBottom: i < arr.length-1 ? "0.5px solid rgba(255,255,255,0.06)" : "none" }}>
+                  <div style={{ width:20, height:20, borderRadius:"50%", background:s.color, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 2px 8px ${s.color}66` }}>
+                    <span style={{ fontSize:10, fontWeight:800, color:"#fff" }}>{s.step}</span>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize:12.5, fontWeight:600, color:T.t1, margin:0, letterSpacing:"-.1px" }}>{s.label}</p>
+                  </div>
+                  {s.href && (
+                    <a href={s.href} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                      style={{ fontSize:11, fontWeight:600, color:"#4285F4", textDecoration:"none", whiteSpace:"nowrap", background:"rgba(66,133,244,0.12)", padding:"4px 9px", borderRadius:999, border:"0.5px solid rgba(66,133,244,0.25)", flexShrink:0 }}>
+                      Get app ↗
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* CTA */}
+        <button onClick={handleConnect} style={{
+          width:"100%", padding:"13px 0", borderRadius:14, border:"none", cursor:"pointer",
+          background:"linear-gradient(135deg,#4285F4 0%,#34A853 100%)",
+          color:"#fff", fontSize:14, fontWeight:700,
+          fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-.1px",
+          boxShadow:"0 6px 24px rgba(66,133,244,0.40), inset 0 1px 0 rgba(255,255,255,0.18)",
+          display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+            <circle cx="5" cy="5" r="3" fill="rgba(255,255,255,0.85)"/>
+            <circle cx="13" cy="5" r="3" fill="rgba(255,255,255,0.65)"/>
+            <circle cx="5" cy="13" r="3" fill="rgba(255,255,255,0.65)"/>
+            <circle cx="13" cy="13" r="3" fill="rgba(255,255,255,0.85)"/>
+          </svg>
+          {gfState === "reconnect" ? "Reconnect Google Fit" : "Connect Google Fit"}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── connected / syncing — merged into StepsCard ───────────────────────────
+  return null;
+}
+
+// ─── weekly review card (static) ─────────────────────────────────────────────
+function WeeklyReviewCard({ data, fd }: { data: HomeData; fd: (d: number) => React.CSSProperties }) {
+  const streak      = data.habit_streak.effective;
+  const perfectDays = data.habit_streak.perfect_days;
+  const stepStreak  = data.steps.step_streak;
+  const challengeDay   = data.habits?.day_number ?? 0;
+  const challengeTotal = data.habits?.total_days ?? 21;
+
+  // Last Mon – Sun date range label
+  const today = new Date();
+  const dow = today.getDay();
+  const lastMon = new Date(today);
+  lastMon.setDate(today.getDate() - (dow === 0 ? 13 : dow + 6));
+  lastMon.setHours(0, 0, 0, 0);
+  const lastSun = new Date(lastMon);
+  lastSun.setDate(lastMon.getDate() + 6);
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const dateRange = `${fmt(lastMon)} – ${fmt(lastSun)}`;
+
+  // ── Natural language summary ──────────────────────────────────────────────
+  // Opening — what kind of week was it?
+  const opening =
+    perfectDays >= 6 ? `You nailed last week.` :
+    perfectDays >= 4 ? `You had a really solid week.` :
+    perfectDays >= 2 ? `You showed up consistently last week.` :
+    streak >= 3     ? `You kept your streak alive last week.` :
+                      `Last week was a starting point.`;
+
+  // Body — the meaningful numbers woven into a sentence
+  const challengePart = challengeDay > 0
+    ? ` You're on day ${challengeDay} of ${challengeTotal} of your challenge.`
+    : "";
+
+  const body =
+    perfectDays >= 1
+      ? `${perfectDays} perfect day${perfectDays !== 1 ? "s" : ""}, a ${streak}-day habit streak, and ${stepStreak} days of steps in a row.${challengePart}`
+      : `You have a ${streak}-day habit streak going and ${stepStreak} consecutive days of steps.${challengePart}`;
+
+  // Hook — one forward-looking sentence
+  const hook =
+    streak >= 7 ? `You've built a 7-day streak. Protect it this week.` :
+    streak >= 3 ? `${7 - streak} more day${7 - streak === 1 ? "" : "s"} and you hit a 7-day streak.` :
+    perfectDays >= 3 ? `${perfectDays} perfect days is real momentum. Keep it going.` :
+    `Every habit you log this week compounds into next week.`;
+
+  return (
+    <div style={{ ...fd(380), margin: "8px 8px" }}>
+      <div style={{
+        borderRadius: 22,
+        background: "linear-gradient(170deg, rgba(22,20,36,.98) 0%, rgba(14,12,24,.99) 100%)",
+        border: "1px solid rgba(226,216,255,.12)",
+        position: "relative" as const,
+        overflow: "hidden",
+      }}>
+        {/* top-right purple glow */}
+        <div style={{
+          position: "absolute", top: 0, right: 0,
+          width: 160, height: 120, pointerEvents: "none",
+          background: "radial-gradient(ellipse at 100% 0%, rgba(167,139,245,.16) 0%, transparent 70%)",
+        }} />
+
+        <div style={{ position: "relative", padding: "20px 20px 20px" }}>
+
+          {/* Label + date */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase" as const, color: "rgba(196,176,248,.70)" }}>Week in Review</span>
+            <span style={{ fontSize: 11, fontWeight: 500, color: "rgba(242,238,255,.28)" }}>{dateRange}</span>
+          </div>
+
+          {/* Opening — large, confident */}
+          <p style={{ margin: "0 0 10px", fontSize: 20, fontWeight: 800, color: "#F2EEFF", letterSpacing: "-.03em", lineHeight: 1.15 }}>
+            {opening}
+          </p>
+
+          {/* Body — numbers in prose */}
+          <p style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 500, color: "rgba(242,238,255,.60)", lineHeight: 1.65, letterSpacing: "-.01em" }}>
+            {body}
+          </p>
+
+          {/* Hairline divider */}
+          <div style={{ height: 1, background: "rgba(255,255,255,.07)", marginBottom: 14 }} />
+
+          {/* Forward hook — purple, slightly smaller */}
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, lineHeight: 1.55, color: T.purpleL, letterSpacing: "-.01em" }}>
+            {hook}
+          </p>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── main page ───────────────────────────────────────────────────────────────
 export default function HomePage() {
   useAuthRedirect({ apiCheck: true });
   const router = useRouter();
@@ -1308,6 +1845,10 @@ export default function HomePage() {
   const [joinTarget, setJoinTarget] = useState(8000);
   const [joining, setJoining] = useState(false);
   const [joinDone, setJoinDone] = useState(false);
+  const [gfitLiveSteps, setGfitLiveSteps] = useState<number | null>(null);
+  const gfitSyncRef = useRef<(() => void) | null>(null);
+  const [gfitConn, setGfitConn] = useState<{ label: string; syncing: boolean; syncFn: () => void } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const navigate = (path: string) => {
     setNavigating(true);
@@ -1352,6 +1893,7 @@ export default function HomePage() {
       try {
         // Fetch home data; fall back gracefully if endpoint not yet live
         const me = await getCachedUserMe() as any;
+        if (me?.role === "admin" || me?.is_admin === true) setIsAdmin(true);
         let data: HomeData;
         try {
           data = await api<HomeData>("/api/home", { method: "GET" });
@@ -1405,12 +1947,57 @@ export default function HomePage() {
       }
     };
     load();
+
+    // Silently refresh steps + trigger GFit sync when the tab regains focus.
+    // Use stable named functions so removeEventListener actually works (no re-fires).
+    const refreshHome = () => {
+      api<HomeData>("/api/home", { method: "GET" })
+        .then(fresh => {
+          if (!fresh) return;
+          if (!fresh.challenge?.id && fresh.step_challenge?.id) fresh = { ...fresh, challenge: fresh.step_challenge };
+          setHomeData(prev => prev ? {
+            ...prev,
+            steps: fresh.steps,
+            habits: fresh.habits ?? prev.habits,
+            habit_streak: fresh.habit_streak,
+          } : prev);
+        })
+        .catch(() => {});
+      // also re-pull live steps from Google Fit if connected
+      gfitSyncRef.current?.();
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") refreshHome(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", refreshHome);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", refreshHome);
+    };
   }, [router]);
 
   const stepsTarget = homeData?.steps.today ?? 0;
   const pctTarget = homeData?.steps.pct ?? 0;
   const animSteps = useCount(stepsTarget, 300, 900);
   const animPct = usePct(pctTarget, 200, 1000);
+
+  // When Google Fit returns live steps, merge them into homeData so every
+  // step-dependent display (hero count, progress bar, "above goal" text) updates.
+  useEffect(() => {
+    if (gfitLiveSteps != null && gfitLiveSteps > 0) {
+      setHomeData(prev => {
+        if (!prev) return prev;
+        const daily_target = prev.steps.daily_target || 8000;
+        return {
+          ...prev,
+          steps: {
+            ...prev.steps,
+            today: gfitLiveSteps,
+            pct: Math.min(Math.round((gfitLiveSteps / daily_target) * 100), 100),
+          },
+        };
+      });
+    }
+  }, [gfitLiveSteps]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fd = (d: number): React.CSSProperties => ({
     opacity: vis ? 1 : 0,
@@ -1492,7 +2079,7 @@ export default function HomePage() {
     // card shell — subtle border, dark fill, rounded
     const Shell = ({ children, mt = 0, delay = 0 }: { children: React.ReactNode; mt?: number; delay?: number }) => (
       <div style={{
-        margin: `${mt}px 16px 0`,
+        margin: `${mt}px 8px 0`,
         borderRadius: 22, overflow: "hidden",
         background: "rgba(255,255,255,.028)",
         border: ".5px solid rgba(255,255,255,.07)",
@@ -1693,13 +2280,17 @@ export default function HomePage() {
         {/* Daily carousel — insight + featured feeds */}
         <DailyCarousel data={homeData} fd={fd} onNavigate={navigate} greeting={greeting} userName={userName.split(" ")[0]} />
 
-        {/* Habits section */}
-        <HabitsCard data={homeData} fd={fd} onNavigate={() => navigate(homeData.habits ? "/habits/tree" : "/habits")} />
+        {/* Google Fit step sync — admin only while in testing/pilot */}
+        {isAdmin && (
+          <div style={{ marginTop: 8 }}>
+            <GoogleFitSyncCard onStepsUpdate={steps => setGfitLiveSteps(steps)} fd={fd} onConnected={info => { setGfitConn(info); gfitSyncRef.current = info?.syncFn ?? null; }} />
+          </div>
+        )}
 
         {/* Steps challenge */}
         {stepsRefreshing ? (
           <div style={{
-            margin: "0 16px 8px", borderRadius: 22, overflow: "hidden",
+            margin: "0 8px 8px", borderRadius: 22, overflow: "hidden",
             background: "rgba(255,255,255,.028)",
             border: ".5px solid rgba(255,255,255,.07)",
           }}>
@@ -1736,13 +2327,20 @@ export default function HomePage() {
             animSteps={animSteps}
             animPct={animPct}
             fd={fd}
+            gfitConn={isAdmin ? gfitConn : null}
             onNavigate={() => navigate(homeData.challenge ? `/challanges/${homeData.challenge.id}/steps` : "/challanges")}
             onJoin={() => { setJoinTarget(8000); setJoinDone(false); setShowJoinSheet(true); }}
           />
         )}
 
+        {/* Habits section */}
+        <HabitsCard data={homeData} fd={fd} onNavigate={() => navigate(homeData.habits ? "/habits/tree" : "/habits")} />
+
+        {/* Weekly Review — admin only (show always for testing) */}
+        {isAdmin && <WeeklyReviewCard data={homeData} fd={fd} />}
+
         {/* Wellbeing */}
-        <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, margin: "0 16px 8px", ...fd(420) }}>
+        <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, margin: "0 8px 8px", ...fd(420) }}>
           {[
             {
               color: T.rose, bg: "rgba(232,122,138,.08)", border: "rgba(232,122,138,.18)",

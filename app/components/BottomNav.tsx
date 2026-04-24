@@ -56,8 +56,9 @@ const ACCENT = "#A78BF5";
 
 export function BottomNav({ active }: { active: NavTabId }) {
   const router = useRouter();
-  const [stepsHref, setStepsHref] = useState<string | null>(null); // null = loading
-  const [habitsActive, setHabitsActive] = useState<boolean | null>(null); // null = loading
+  const [stepsHref, setStepsHref] = useState<string | null>(null);
+  const [habitsActive, setHabitsActive] = useState<boolean | null>(null);
+  const [tapped, setTapped] = useState<NavTabId | null>(null);
 
   useEffect(() => {
     api<{ id?: string; status?: string; user_joined?: boolean; start_date?: string }[]>("/api/challenges/available")
@@ -79,17 +80,20 @@ export function BottomNav({ active }: { active: NavTabId }) {
 
   function handleTap(tab: typeof TABS[number]) {
     if (tab.id === active) return;
+    if (tab.id === "feed") return;
     if (tab.id === "steps") {
-      if (stepsHref === null) return; // still loading
-      // if enrolled → go to challenge steps; if not enrolled → go to challenges list to join
+      if (stepsHref === null) return;
       router.push(stepsHref || "/challanges");
-      return;
     }
     if (tab.id === "habits") {
-      if (habitsActive === null) return; // still loading
-      if (!habitsActive) return;         // no active challenge — do nothing
+      if (habitsActive === null) return;
+      if (!habitsActive) return;
     }
-    router.push(tab.href);
+    // Ripple + vibrate
+    setTapped(tab.id);
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(8);
+    setTimeout(() => setTapped(null), 400);
+    if (tab.id !== "steps") router.push(tab.href);
   }
 
   const stepsLoading = stepsHref === null;
@@ -99,22 +103,28 @@ export function BottomNav({ active }: { active: NavTabId }) {
 
   return (
     <nav style={{
-      position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+      position: "fixed", bottom: 0,
+      left: "50%", transform: "translateX(-50%)",
       width: "100%", maxWidth: 480,
-      background: "rgba(10,10,10,0.92)",
+      background: "rgba(10,10,10,0.95)",
       backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-      borderTop: "0.5px solid rgba(255,255,255,0.07)",
+      borderTop: "0.5px solid rgba(255,255,255,0.08)",
       display: "flex", justifyContent: "space-around", alignItems: "center",
       height: 58, zIndex: 300,
       paddingBottom: "env(safe-area-inset-bottom)",
+      boxSizing: "border-box",
     }}>
       {TABS.map(tab => {
         const isActive = tab.id === active;
         const isDisabled =
+          (tab.id === "feed") ||
           (tab.id === "steps" && stepsLoading) ||
           (tab.id === "habits" && (habitsDisabled || habitsLoading));
-        // Use a higher-contrast gray for disabled tabs for accessibility
-        const color = isActive ? ACCENT : isDisabled ? "rgba(180,180,200,0.38)" : "rgba(240,237,232,0.35)";
+        const color = isActive
+          ? ACCENT
+          : isDisabled
+            ? "rgba(255,255,255,0.40)"
+            : "rgba(255,255,255,0.62)";
 
         return (
           <motion.button
@@ -122,30 +132,38 @@ export function BottomNav({ active }: { active: NavTabId }) {
             whileTap={isDisabled ? {} : { scale: 0.88 }}
             onClick={() => handleTap(tab)}
             style={{
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
               background: "none", border: "none",
               cursor: isDisabled ? "not-allowed" : isActive ? "default" : "pointer",
-              padding: "6px 20px 2px", minWidth: 60, height: 58,
+              padding: "4px 0 2px", flex: 1, minWidth: 0, height: 58,
               justifyContent: "center", position: "relative",
               WebkitTapHighlightColor: "transparent",
               opacity: isDisabled ? 0.55 : 1,
               transition: "opacity 0.2s",
             }}
           >
-            {isActive && (
-              <motion.div
-                layoutId="nav-dot"
-                style={{
-                  position: "absolute", top: 6, width: 4, height: 4,
-                  borderRadius: "50%", background: ACCENT,
-                  boxShadow: `0 0 6px ${ACCENT}`,
-                }}
-              />
-            )}
-            {tab.icon(color)}
+            {/* tap ripple glow */}
+            <motion.div
+              animate={tapped === tab.id
+                ? { scale: [0.4, 1.8], opacity: [0.55, 0] }
+                : { scale: 0.4, opacity: 0 }}
+              transition={{ duration: 0.38, ease: "easeOut" }}
+              style={{
+                position: "absolute", width: 44, height: 44, borderRadius: "50%",
+                background: isActive ? "rgba(167,139,245,.30)" : "rgba(167,139,245,.22)",
+                pointerEvents: "none",
+              }}
+            />
+            <motion.div
+              animate={{ scale: isActive ? 1.18 : 1 }}
+              transition={{ type: "spring", stiffness: 420, damping: 28 }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              {tab.icon(color)}
+            </motion.div>
             <span style={{
               fontSize: 9.5, fontWeight: isActive ? 700 : 500,
-              letterSpacing: "0.04em", textTransform: "uppercase" as const,
+              letterSpacing: "0.03em", textTransform: "uppercase" as const,
               color, transition: "color 0.2s",
             }}>
               {tab.label}

@@ -2801,7 +2801,7 @@ export default function FeedPage({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ delay: 0.2, type: 'spring', damping: 20, stiffness: 300 }}
           whileTap={{ scale: 0.92 }}
-          onClick={() => onCompose?.()}
+          onClick={() => router.push('/feeds/create')}
           className="fixed z-30 flex items-center gap-2 rounded-full"
           style={{
             right: 16,
