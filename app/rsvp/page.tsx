@@ -505,7 +505,7 @@ export default function RsvpPage() {
   const REGISTERED = 134;
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#111113', color: '#F2F2F7' }}>
+    <div className="pb-nav" style={{ minHeight: '100dvh', background: '#111113', color: '#F2F2F7' }}>
       {/* Sticky header */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 50,

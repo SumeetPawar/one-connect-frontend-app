@@ -801,7 +801,7 @@ export default function StepsTracker() {
         );
     }
     return (
-        <div style={{ minHeight: '100vh', width: '100%', backgroundColor: '#0f172a', padding: '0', paddingBottom: 90 }}>
+        <div className="pb-nav" style={{ minHeight: '100vh', width: '100%', backgroundColor: '#0f172a', padding: '0' }}>
             {/* Full-page Confetti Effect */}
             {showConfetti && (
                 <div style={{

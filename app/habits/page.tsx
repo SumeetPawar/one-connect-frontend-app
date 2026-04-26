@@ -1024,7 +1024,7 @@ function HabitSetupPage({ initialSelected, aiSuggestedIds, isReview, onComplete,
   initialSelected?: string[];
   aiSuggestedIds?: string[];
   isReview?: boolean;
-  onComplete: (ids: string[]) => void;
+  onComplete: (ids: string[], customIds: number[]) => void;
   onBack?: () => void;
 }) {
   const ah = useHabits();
@@ -1034,6 +1034,11 @@ function HabitSetupPage({ initialSelected, aiSuggestedIds, isReview, onComplete,
   const [suggestion, setSuggestion] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [customHabits, setCustomHabits] = useState<{ id: number; name: string; emoji: string }[]>([]);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customEmoji, setCustomEmoji] = useState("✨");
+  const [savingCustom, setSavingCustom] = useState(false);
 
   useEffect(() => {
     function onScroll() { setScrolled(window.scrollY > 120); }
@@ -1046,12 +1051,39 @@ function HabitSetupPage({ initialSelected, aiSuggestedIds, isReview, onComplete,
   const toggle = (id: string) => {
     setSelected(prev => {
       if (prev.includes(id)) return prev.filter((x: string) => x !== id);
-      if (prev.length >= MAX_HABITS) return prev;
+      if (prev.length + customHabits.length >= MAX_HABITS) return prev;
       return [...prev, id];
     });
   };
 
-  const canProceed = selected.length >= MIN_HABITS;
+  const totalSelected = selected.length + customHabits.length;
+  const canProceed = totalSelected >= MIN_HABITS;
+  const atMax = totalSelected >= MAX_HABITS;
+
+  const saveCustomHabit = async () => {
+    const name = customName.trim();
+    if (!name || savingCustom) return;
+    if (totalSelected >= MAX_HABITS) return;
+    setSavingCustom(true);
+    try {
+      const res = await api<{ id: number; name: string; emoji: string }>("/api/habits/custom", {
+        method: "POST",
+        body: JSON.stringify({ name, emoji: customEmoji }),
+      });
+      setCustomHabits(prev => [...prev, res]);
+      setCustomName("");
+      setCustomEmoji("✨");
+      setShowCustomInput(false);
+    } catch {
+      // ignore
+    } finally {
+      setSavingCustom(false);
+    }
+  };
+
+  const removeCustom = (id: number) => {
+    setCustomHabits(prev => prev.filter(c => c.id !== id));
+  };
 
   return (
     <div style={{ minHeight:"100vh", background:"#000", fontFamily:"-apple-system,BlinkMacSystemFont,sans-serif", WebkitFontSmoothing:"antialiased", paddingBottom:120 }}>
@@ -1087,7 +1119,7 @@ function HabitSetupPage({ initialSelected, aiSuggestedIds, isReview, onComplete,
                 </span>
               </div>
               <span style={{ fontSize:12, fontWeight:600, color:T3, letterSpacing:"-0.01em", fontVariantNumeric:"tabular-nums" }}>
-                {selected.length}/{MAX_HABITS}
+                {totalSelected}/{MAX_HABITS}
               </span>
             </div>
 
@@ -1120,8 +1152,8 @@ function HabitSetupPage({ initialSelected, aiSuggestedIds, isReview, onComplete,
               {Array.from({ length: MAX_HABITS }).map((_, i) => (
                 <div key={i} style={{
                   flex:1, height:2, borderRadius:99,
-                  background: i < selected.length ? C_BRAND : "rgba(255,255,255,0.1)",
-                  boxShadow: i < selected.length ? "0 0 6px rgba(10,132,255,0.5)" : "none",
+                  background: i < totalSelected ? C_BRAND : "rgba(255,255,255,0.1)",
+                  boxShadow: i < totalSelected ? "0 0 6px rgba(10,132,255,0.5)" : "none",
                   transition:"all 0.25s",
                 }}/>
               ))}
@@ -1334,7 +1366,7 @@ function HabitSetupPage({ initialSelected, aiSuggestedIds, isReview, onComplete,
                     <HabitSelectCard
                       key={h.id} habit={h}
                       selected={selected.includes(h.id)}
-                      disabled={selected.length >= MAX_HABITS}
+                      disabled={atMax}
                       onToggle={() => toggle(h.id)}
                       aiSuggested={aiSuggestedIds?.includes(h.id)}
                     />
@@ -1368,11 +1400,61 @@ function HabitSetupPage({ initialSelected, aiSuggestedIds, isReview, onComplete,
         </div>
       </div>
 
+      {/* Custom habits section */}
+      <div style={{ maxWidth: 390, margin: "0 auto", padding: "0 20px 16px" }}>
+        {customHabits.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: T4, marginBottom: 8 }}>Your custom habits</p>
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+              {customHabits.map(c => (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <span style={{ fontSize: 22 }}>{c.emoji}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.88)" }}>{c.name}</span>
+                  <button onClick={() => removeCustom(c.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 18, lineHeight: 1, padding: "2px 4px" }}>×</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {showCustomInput ? (
+          <div style={{ padding: "14px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)" }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <input
+                value={customEmoji}
+                onChange={e => setCustomEmoji(e.target.value)}
+                maxLength={2}
+                style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)", color: "#fff", fontSize: 22, textAlign: "center" as const, outline: "none" }}
+              />
+              <input
+                value={customName}
+                onChange={e => setCustomName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && saveCustomHabit()}
+                placeholder="e.g. Cold shower, Journal..."
+                maxLength={60}
+                style={{ flex: 1, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)", color: "#fff", fontSize: 14, padding: "0 14px", outline: "none", fontFamily: "-apple-system,sans-serif" }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { setShowCustomInput(false); setCustomName(""); }} style={{ flex: 1, height: 38, borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: T3, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button onClick={saveCustomHabit} disabled={!customName.trim() || savingCustom} style={{ flex: 2, height: 38, borderRadius: 12, background: customName.trim() ? C_BRAND : "rgba(255,255,255,0.06)", border: "none", color: customName.trim() ? "#fff" : T4, fontSize: 13, fontWeight: 700, cursor: customName.trim() ? "pointer" : "default" }}>{savingCustom ? "Saving…" : "Add habit"}</button>
+            </div>
+          </div>
+        ) : !atMax && (
+          <button
+            onClick={() => setShowCustomInput(true)}
+            style={{ width: "100%", height: 44, borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(255,255,255,0.12)", color: T3, fontSize: 14, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          >
+            <span style={{ fontSize: 18 }}>+</span> Add your own habit
+          </button>
+        )}
+      </div>
+
       {/* Sticky CTA */}
       <div style={{ position:"fixed", bottom:0, left:0, right:0, padding:"20px 18px 40px", background:"linear-gradient(to top, #000 60%, transparent)" }}>
         <div style={{ maxWidth:390, margin:"0 auto" }}>
           <button
-            onClick={() => canProceed && onComplete(selected)}
+            onClick={() => canProceed && onComplete(selected, customHabits.map(c => c.id))}
             style={{
               width:"100%", height:56, borderRadius:17, fontSize:16, fontWeight:700,
               letterSpacing:"-0.025em", border:"none",
@@ -1397,8 +1479,9 @@ function HabitSetupPage({ initialSelected, aiSuggestedIds, isReview, onComplete,
 }
 
 // ─── COMMITMENT SCREEN ────────────────────────────────────────────────────────
-function CommitmentScreen({ selectedIds, packId, onCommit, onBack }: {
+function CommitmentScreen({ selectedIds, customHabitIds, packId, onCommit, onBack }: {
   selectedIds: string[];
+  customHabitIds: number[];
   packId: string | null;
   onCommit: () => void;
   onBack?: () => void;
@@ -1485,6 +1568,7 @@ function CommitmentScreen({ selectedIds, packId, onCommit, onBack }: {
                   body: JSON.stringify({
                     pack_id: packId ?? null,
                     habit_slugs: selectedIds,
+                    custom_habit_ids: customHabitIds,
                   }),
                 });
                 setTimeout(onCommit, 600);
@@ -1572,6 +1656,7 @@ export default function HabitFlow() {
   const router = useRouter();
   const [flow, setFlow] = useState("packs");
   const [selected, setSelected] = useState<string[]>([]);
+  const [customHabitIds, setCustomHabitIds] = useState<number[]>([]);
   const [packId, setPackId] = useState<string | null>(null);
   const [aiSuggestedIds, setAiSuggestedIds] = useState<string[]>([]);
   const [availableHabits, setAvailableHabits] = useState<Habit[]>(ALL_HABITS);
@@ -1622,9 +1707,9 @@ export default function HabitFlow() {
   return (
     <HabitsCtx.Provider value={availableHabits}>
       {flow === "setup"
-        ? <HabitSetupPage key={selected.join("|") || "empty"} initialSelected={selected} aiSuggestedIds={aiSuggestedIds.length > 0 ? aiSuggestedIds : undefined} onBack={() => { setAiSuggestedIds([]); setFlow("packs"); }} onComplete={(ids: string[]) => { setSelected(ids); setFlow("commit"); }}/>
+        ? <HabitSetupPage key={selected.join("|") || "empty"} initialSelected={selected} aiSuggestedIds={aiSuggestedIds.length > 0 ? aiSuggestedIds : undefined} onBack={() => { setAiSuggestedIds([]); setFlow("packs"); }} onComplete={(ids: string[], customIds: number[]) => { setSelected(ids); setCustomHabitIds(customIds); setFlow("commit"); }}/>
         : flow === "commit"
-        ? <CommitmentScreen selectedIds={selected} packId={packId} onBack={() => setFlow("setup")} onCommit={() => setFlow("committed")}/>
+        ? <CommitmentScreen selectedIds={selected} customHabitIds={customHabitIds} packId={packId} onBack={() => setFlow("setup")} onCommit={() => setFlow("committed")}/>
         : flow === "committed"
         ? <CommittedScreen selectedIds={selected} onDone={() => setFlow("tracking")}/>
         : flow === "packs"

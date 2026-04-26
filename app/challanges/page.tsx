@@ -262,8 +262,7 @@ export default function Dashboard() {
             width: '100%',
             backgroundColor: '#0f172a',
             padding: '0',
-            paddingBottom: '90px'
-        }}>
+        }} className="pb-nav">
 
             {/* USE HEADER COMPONENT */}
             <Header

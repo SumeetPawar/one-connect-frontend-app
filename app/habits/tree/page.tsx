@@ -614,7 +614,15 @@ export default function HabitTree() {
   // ── History API shapes ───────────────────────────────────────────────────
   type HistoryTopHabit = {
     commitment_id: number;
-    habit: { id: number; slug: string; label?: string; icon?: string };
+    habit: {
+      commitment_id: number;
+      is_custom: boolean;
+      habit_id: number | null;
+      user_habit_id: number | null;
+      name: string;
+      slug: string | null;
+      emoji: string | null;
+    };
   };
   type HistoryLogHabit = {
     commitment_id: number;
@@ -645,19 +653,22 @@ export default function HabitTree() {
         const slugToId: Record<string, string> = {};
 
         if (Array.isArray(latest.habits) && latest.habits.length > 0) {
-          latest.habits.forEach(h => { slugToId[h.habit.slug] = String(h.habit.id); });
+          latest.habits.forEach(h => { if (h.habit.slug) slugToId[h.habit.slug] = h.habit.is_custom ? `custom-${h.habit.user_habit_id}` : String(h.habit.habit_id); });
 
           // Populate habits state
           setHabits(latest.habits.map(h => ({
-            id:    String(h.habit.id),
-            slug:  h.habit.slug,
-            label: h.habit.label || h.habit.slug,
-            icon:  h.habit.icon  || "✦",
+            id:    h.habit.is_custom ? `custom-${h.habit.user_habit_id}` : String(h.habit.habit_id),
+            slug:  h.habit.slug ?? "",
+            label: h.habit.name,
+            icon:  h.habit.emoji || "✦",
           })));
 
           // Populate commitment-id map
           const cids: Record<string, number> = {};
-          latest.habits.forEach(h => { cids[String(h.habit.id)] = h.commitment_id; });
+          latest.habits.forEach(h => {
+            const k = h.habit.is_custom ? `custom-${h.habit.user_habit_id}` : String(h.habit.habit_id);
+            cids[k] = h.commitment_id;
+          });
           setHabitCommitmentIds(cids);
         }
 
@@ -709,15 +720,24 @@ export default function HabitTree() {
 
   // Fetch active habit challenge — secondary: confirms/patches data after history loads
   useEffect(() => {
-    api<{ id: number; status: string; started_at: string; ends_at: string; habits: { id: string; slug?: string; label?: string; name?: string; icon?: string }[] }>("/api/habit-challenges/active")
+    type AnyHabitOut = {
+      commitment_id: number;
+      is_custom: boolean;
+      habit_id: number | null;
+      user_habit_id: number | null;
+      name: string;
+      slug: string | null;
+      emoji: string | null;
+    };
+    api<{ id: number; status: string; started_at: string; ends_at: string; habits: AnyHabitOut[] }>("/api/habit-challenges/active")
       .then(data => {
         if (data.id) setChallengeId(data.id);
         if (data.habits && data.habits.length > 0) {
           setHabits(data.habits.map(h => ({
-            id: String(h.id),
+            id: h.is_custom ? `custom-${h.user_habit_id}` : String(h.habit_id),
             slug: h.slug ?? "",
-            label: h.label || h.name || String(h.id),
-            icon: h.icon || "✦",
+            label: h.name,
+            icon: h.emoji || "✦",
           })));
         }
         if (data.started_at) {
@@ -741,7 +761,19 @@ export default function HabitTree() {
     const todayNum = Math.min(TOTAL_DAYS, Math.max(1,
       Math.floor((Date.now() - Date.parse(startedAt)) / 86400000) + 1));
 
-    type TodayEntry = { commitment_id: number; habit: { id: string }; completed: boolean };
+    type TodayEntry = {
+      commitment_id: number;
+      completed: boolean;
+      habit: {
+        commitment_id: number;
+        is_custom: boolean;
+        habit_id: number | null;
+        user_habit_id: number | null;
+        name: string;
+        slug: string | null;
+        emoji: string | null;
+      };
+    };
     api<{ habits?: TodayEntry[] }>("/api/habit-challenges/today")
       .then(data => {
         const entries = data.habits ?? [];
@@ -749,7 +781,9 @@ export default function HabitTree() {
         const dayMap: Record<string, boolean> = {};
         const commitMap: Record<string, number> = {};
         entries.forEach((e: TodayEntry) => {
-          const key = String(e.habit?.id ?? "");
+          const key = e.habit.is_custom
+            ? `custom-${e.habit.user_habit_id}`
+            : String(e.habit.habit_id ?? "");
           if (key) { dayMap[key] = e.completed; commitMap[key] = e.commitment_id; }
         });
         setDays(prev => ({ ...prev, [todayNum]: { ...prev[todayNum], ...dayMap } }));
@@ -977,7 +1011,7 @@ export default function HabitTree() {
   };
 
   return (
-    <div ref={mainScrollRef} style={{ background:BG,minHeight:"100svh",fontFamily:"-apple-system,'SF Pro Text','Helvetica Neue',sans-serif",color:T1,overflowX:"hidden",overflowY:"auto",height:"100svh" }}>
+    <div ref={mainScrollRef} className="pb-nav" style={{ background:BG,minHeight:"100svh",fontFamily:"-apple-system,'SF Pro Text','Helvetica Neue',sans-serif",color:T1,overflowX:"hidden",overflowY:"auto",height:"100svh" }}>
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
         ::-webkit-scrollbar{display:none}

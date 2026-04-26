@@ -1391,7 +1391,7 @@ const NotificationsPanel = ({ onClose, onMarkAllRead }: { onClose: () => void; o
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-nav">
           {notifs.map((n) => (
             <motion.button
               key={n.id}
@@ -1790,7 +1790,7 @@ const PostDetailSheet = ({
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-nav">
           {/* Header */}
           <div className="flex items-center justify-between px-4 pt-2 pb-3">
             <div className="flex items-center gap-2.5">

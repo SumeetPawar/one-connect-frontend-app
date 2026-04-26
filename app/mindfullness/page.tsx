@@ -1067,8 +1067,7 @@ export default function MeditationPage() {
       fontFamily: "-apple-system,'SF Pro Display','SF Pro Text',BlinkMacSystemFont,'Helvetica Neue',sans-serif",
       WebkitFontSmoothing: "antialiased",
       overflowX: "hidden",
-      paddingBottom: 90,
-    }}>
+    }} className="pb-nav">
       {/* Back Button */}
       <div style={{ position: 'fixed', top: 16, left: 16, zIndex: 50 }}>
         <button

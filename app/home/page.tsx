@@ -1732,6 +1732,350 @@ function GoogleFitSyncCard({
   return null;
 }
 
+// ─── accountability partner card (live) ──────────────────────────────────────
+interface PartnerPreview {
+  pair_id: number;
+  status: string;
+  week_start: string;
+  unread_messages: number;
+  can_nudge: boolean;
+  already_nudged: boolean;
+  partner: {
+    id: string;
+    name: string;
+    steps_today: number;
+    step_streak_days: number;
+    habit_streak_days: number;
+    habits_done: number;
+    habits_total: number;
+  };
+}
+type HomePartnerState = "loading" | "has_partner" | "queued" | "opted_out" | "neutral";
+
+function PartnerCard({ onNavigate }: { onNavigate: (p: string) => void }) {
+  const PVIOLET = "#7C5CFC";
+  const [cardState, setCardState] = useState<HomePartnerState>("loading");
+  const [partner, setPartner] = useState<PartnerPreview | null>(null);
+  const [finding, setFinding] = useState(false);
+  const [nudging, setNudging] = useState(false);
+  const [nudgeSent, setNudgeSent] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const initials = (n: string) => n.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  const showToast = (msg: string, ok: boolean) => {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const loadPartner = async () => {
+    try {
+      const res = await api<{ partners: PartnerPreview[]; seeking_partner: boolean; partner_opt_out: boolean }>("/api/partners");
+      const approved = res.partners.find((p: any) => p.status === "approved");
+      if (approved) { setPartner(approved); setCardState("has_partner"); setNudgeSent(approved.already_nudged); }
+      else if (res.seeking_partner) setCardState("queued");
+      else if (res.partner_opt_out) setCardState("opted_out");
+      else setCardState("neutral");
+    } catch {
+      setCardState("neutral");
+    }
+  };
+
+  useEffect(() => { loadPartner(); }, []);
+
+  const findRandom = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (finding) return;
+    setFinding(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+      const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://cbiqa.dev.honeywellcloud.com/socialapi").replace(/\/$/, "");
+      const res = await fetch(`${apiBase}/api/partners/find-random`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (res.status === 201) {
+        const data = await res.json();
+        showToast(`Matched with ${data.partner.name}! Say hi 👋`, true);
+        await loadPartner();
+      } else if (res.status === 202) {
+        const data = await res.json();
+        showToast(data.message || "We're finding you the perfect partner…", true);
+        setCardState("queued");
+      } else if (res.status === 409) {
+        await loadPartner();
+      } else {
+        showToast("Something went wrong. Please try again.", false);
+      }
+    } catch {
+      showToast("Something went wrong. Please try again.", false);
+    } finally {
+      setFinding(false);
+    }
+  };
+
+  const sendNudge = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!partner || nudging || nudgeSent) return;
+    setNudging(true);
+    try {
+      await api("/api/partners/nudge", {
+        method: "POST",
+        body: JSON.stringify({ receiver_user_id: partner.partner.id }),
+      });
+      setNudgeSent(true);
+      showToast(`Nudged ${partner.partner.name.split(" ")[0]}! 💪`, true);
+    } catch (e: any) {
+      const code = e?.data?.detail || e?.message || "";
+      if (code.includes("outside_window")) showToast("Nudge available 12:00–21:00 IST", false);
+      else if (code.includes("already_nudged")) { setNudgeSent(true); showToast("Already nudged today", false); }
+      else if (code.includes("habits_already_complete")) showToast("Partner already done for today!", true);
+      else showToast("Could not send nudge", false);
+    } finally {
+      setNudging(false);
+    }
+  };
+
+  // ── loading skeleton ──────────────────────────────────────────────────────
+  if (cardState === "loading") return (
+    <div style={{ margin: "0 8px 8px", borderRadius: 22, background: "#100E1A", border: ".5px solid rgba(255,255,255,.08)", padding: "16px", display: "flex", alignItems: "center", gap: 12 }}>
+      <style>{`@keyframes pcsk{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
+      <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(90deg,rgba(124,92,252,.15) 25%,rgba(124,92,252,.25) 50%,rgba(124,92,252,.15) 75%)", backgroundSize: "200% 100%", animation: "pcsk 1.4s ease infinite", flexShrink: 0 }} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: 7 }}>
+        <div style={{ width: "55%", height: 13, borderRadius: 6, background: "linear-gradient(90deg,rgba(255,255,255,.07) 25%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.07) 75%)", backgroundSize: "200% 100%", animation: "pcsk 1.4s ease infinite" }} />
+        <div style={{ width: "35%", height: 10, borderRadius: 6, background: "linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.05) 75%)", backgroundSize: "200% 100%", animation: "pcsk 1.4s 80ms ease infinite" }} />
+      </div>
+    </div>
+  );
+
+  // ── no buddy states (queued / opted_out / neutral) ───────────────────────
+  if (cardState !== "has_partner") {
+    const CardIcon = ({ emoji, pulse }: { emoji: string; pulse?: boolean }) => (
+      <div style={{ width: 48, height: 48, borderRadius: 16, background: "linear-gradient(135deg,rgba(124,92,252,.28) 0%,rgba(167,139,245,.16) 100%)", border: "1px solid rgba(124,92,252,.30)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, position: "relative" as const }}>
+        {emoji}
+        {pulse && <div style={{ position: "absolute" as const, top: -2, right: -2, width: 8, height: 8, borderRadius: "50%", background: "#7C5CFC", border: "1.5px solid #14102E" }} />}
+      </div>
+    );
+    return (
+      <div style={{ margin: "0 8px 8px", borderRadius: 22, overflow: "hidden", boxShadow: "0 8px 36px rgba(0,0,0,.6)", position: "relative" as const }}>
+        <style>{`@keyframes pc-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+        <div style={{ position: "absolute" as const, inset: 0, background: "linear-gradient(150deg,#14102E 0%,#0D0B1E 50%,#090714 100%)" }} />
+        <div style={{ position: "absolute" as const, top: -30, right: -30, width: 180, height: 180, borderRadius: "50%", background: "radial-gradient(circle,rgba(124,92,252,.20) 0%,transparent 70%)", pointerEvents: "none" as const }} />
+        <div style={{ position: "relative" as const, zIndex: 1 }}>
+          {toast && (
+            <div style={{ padding: "9px 16px", background: toast.ok ? "rgba(45,212,100,.13)" : "rgba(248,113,113,.13)", borderBottom: `.5px solid ${toast.ok ? "rgba(45,212,100,.22)" : "rgba(248,113,113,.22)"}` }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: toast.ok ? "#4ade80" : "#f87171", textAlign: "center" as const }}>{toast.msg}</p>
+            </div>
+          )}
+
+          {/* ── queued ── */}
+          {cardState === "queued" && (
+            <div onClick={() => onNavigate("/partner")} style={{ padding: "16px 16px 16px", display: "flex", gap: 14, alignItems: "center", cursor: "pointer" }}>
+              <CardIcon emoji="🔍" pulse />
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#F2EEFF", letterSpacing: "-.02em", marginBottom: 3 }}>Searching for your buddy…</p>
+                <p style={{ fontSize: 12, color: "rgba(242,238,255,.40)", lineHeight: 1.5 }}>You'll get a notification the moment you're paired. Tap to manage.</p>
+              </div>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          )}
+
+          {/* ── opted out ── */}
+          {cardState === "opted_out" && (
+            <div onClick={() => onNavigate("/partner")} style={{ cursor: "pointer" }}>
+              <div style={{ padding: "16px 16px 14px", display: "flex", gap: 14, alignItems: "center" }}>
+                <CardIcon emoji="💤" />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "#F2EEFF", letterSpacing: "-.02em", marginBottom: 3 }}>Partner pairing is off</p>
+                  <p style={{ fontSize: 12, color: "rgba(242,238,255,.40)", lineHeight: 1.5 }}>Buddies hit goals 2× more often. Tap to turn it on — free, anytime.</p>
+                </div>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div style={{ margin: "0 14px 14px" }}>
+                <div style={{ height: 36, borderRadius: 11, background: "linear-gradient(135deg,rgba(109,66,240,.25) 0%,rgba(167,139,245,.15) 100%)", border: "1px solid rgba(124,92,252,.30)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#C4B5FD" }}>✨  Turn on Partner Pairing</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── neutral ── */}
+          {cardState === "neutral" && (
+            <div onClick={() => onNavigate("/partner")} style={{ cursor: "pointer" }}>
+              <div style={{ padding: "20px 18px 14px", display: "flex", gap: 14, alignItems: "center" }}>
+                <CardIcon emoji="🤝" pulse />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: "#F2EEFF", letterSpacing: "-.03em", lineHeight: 1.2, marginBottom: 4 }}>Get an accountability buddy</p>
+                  <p style={{ fontSize: 12, color: "rgba(242,238,255,.45)", lineHeight: 1.55 }}>Someone who checks on you, cheers you on, and won't let you skip.</p>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", padding: "0 16px 14px", gap: 0 }}>
+                {[{ icon: "💬", label: "Chat & nudge" }, { icon: "📈", label: "Live progress" }, { icon: "🎯", label: "2× goal rate" }].map(({ icon, label }, i, arr) => (
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, flex: 1, justifyContent: "center" }}>
+                      <span style={{ fontSize: 13 }}>{icon}</span>
+                      <span style={{ fontSize: 11, fontWeight: 500, color: "rgba(242,238,255,.48)", letterSpacing: "-.01em" }}>{label}</span>
+                    </div>
+                    {i < arr.length - 1 && <div style={{ width: 1, height: 14, background: "rgba(255,255,255,.10)", flexShrink: 0 }} />}
+                  </div>
+                ))}
+              </div>
+              <div style={{ height: .5, background: "rgba(255,255,255,.07)", margin: "0 14px" }} />
+              <div style={{ padding: "11px 14px 13px" }}>
+                <div style={{ height: 40, borderRadius: 11, background: "linear-gradient(135deg,#6D42F0 0%,#9B7FE8 100%)", boxShadow: "0 3px 14px rgba(109,66,240,.44)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-.01em" }}>Find my buddy</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── has partner ───────────────────────────────────────────────────────────
+  const pInit = initials(partner!.partner.name);
+  const firstName = partner!.partner.name.split(" ")[0];
+  const stepsPct = Math.min(partner!.partner.steps_today / 10000, 1);
+  const habitsPct = partner!.partner.habits_total > 0
+    ? Math.min(partner!.partner.habits_done / partner!.partner.habits_total, 1)
+    : 0;
+
+  return (
+    <div style={{ margin: "0 8px 8px", borderRadius: 20, background: "#111019", border: "1px solid rgba(255,255,255,.07)", overflow: "hidden" }}>
+
+      {/* ── Header ── */}
+      <div
+        onClick={() => onNavigate("/partner")}
+        style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,.06)", cursor: "pointer" }}
+      >
+        <div style={{ position: "relative" as const, flexShrink: 0 }}>
+          <div style={{ width: 38, height: 38, borderRadius: "50%", background: PVIOLET, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{pInit}</div>
+          <div style={{ position: "absolute" as const, bottom: 0, right: 0, width: 10, height: 10, borderRadius: "50%", background: "#30D158", border: "2.5px solid #111019" }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", letterSpacing: "-.02em", lineHeight: 1.2 }}>{partner!.partner.name}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,.3)", fontWeight: 400 }}>Accountability buddy</span>
+            {partner!.unread_messages > 0 && (
+              <>
+                <span style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(255,255,255,.2)", display: "inline-block" }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#EF4444" }}>{partner!.unread_messages} new</span>
+              </>
+            )}
+          </div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+
+      {/* ── Steps + Habits ── */}
+      <div onClick={() => onNavigate("/partner")} style={{ cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+
+        {/* Steps row */}
+        <div style={{ padding: "13px 16px 11px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,.38)", marginBottom: 3, letterSpacing: "-.01em" }}>Steps today</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+              <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-.05em", color: "#fff", fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>
+                {partner!.partner.steps_today.toLocaleString()}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,.3)", letterSpacing: "-.01em" }}>/ 10,000</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", flexShrink: 0, gap: 4 }}>
+            <Ic.Flame c={T.orange} s={12} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.t2 }}>
+              {partner!.partner.step_streak_days ?? 0}
+            </span>
+          </div>
+        </div>
+        <div style={{ height: 3, background: "rgba(255,255,255,.06)" }}>
+          <div style={{ height: "100%", width: `${stepsPct * 100}%`, background: PVIOLET, transition: "width .6s ease" }} />
+        </div>
+
+        {/* Habits row */}
+        <div style={{ padding: "11px 16px 13px", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,.38)", marginBottom: 3, letterSpacing: "-.01em" }}>Habits today</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+              <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-.05em", color: "#fff", lineHeight: 1 }}>
+                {partner!.partner.habits_done}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,.3)", letterSpacing: "-.01em" }}>
+                of {partner!.partner.habits_total} done
+              </span>
+            </div>
+          </div>
+          {/* Flame streak */}
+          <div style={{ display: "flex", alignItems: "center", flexShrink: 0, gap: 4 }}>
+            <Ic.Flame c={T.orange} s={12} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.t2 }}>
+              {partner!.partner.habit_streak_days ?? 0}
+            </span>
+          </div>
+        </div>
+        <div style={{ height: 3, background: "rgba(255,255,255,.06)" }}>
+          <div style={{ height: "100%", width: `${habitsPct * 100}%`, background: PVIOLET, transition: "width .6s ease" }} />
+        </div>
+
+      </div>
+
+      {/* ── Actions: nudge + chat ── */}
+      <div style={{ padding: "12px 14px 14px", display: "flex", gap: 8 }}>
+        {/* nudge button — only when can_nudge */}
+        {partner!.can_nudge && (
+          <button
+            onClick={sendNudge}
+            disabled={nudging}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "11px 14px", borderRadius: 14, flexShrink: 0,
+              border: nudgeSent ? "1px solid rgba(45,212,100,.30)" : "1px solid rgba(251,146,60,.30)",
+              background: nudgeSent ? "rgba(45,212,100,.10)" : "rgba(251,146,60,.10)",
+              cursor: nudgeSent || nudging ? "default" : "pointer",
+              transition: "all .2s",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={nudgeSent ? "#4ade80" : "#fb923c"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            <span style={{ fontSize: 12, fontWeight: 700, color: nudgeSent ? "#4ade80" : "#fb923c", whiteSpace: "nowrap" as const }}>
+              {nudging ? "…" : nudgeSent ? "Nudged ✓" : "Nudge"}
+            </span>
+          </button>
+        )}
+        {/* chat button */}
+        <button
+          onClick={() => onNavigate("/partner")}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            padding: "11px 16px", borderRadius: 14,
+            background: "linear-gradient(135deg,rgba(124,92,252,.22) 0%,rgba(167,139,245,.14) 100%)",
+            border: "1px solid rgba(124,92,252,.30)",
+            cursor: "pointer", position: "relative" as const,
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C4B5FD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#C4B5FD", letterSpacing: "-.01em" }}>
+            {partner!.unread_messages > 0 ? `${partner!.unread_messages} new · Open Chat` : `Chat with ${firstName}`}
+          </span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C4B5FD" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+          {partner!.unread_messages > 0 && (
+            <div style={{ position: "absolute" as const, top: -6, right: 10, minWidth: 18, height: 18, borderRadius: 9, background: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px", boxShadow: "0 0 0 2px #111019" }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: "#fff" }}>{partner!.unread_messages > 9 ? "9+" : partner!.unread_messages}</span>
+            </div>
+          )}
+        </button>
+      </div>
+
+    </div>
+  );
+}
+
 // ─── weekly review card (static) ─────────────────────────────────────────────
 function WeeklyReviewCard({ data, fd }: { data: HomeData; fd: (d: number) => React.CSSProperties }) {
   const streak      = data.habit_streak.effective;
@@ -2089,7 +2433,7 @@ export default function HomePage() {
 
     return (
       <div style={{ minHeight: "100vh", width: "100%", backgroundColor: T.bg }}>
-        <div style={{ maxWidth: 430, margin: "0 auto", paddingBottom: 90 }}>
+        <div className="pb-nav" style={{ maxWidth: 430, margin: "0 auto" }}>
           <style>{`
           @keyframes skshimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
           @keyframes skfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -2210,7 +2554,7 @@ export default function HomePage() {
         @keyframes slideUp{from{transform:translateX(-50%) translateY(100%)}to{transform:translateX(-50%) translateY(0)}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         html,body{overflow-x:hidden;}
-        .hp-page{min-height:100vh;max-width:430px;margin:0 auto;background:${T.bg};font-family:'Plus Jakarta Sans',-apple-system,sans-serif;color:${T.t1};-webkit-font-smoothing:antialiased;padding-bottom:56px;overflow-x:hidden;}
+        .hp-page{min-height:100vh;max-width:430px;margin:0 auto;background:${T.bg};font-family:'Plus Jakarta Sans',-apple-system,sans-serif;color:${T.t1};-webkit-font-smoothing:antialiased;padding-bottom:calc(58px + env(safe-area-inset-bottom,0px) + 12px);overflow-x:hidden;}
         .hp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:40;backdrop-filter:blur(10px);}
         .hp-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#0E0C18;border-radius:26px 26px 0 0;border-top:.5px solid rgba(155,127,232,.22);box-shadow:0 -16px 60px rgba(0,0,0,.80);z-index:50;animation:slideUp .3s cubic-bezier(.22,1,.36,1);}
         .hp-kbtn{padding:15px 0;border-radius:13px;border:.5px solid rgba(242,238,255,.07);background:rgba(242,238,255,.05);cursor:pointer;font-size:18px;font-weight:600;color:${T.t1};font-family:'Plus Jakarta Sans',sans-serif;transition:background .12s,transform .1s;}
@@ -2280,13 +2624,6 @@ export default function HomePage() {
         {/* Daily carousel — insight + featured feeds */}
         <DailyCarousel data={homeData} fd={fd} onNavigate={navigate} greeting={greeting} userName={userName.split(" ")[0]} />
 
-        {/* Google Fit step sync — admin only while in testing/pilot */}
-        {isAdmin && (
-          <div style={{ marginTop: 8 }}>
-            <GoogleFitSyncCard onStepsUpdate={steps => setGfitLiveSteps(steps)} fd={fd} onConnected={info => { setGfitConn(info); gfitSyncRef.current = info?.syncFn ?? null; }} />
-          </div>
-        )}
-
         {/* Steps challenge */}
         {stepsRefreshing ? (
           <div style={{
@@ -2333,11 +2670,21 @@ export default function HomePage() {
           />
         )}
 
+        {/* Accountability Buddy */}
+        <PartnerCard onNavigate={navigate} />
+
         {/* Habits section */}
         <HabitsCard data={homeData} fd={fd} onNavigate={() => navigate(homeData.habits ? "/habits/tree" : "/habits")} />
 
         {/* Weekly Review — admin only (show always for testing) */}
         {isAdmin && <WeeklyReviewCard data={homeData} fd={fd} />}
+
+        {/* Google Fit step sync — admin only while in testing/pilot */}
+        {isAdmin && (
+          <div style={{ marginTop: 8 }}>
+            <GoogleFitSyncCard onStepsUpdate={steps => setGfitLiveSteps(steps)} fd={fd} onConnected={info => { setGfitConn(info); gfitSyncRef.current = info?.syncFn ?? null; }} />
+          </div>
+        )}
 
         {/* Wellbeing */}
         <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, margin: "0 8px 8px", ...fd(420) }}>

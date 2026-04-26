@@ -33,6 +33,16 @@ body {
   }
 }
 
+/* ── bottom-nav clearance ────────────────────────────────────────────────────
+   Nav bar is 58px tall + iPhone home-bar (env safe-area-inset-bottom).
+   Apply .pb-nav to any scrollable content container that sits behind it.     */
+:root {
+  --nav-h: 58px;
+}
+.pb-nav {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 12px) !important;
+}
+
 @layer utilities {
   @keyframes slideUp {
     from {

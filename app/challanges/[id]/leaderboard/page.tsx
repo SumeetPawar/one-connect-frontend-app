@@ -230,7 +230,7 @@ export default function LeaderboardPage() {
 
     if (loading || tabSwitching) {
         return (
-            <div className="min-h-screen bg-zinc-950 text-white pb-24">
+            <div className="min-h-screen bg-zinc-950 text-white pb-nav">
                 <div className="sticky top-0 z-40 bg-zinc-950 border-b border-zinc-800">
                     <div className="px-5 py-4 flex items-center gap-4">
                         <div className="w-9 h-9 bg-zinc-800 rounded-lg animate-pulse"></div>
@@ -278,7 +278,7 @@ export default function LeaderboardPage() {
     const myDeptIds: string[] = currentChip?.department_ids ?? [];
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-white pb-24">
+        <div className="min-h-screen bg-zinc-950 text-white pb-nav">
             {/* Header */}
             <div className="sticky top-0 z-40 bg-zinc-950 border-b border-zinc-800">
                 <div className="px-5 py-4 flex items-center gap-4">

@@ -1488,9 +1488,9 @@ export default function ScanReport() {
 
   return (
     <>
-      <div style={{
+      <div className="pb-nav" style={{
         minHeight: "100vh", background: C.bg, color: C.text,
-        fontFamily: "Figtree, sans-serif", width: "100%", paddingBottom: 90
+        fontFamily: "Figtree, sans-serif", width: "100%"
       }}>
         <style>{`
         * { box-sizing:border-box }
